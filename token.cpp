@@ -1,30 +1,25 @@
 #include "token.hpp"
 
-namespace Token{
+namespace Parser{
 
 	using std::string;
 	using _ptr_token = Token::_shared_ptr_token;
-	using _str_itr = Token::_str_itr;
+	using _itr_str = Token::_itr_str;
 
 	_ptr_token Token::_token_cur = nullptr;
 
-	/**
-	 * @brief コンストラクタ
-	 */
+	/** @brief コンストラクタ */
 	Token::Token() = default;
 
-	Token::Token(const TokenKind &kind, const _str_itr &itr)
+	Token::Token(const TokenKind &kind, const _itr_str &itr)
 		: _kind(kind), _str(itr)
 	{}
 
-	/**
-	 * @brief デストラクタ
-	 */
+    /** @brief デストラクタ */
 	Token::~Token() = default;
 
 	/**
-	 * @brief 
-	 * エラー報告用の関数
+	 * @brief エラー報告用の関数
 	 * @param err 
 	 */
 	void Token::error(const string &msg) {
@@ -33,12 +28,11 @@ namespace Token{
 	}
 
 	/**
-	 * @brief 
-	 * エラー箇所を報告する
+	 * @brief エラー箇所を報告する
 	 * @param pos エラー箇所
 	 */
-	void Token::error_at(const string &msg, const _str_itr &loc){
-		_str_itr first = user_input.begin();
+	void Token::error_at(const string &msg, const _itr_str &loc){
+		_itr_str first = user_input.begin();
 		size_t pos = std::distance(first, loc);
 		std::cerr << user_input << "\n";
 		std::cerr << string(pos, ' ') << "^ ";
@@ -48,7 +42,7 @@ namespace Token{
 
 	/**
 	 * @brief 
-	 * 次のトークンが期待している記号の時には、トークンを1つ進めてtrueを返す。
+	 * 次のトークンが期待している記号の時には、トークンを1つ進めてtrueを返す。 \n 
 	 * それ以外の場合には偽を返す。
 	 * @param op 期待している記号
 	 * @return true 次のトークンが期待している記号
@@ -62,7 +56,7 @@ namespace Token{
 
 	/**
 	 * @brief 
-	 * 次のトークンが期待している記号の時はトークンを１つ進める。
+	 * 次のトークンが期待している記号の時はトークンを１つ進める。 \n 
 	 * それ以外の場合にはエラーを報告する。
 	 * @param op 期待している記号
 	 */
@@ -75,7 +69,7 @@ namespace Token{
 
 	/**
 	 * @brief 
-	 * 次のトークンが数値の場合、トークンを１つ読み進めてその数値を返す。
+	 * 次のトークンが数値の場合、トークンを１つ読み進めてその数値を返す。 \n 
 	 * それ以外の場合はエラーを返す。
 	 * @return int 
 	 */
@@ -96,7 +90,7 @@ namespace Token{
 	 * @param str 新しく生成するトークン文字列
 	 * @return _shared_ptr_token 生成したトークンのポインタ
 	 */
-	_ptr_token Token::new_token(const TokenKind &kind, _shared_ptr_token cur, const _str_itr &itr)
+	_ptr_token Token::new_token(const TokenKind &kind, _shared_ptr_token cur, const _itr_str &itr)
 	{	
 		_shared_ptr_token tok = std::make_shared<Token>(kind, itr);
 		cur->next = tok;
@@ -111,7 +105,7 @@ namespace Token{
 		_ptr_token head = std::make_shared<Token>();
 		_ptr_token cur(head);
 
-		for(_str_itr it = str.begin(), end = str.end(); it != end; ++it){
+		for(_itr_str it = str.begin(), end = str.end(); it != end; ++it){
 			/* 空白文字をスキップ */
 			if(std::isspace(*it)){continue;}
 			
