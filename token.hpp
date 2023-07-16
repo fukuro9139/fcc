@@ -22,13 +22,13 @@ namespace Parser{
      */
     struct Token
     {
-        using _shared_ptr_token = std::shared_ptr<Token>;
+        using _unique_ptr_token = std::unique_ptr<Token>;
         using _itr_str = std::string::const_iterator;
 
     public:
        
         /** @brief 次のトークン */
-        _shared_ptr_token next = nullptr;
+        _unique_ptr_token next = nullptr;
 
         Token();
         Token(const TokenKind &kind, const _itr_str &itr);
@@ -39,7 +39,7 @@ namespace Parser{
         static bool consume(const char &op);
         static void expect(const char &op);
         static int expect_number();
-        static _shared_ptr_token new_token( const TokenKind &kind, _shared_ptr_token cur, const _itr_str &itr);
+        static Token* new_token( const TokenKind &kind, Token *cur, const _itr_str &itr);
         static void tokenize(const std::string &str);
         static bool at_eof();
         
@@ -52,7 +52,7 @@ namespace Parser{
         /** @brief トークン文字列 */
         _itr_str _str;
         /** @brief 現在着目しているトークン */
-        static _shared_ptr_token _token_cur;
+        static _unique_ptr_token _token_cur;
     };
 
 }

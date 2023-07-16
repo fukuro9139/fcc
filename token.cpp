@@ -3,7 +3,7 @@
 namespace Parser{
 
 	using std::string;
-	using _ptr_token = Token::_shared_ptr_token;
+	using _ptr_token = Token::_unique_ptr_token;
 	using _itr_str = Token::_itr_str;
 
 	_ptr_token Token::_token_cur = nullptr;
@@ -88,13 +88,13 @@ namespace Parser{
 	 * @param kind 新しく生成するトークンの種類
 	 * @param cur 親となるトークン
 	 * @param str 新しく生成するトークン文字列
-	 * @return _shared_ptr_token 生成したトークンのポインタ
+	 * @return _unique_ptr_token 生成したトークンのポインタ
 	 */
-	_ptr_token Token::new_token(const TokenKind &kind, _shared_ptr_token cur, const _itr_str &itr)
+	Token* Token::new_token(const TokenKind &kind, Token *cur, const _itr_str &itr)
 	{	
-		_shared_ptr_token tok = std::make_shared<Token>(kind, itr);
-		cur->next = tok;
-		return std::move(tok);
+		_unique_ptr_token tok = std::make_unique<Token>(kind, itr);
+		cur->next = std::move(tok);
+		return cur->next.get();
 	}
 
 	/**
@@ -102,8 +102,8 @@ namespace Parser{
 	 * @param str トークナイズする対象文字列
 	 */
 	void Token::tokenize(const string &str) {
-		_ptr_token head = std::make_shared<Token>();
-		_ptr_token cur(head);
+		_ptr_token head = std::make_unique<Token>();
+		Token *cur = head.get();
 
 		for(_itr_str it = str.begin(), end = str.end(); it != end; ++it){
 			/* 空白文字をスキップ */
@@ -111,16 +111,16 @@ namespace Parser{
 			
 			if('+' == *it || '-' == *it) {
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
-				cur = new_token(TokenKind::TK_RESERVED, std::move(cur), it);
+				cur = new_token(TokenKind::TK_RESERVED, cur, it);
 				continue;
 			}
-			if(isdigit(*it)){
-				const string sub_str(it, str.end());
+			if(isdigit(*it)){	
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
-				cur = new_token(TokenKind::TK_NUM, std::move(cur), it);
+				cur = new_token(TokenKind::TK_NUM, cur, it);
 				
 				/* 数値変換 */
 				size_t idx;
+				const string sub_str(it, str.end());
 				cur->_val = std::stoi(sub_str, &idx);
 				it += idx - 1;
 				continue;
