@@ -7,6 +7,8 @@ using std::cout;
 using std::vector;
 using std::string;
 
+string user_input;
+
 int main(int argc, char **argv){
 
 	if(argc != 2){
@@ -15,10 +17,10 @@ int main(int argc, char **argv){
 	}
 
 	vector<string> args(argv, argv + argc);
-	std::size_t idx;
+	user_input = args[1];
 
 	/* トークナイズする */
-	Token::tokenize(args[1]);
+	Token::tokenize(user_input);
 
 	/* アセンブリの前半部分を出力 */
 	cout << ".intel_syntax noprefix\n";
@@ -33,11 +35,13 @@ int main(int argc, char **argv){
 	/* アセンブリを出力 */
 	while(!Token::at_eof()){
 		if(Token::consume('+')){
-			cout << " add rax, " << Token::expect_number() << "\n";
+			const int num = Token::expect_number();
+			cout << " add rax, " << num << "\n";
 			continue;
 		}
 		Token::expect('-');
-		cout << " sub rax, " << Token::expect_number() << "\n";
+		const int num = Token::expect_number();
+		cout << " sub rax, " << num << "\n";
 	}
 
 	cout << " ret\n";
