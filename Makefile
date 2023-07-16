@@ -1,6 +1,6 @@
 CC = g++
 
-CFLAGS = -std=c++20 -g -static
+CFLAGS = -std=C++20 -g -static
 
 TARGET = fcc
 

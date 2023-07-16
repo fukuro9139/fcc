@@ -3,7 +3,9 @@
 #include<string>
 #include "token.hpp"
 
-using std::cout, std::vector, std::string;
+using std::cout;
+using std::vector;
+using std::string;
 
 int main(int argc, char **argv){
 
@@ -16,7 +18,7 @@ int main(int argc, char **argv){
 	std::size_t idx;
 
 	/* トークナイズする */
-	token = Token::tokenize(args[1]);
+	Token::tokenize(args[1]);
 
 	/* アセンブリの前半部分を出力 */
 	cout << ".intel_syntax noprefix\n";

@@ -1,7 +1,7 @@
 #include "token.hpp"
 using std::string;
-using _shared_ptr_token = std::shared_ptr<Token>;
-using _unique_ptr_token = std::unique_ptr<Token>;
+
+Token::_shared_ptr_token Token::_token_cur = nullptr;
 
 /**
  * @brief コンストラクタ
@@ -36,8 +36,8 @@ void Token::error(const string &err) {
  * @return false それ以外
  */
 bool Token::consume(const char &op) {
-	if(token->_kind != TokenKind::TK_RESERVED || token->_str[0] != op) {return false;}
-	token = std::move(token->next);
+	if(_token_cur->_kind != TokenKind::TK_RESERVED || _token_cur->_str[0] != op) {return false;}
+	_token_cur = std::move(_token_cur->next);
 	return true;
 }
 
@@ -48,8 +48,8 @@ bool Token::consume(const char &op) {
  * @param op 期待している記号
  */
 void Token::expect(const char &op){
-	if (token->_kind != TokenKind::TK_RESERVED || token->_str[0] != op) {error(string{op}+ "ではありません");}
-	token = std::move(token->next);
+	if (_token_cur->_kind != TokenKind::TK_RESERVED || _token_cur->_str[0] != op) {error(string{op}+ "ではありません");}
+	_token_cur = std::move(_token_cur->next);
 }
 
 /**
@@ -59,9 +59,9 @@ void Token::expect(const char &op){
  * @return int 
  */
 int Token::expect_number(){
-	if(token->_kind != TokenKind::TK_NUM){error("数ではありません");}
-	int val = token->_val;
-	token = std::move(token->next);
+	if(_token_cur->_kind != TokenKind::TK_NUM){error("数ではありません");}
+	int val = _token_cur->_val;
+	_token_cur = std::move(_token_cur->next);
     return val;
 }
 
@@ -73,7 +73,7 @@ int Token::expect_number(){
  * @param str 新しく生成するトークン文字列
  * @return _shared_ptr_token 生成したトークンのポインタ
  */
-_shared_ptr_token Token::new_token(const TokenKind &kind, _shared_ptr_token cur, const std::string &str)
+Token::_shared_ptr_token Token::new_token(const TokenKind &kind, _shared_ptr_token cur, const std::string &str)
 {	
 	_shared_ptr_token tok = std::make_shared<Token>(kind, str);
     cur->next = tok;
@@ -83,9 +83,8 @@ _shared_ptr_token Token::new_token(const TokenKind &kind, _shared_ptr_token cur,
 /**
  * @brief 文字列strをトークナイズしてトークン列を生成。
  * @param str トークナイズする対象文字列
- * @return 生成したトークン列の先頭トークンへのポインタ
  */
-_shared_ptr_token Token::tokenize(const string &str) {
+void Token::tokenize(const string &str) {
 	_shared_ptr_token head = std::make_shared<Token>();
 	_shared_ptr_token cur(head);
 
@@ -106,7 +105,7 @@ _shared_ptr_token Token::tokenize(const string &str) {
 			/* 数値変換 */
 			size_t idx;
 			cur->_val = std::stoi(sub_str, &idx);
-			i += idx;
+			i += idx - 1;
 			continue;
 		}
 		error("トークナイズできません");
@@ -114,7 +113,7 @@ _shared_ptr_token Token::tokenize(const string &str) {
 	}
 
 	cur = new_token(TokenKind::TK_EOF, std::move(cur), "");
-	return std::move(head->next);
+	_token_cur = std::move(head->next);
 }
 
 /**
@@ -124,6 +123,6 @@ _shared_ptr_token Token::tokenize(const string &str) {
  * @return false 
  */
 bool Token::at_eof() {
-  return token->_kind == TokenKind::TK_EOF;
+  return _token_cur->_kind == TokenKind::TK_EOF;
 }
 
