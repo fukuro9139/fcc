@@ -15,23 +15,30 @@ enum class TokenKind {
 struct Token
 {
 public:
-    /* トークンの型 */
-    TokenKind kind;
+
     /* 次の入力トークン */
-    std::unique_ptr<Token> next = nullptr;
+    std::shared_ptr<Token> next = nullptr;
+
+    Token();
+    Token(const TokenKind &kind, const std::string &str);
+    ~Token();
+
+    static void error(const std::string &err);
+    static bool consume(const char &op);
+    static void expect(const char &op);
+    static int expect_number();
+    static _shared_ptr_token new_token( const TokenKind &kind, _shared_ptr_token token, const std::string &str);
+    static _shared_ptr_token tokenize(const std::string &str);
+    static bool at_eof();
+
+private:
+    /* トークンの型 */
+    TokenKind _kind;
     /* kindがTK_NUMの場合、その数値 */
-	int val;
+	int _val;
     /* トークン文字列 */
-	std::string str;
-
-    /* 現在着目しているトークン */
-    static std::unique_ptr<Token> token;
-
-    
-    void error(const std::string &err);
-    bool consume(const char &op);
-    void expect(const char &op);
-    int expect_number();
-    bool at_eof();
-
+	std::string _str;
 };
+
+/* 現在着目しているトークン */
+std::shared_ptr<Token> token = nullptr;

@@ -1,6 +1,22 @@
 #include "token.hpp"
-
 using std::string;
+using _shared_ptr_token = std::shared_ptr<Token>;
+using _unique_ptr_token = std::unique_ptr<Token>;
+
+/**
+ * @brief コンストラクタ
+ */
+Token::Token() = default;
+
+Token::Token(const TokenKind &kind, const std::string &str)
+	: _kind(kind), _str(str)
+{}
+
+/**
+ * @brief デストラクタ
+ */
+Token::~Token() = default;
+
 /**
  * @brief 
  * エラー報告用の関数
@@ -20,7 +36,7 @@ void Token::error(const string &err) {
  * @return false それ以外
  */
 bool Token::consume(const char &op) {
-	if(token->kind != TokenKind::TK_RESERVED || token->str[0] != op) {return false;}
+	if(token->_kind != TokenKind::TK_RESERVED || token->_str[0] != op) {return false;}
 	token = std::move(token->next);
 	return true;
 }
@@ -32,7 +48,7 @@ bool Token::consume(const char &op) {
  * @param op 期待している記号
  */
 void Token::expect(const char &op){
-	if (token->kind != TokenKind::TK_RESERVED || token->str[0] != op) {error(string{op}+ "ではありません");}
+	if (token->_kind != TokenKind::TK_RESERVED || token->_str[0] != op) {error(string{op}+ "ではありません");}
 	token = std::move(token->next);
 }
 
@@ -43,10 +59,62 @@ void Token::expect(const char &op){
  * @return int 
  */
 int Token::expect_number(){
-	if(token->kind != TokenKind::TK_NUM){error("数ではありません");}
-	int val = token->val;
+	if(token->_kind != TokenKind::TK_NUM){error("数ではありません");}
+	int val = token->_val;
 	token = std::move(token->next);
     return val;
+}
+
+/**
+ * @brief 
+ * 新しいトークンを生成してcurにつなげる
+ * @param kind 新しく生成するトークンの種類
+ * @param cur 親となるトークン
+ * @param str 新しく生成するトークン文字列
+ * @return _shared_ptr_token 生成したトークンのポインタ
+ */
+_shared_ptr_token Token::new_token(const TokenKind &kind, _shared_ptr_token cur, const std::string &str)
+{	
+	_shared_ptr_token tok = std::make_shared<Token>(kind, str);
+    cur->next = tok;
+	return std::move(tok);
+}
+
+/**
+ * @brief 文字列strをトークナイズしてトークン列を生成。
+ * @param str トークナイズする対象文字列
+ * @return 生成したトークン列の先頭トークンへのポインタ
+ */
+_shared_ptr_token Token::tokenize(const string &str) {
+	_shared_ptr_token head = std::make_shared<Token>();
+	_shared_ptr_token cur(head);
+
+	for(size_t i = 0, len = str.length(); i < len; ++i){
+		/* 空白文字をスキップ */
+		if(std::isspace(str[i])){continue;}
+		
+		if('+' == str[i] || '-' == str[i]) {
+			/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
+			cur = new_token(TokenKind::TK_RESERVED, std::move(cur), string{str[i]});
+			continue;
+		}
+		if(isdigit(str[i])){
+			const string sub_str = str.substr(i);
+			/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
+			cur = new_token(TokenKind::TK_NUM, std::move(cur), sub_str);
+			
+			/* 数値変換 */
+			size_t idx;
+			cur->_val = std::stoi(sub_str, &idx);
+			i += idx;
+			continue;
+		}
+		error("トークナイズできません");
+
+	}
+
+	cur = new_token(TokenKind::TK_EOF, std::move(cur), "");
+	return std::move(head->next);
 }
 
 /**
@@ -56,5 +124,6 @@ int Token::expect_number(){
  * @return false 
  */
 bool Token::at_eof() {
-  return token->kind == TokenKind::TK_EOF;
+  return token->_kind == TokenKind::TK_EOF;
 }
+

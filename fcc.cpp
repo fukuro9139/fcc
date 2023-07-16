@@ -1,6 +1,7 @@
 #include <iostream>
 #include<vector>
 #include<string>
+#include "token.hpp"
 
 using std::cout, std::vector, std::string;
 
@@ -14,25 +15,27 @@ int main(int argc, char **argv){
 	vector<string> args(argv, argv + argc);
 	std::size_t idx;
 
+	/* トークナイズする */
+	token = Token::tokenize(args[1]);
+
+	/* アセンブリの前半部分を出力 */
 	cout << ".intel_syntax noprefix\n";
 	cout << ".globl main\n";
 	cout << "main:\n";
-	cout << " mov rax, " << std::stol(args[1], &idx, 10) << "\n";
 
-	while(args[1].length() != idx){
-		if('+' == args[1][idx]){
-			++idx;
-			args[1] = args[1].substr(idx);
-			cout << " add rax, " << std::stol(args[1], &idx, 10) << "\n";
-			continue;
-		}else if('-' == args[1][idx]){
-			++idx;
-			args[1] = args[1].substr(idx);
-			cout << " sub rax, " << std::stol(args[1], &idx, 10) << "\n";
+	/* 式の最初は数でなければならないので、それをチェックして */
+	/* 最初のmove命令を出力 */
+	cout << " mov rax, " << Token::expect_number() << "\n";
+
+	/* '+ <数>'または'- <数>'というトークンの並びを消費しつつ */
+	/* アセンブリを出力 */
+	while(!Token::at_eof()){
+		if(Token::consume('+')){
+			cout << " add rax, " << Token::expect_number() << "\n";
 			continue;
 		}
-		std::cerr << "予期しない文字です: " << args[1][idx] << "\n";
-		return 1;
+		Token::expect('-');
+		cout << " sub rax, " << Token::expect_number() << "\n";
 	}
 
 	cout << " ret\n";
