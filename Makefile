@@ -7,11 +7,7 @@ CFLAGS = -std=c++20 -g -static -fexec-charset=cp932
 
 #プログラム名とオブジェクトファイル名
 TARGET = fcc
-OBJS = token.o fcc.o
-
-#ヘッダフィルの依存関係
-token.o: token.hpp
-fcc.o: token.hpp
+OBJS = token.o node.o fcc.o
 
 #サフィックスルール適用対象
 .SUFFIXES: .cpp .o
@@ -41,3 +37,8 @@ clean:
 
 #For Windows
 	del fcc.exe $(OBJS)
+
+#ヘッダフィルの依存関係
+token.o: token.hpp
+node.o: token.hpp node.hpp
+fcc.o: token.hpp
