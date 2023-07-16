@@ -1,6 +1,10 @@
 CC = g++
 
-CFLAGS = -std=c++20 -g -static
+#For Linux
+# CFLAGS = -std=c++20 -g -static
+
+#For Windows
+CFLAGS = -std=c++20 -g -static -fexec-charset=cp932
 
 TARGET = fcc
 
@@ -20,6 +24,9 @@ test: fcc
 		./test.sh
 
 clean:
-		rm -f fcc *.o *~ tmp*
+#For Linux
+#		rm -f fcc *.o *~ tmp*
 
+#For Windows
+		del fcc.exe *.o *~ tmp*
 .PHONY: test clean
