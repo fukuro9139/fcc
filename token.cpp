@@ -96,7 +96,7 @@ namespace Parser{
 	 */
 	Token* Token::new_token(const TokenKind &kind, Token *cur, const _itr_str &itr, const size_t &len)
 	{	
-		_unique_ptr_token tok = std::make_unique<Token>(kind, itr);
+		_unique_ptr_token tok = std::make_unique<Token>(kind, itr, len);
 		cur->next = std::move(tok);
 		return cur->next.get();
 	}
