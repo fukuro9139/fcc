@@ -16,7 +16,9 @@ assert() {
   fi
 }
 
-assert 0 0
-assert 22 22
+assert 2 "4/2"
+assert 6 "2*3"
+assert 9 "( 1 + 2) * 3"
+assert 7 "1 + 2 * 3"
 
 echo OK
