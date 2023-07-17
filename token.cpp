@@ -111,7 +111,7 @@ namespace Parser{
 			/* 空白文字をスキップ */
 			if(std::isspace(*it)){continue;}
 			
-			if('+' == *it || '-' == *it) {
+			if('+' == *it || '-' == *it || '*' == *it || '/' == *it || '(' == *it || ')' == *it) {
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
 				cur = new_token(TokenKind::TK_RESERVED, cur, it);
 				continue;

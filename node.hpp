@@ -31,6 +31,7 @@ namespace Parser{
         static _unique_ptr_node expr();
         static _unique_ptr_node mul();
         static _unique_ptr_node primary();
+        static void gen(_unique_ptr_node node);
 
     private:
         /** @brief ノードの種類*/

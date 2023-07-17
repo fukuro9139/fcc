@@ -83,6 +83,53 @@ namespace Parser{
         }
 
         /* そうでなければ数値のはず */
-        return std::move(std::make_unique<Node>(Token::expect_number()));
+        int num = Token::expect_number();
+        return std::move(std::make_unique<Node>(num));
+    }
+    
+    /**
+     * @brief 
+     * Nodeを計算する
+     * @param node 抽象構文木のNode
+     */
+    void Node::gen(_unique_ptr_node node)
+    {
+        /* 数値ならPUSH命令を出力する */
+        if(NodeKind::ND_NUM == node->_kind){
+            std::cout << " push " << node->_val << "\n";
+            return;
+        }
+
+        /* 左辺を計算 */
+        gen(std::move(node->_lhs));
+        /* 右辺を計算 */
+        gen(std::move(node->_rhs));
+
+        /* 計算対象をPOP */
+        std::cout << " pop rdi\n";
+        std::cout << " pop rax\n";
+
+        /* 演算子ノードなら演算命令を出力する */
+        switch (node->_kind)
+        {
+        case NodeKind::ND_ADD :
+            std::cout << " add rax, rdi\n";
+            break;
+        case NodeKind::ND_SUB :
+            std::cout << " sub rax, rdi\n";
+            break;
+        case NodeKind::ND_MUL :
+            std::cout << " imul rax, rdi\n";
+            break;
+        case NodeKind::ND_DIV :
+            std::cout << " cqo\n";
+            std::cout << " idiv rdi\n";
+            break;
+        default:
+            break;
+        }
+
+        /* 計算結果のPUSH命令を出力する */
+        std::cout << " push rax\n";
     }
 }
