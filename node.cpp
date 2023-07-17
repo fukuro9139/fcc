@@ -5,7 +5,7 @@ namespace Parser{
     using _ptr_node = Node::_unique_ptr_node;
 
     /** @brief コンストラクタ */
-    Node::Node() = default;
+    constexpr Node::Node() = default;
 
     /**
      * @brief コンストラクタ
@@ -13,7 +13,7 @@ namespace Parser{
      * @param lhs 左辺
      * @param rhs 右辺
      */
-    Node::Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs)
+    constexpr Node::Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs)
         : _kind(kind), _lhs(std::move(lhs)), _rhs(std::move(rhs))
     {}
 
@@ -21,7 +21,7 @@ namespace Parser{
      * @brief コンストラクタ
      * @param val 数値
      */
-    Node::Node(const int &val)
+    constexpr Node::Node(const int &val)
         : _kind(NodeKind::ND_NUM), _val(val)
     {}
 
@@ -38,9 +38,9 @@ namespace Parser{
     {
         _ptr_node node = std::move(mul());
         for(;;){
-            if(Token::consume('+')){
+            if(Token::consume("+")){
                 node = std::make_unique<Node>(NodeKind::ND_ADD, std::move(node), std::move(mul()));
-            }else if(Token::consume('-')){
+            }else if(Token::consume("-")){
                 node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(node), std::move(mul()));
             }else{
                 return std::move(node);
@@ -58,9 +58,9 @@ namespace Parser{
     {
         _ptr_node node = std::move(unary());
         for(;;){
-            if(Token::consume('*')){
+            if(Token::consume("*")){
                 node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), std::move(unary()));
-            }else if(Token::consume('/')){
+            }else if(Token::consume("/")){
                 node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::move(unary()));
             }else{
                 return std::move(node);
@@ -76,10 +76,10 @@ namespace Parser{
 	*/
 	_ptr_node Node::unary()
 	{
-		if(Token::consume('+')){
+		if(Token::consume("+")){
 			return std::move(unary());
 		}
-		if(Token::consume('-')){
+		if(Token::consume("-")){
 			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(0), std::move(unary()));
 			return std::move(node);
 		}
@@ -87,17 +87,17 @@ namespace Parser{
 	}
 
 	/**
-     * @brief 
+     * @brief
      * primaryは'数'または'(式)'で表される。 \n
      * primary = num | "(" expr ")"
-     * @return _ptr_node 
+     * @return _ptr_node
      */
     _ptr_node Node::primary()
     {
         /* 次のトークンが"("なら、"(" expr ")"のはず */
-        if(Token::consume('(')){
+        if(Token::consume("(")){
             _ptr_node node = std::move(expr());
-            Token::expect(')');
+            Token::expect(")");
             return std::move(node);
         }
 
@@ -107,7 +107,7 @@ namespace Parser{
     }
     
     /**
-     * @brief 
+     * @brief
      * Nodeを計算する
      * @param node 抽象構文木のNode
      */

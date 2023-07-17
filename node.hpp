@@ -17,16 +17,16 @@ namespace Parser{
      * 以下のEBNFに従って抽象構文木を構成する。\n 
      *   expr    = mul ("+" mul | "-" mul)* \n 
      *   mul     = unary ("*" unary | "/" unary)* \n 
-	 *   unary	 = ("+" | "-")? primary \n
+	 *   unary	 = ("+" | "-")? unary | primary \n
      *   primary = num | "(" expr ")" \n 
      */
     struct Node
     {
         using _unique_ptr_node = std::unique_ptr<Node>;
     public:
-        Node();
-        Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs);
-        Node(const int &val);
+        constexpr Node();
+        constexpr Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs);
+        constexpr Node(const int &val);
         ~Node();
 
         static _unique_ptr_node expr();

@@ -1,7 +1,5 @@
 #include "token.hpp"
 
-std::string user_input;
-
 namespace Parser{
 
 	using std::string;
@@ -9,11 +7,12 @@ namespace Parser{
 	using _itr_str = Token::_itr_str;
 
 	_ptr_token Token::_token_cur = nullptr;
+	const string Token::_ops = "+-*/()";
 
 	/** @brief コンストラクタ */
-	Token::Token() = default;
+	constexpr Token::Token() = default;
 
-	Token::Token(const TokenKind &kind, const _itr_str &itr)
+	constexpr Token::Token(const TokenKind &kind, const _itr_str &itr)
 		: _kind(kind), _str(itr)
 	{}
 
@@ -50,8 +49,8 @@ namespace Parser{
 	 * @return true 次のトークンが期待している記号
 	 * @return false それ以外
 	 */
-	bool Token::consume(const char &op) {
-		if(_token_cur->_kind != TokenKind::TK_RESERVED || *(_token_cur->_str) != op) {return false;}
+	bool Token::consume(const string &op) {
+		if(_token_cur->_kind != TokenKind::TK_RESERVED || !Token::_comp_op(op)) {return false;}
 		_token_cur = std::move(_token_cur->next);
 		return true;
 	}
@@ -62,9 +61,9 @@ namespace Parser{
 	 * それ以外の場合にはエラーを報告する。
 	 * @param op 期待している記号
 	 */
-	void Token::expect(const char &op){
-		if (_token_cur->_kind != TokenKind::TK_RESERVED || *(_token_cur->_str) != op) {
-			error_at(string{op}+ "ではありません", _token_cur->_str);
+	void Token::expect(const std::string &op){
+		if (_token_cur->_kind != TokenKind::TK_RESERVED || !Token::_comp_op(op)) {
+			error_at(op + "ではありません", _token_cur->_str);
 		}
 		_token_cur = std::move(_token_cur->next);
 	}
@@ -111,7 +110,7 @@ namespace Parser{
 			/* 空白文字をスキップ */
 			if(std::isspace(*it)){continue;}
 			
-			if('+' == *it || '-' == *it || '*' == *it || '/' == *it || '(' == *it || ')' == *it) {
+			if(Token::_ops.find(*it) != string::npos) {
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
 				cur = new_token(TokenKind::TK_RESERVED, cur, it);
 				continue;
@@ -146,4 +145,20 @@ namespace Parser{
 	return _token_cur->_kind == TokenKind::TK_EOF;
 	}
 
+	/**
+	 * @brief 
+	 * 文字列と現在のトークン文字列の比較
+	 * @return true 一致
+	 * @return false 不一致
+	 */
+	bool Token::_comp_op(const std::string &op)
+	{
+		/* 長さの比較 */
+		if(op.length() != _token_cur->_len) { return false; }
+		/* 先頭から1文字ずつチェック */
+		for(size_t i = 0; i < _token_cur->_len; ++i){
+			if(op[i] != *(_token_cur->_str + i)) {return false;}
+		}
+		return true;
+	}
 }

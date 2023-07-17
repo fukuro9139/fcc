@@ -4,8 +4,6 @@
 #include "token.hpp"
 #include "node.hpp"
 
-extern std::string user_input;
-
 int main(int argc, char **argv){
 
 	using std::cout;
@@ -18,10 +16,10 @@ int main(int argc, char **argv){
 	}
 
 	std::vector<std::string> args(argv, argv + argc);
-	user_input = args[1];
+	Token::user_input = args[1];
 
 	/* トークナイズしてパースする */
-	Token::tokenize(user_input);
+	Token::tokenize(Token::user_input);
 	std::unique_ptr<Node> root = std::move(Node::expr());
 
 	/* アセンブリの前半部分を出力 */
