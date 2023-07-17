@@ -9,7 +9,7 @@ namespace Parser{
 	using _itr_str = Token::_itr_str;
 
 	_ptr_token Token::_token_cur = nullptr;
-	const string Token::_ops = "+-*/()";
+	const string Token::_ops = "+-*/()<>";
 
 	/** @brief コンストラクタ */
 	constexpr Token::Token() = default;
@@ -113,8 +113,13 @@ namespace Parser{
 			/* 空白文字をスキップ */
 			if(std::isspace(*it)){continue;}
 			
+			/* 2文字演算子 */
+			if( _start_with(it, "==") || _start_with(it, "!=") ||
+			    _start_with(it, "<=") || _start_with(it, ">=")) {
+					cur = new_token(TokenKind::TK_RESERVED, cur, it, 2);
+			}
 
-			/* 1文字トークン */
+			/* 1文字演算子 */
 			if(Token::_ops.find(*it) != string::npos) {
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
 				cur = new_token(TokenKind::TK_RESERVED, cur, it, 1);
@@ -153,6 +158,20 @@ namespace Parser{
 		/* 先頭から1文字ずつチェック */
 		for(size_t i = 0; i < _token_cur->_len; ++i){
 			if(op[i] != *(_token_cur->_str + i)) {return false;}
+		}
+		return true;
+	}
+
+	/**
+	 * @brief
+	 * 文字列の先頭がopと一致するか
+	 * @return true 一致
+	 * @return false 不一致
+	 */
+	bool Token::_start_with(const _itr_str &itr, const std::string &op)
+	{
+		for(size_t i=0, len = op.length(); i < len; ++i){
+			if(op[i] != *(itr + i)){ return false; }
 		}
 		return true;
 	}
