@@ -71,15 +71,16 @@ namespace Parser{
 	/**
 	 * @brief
 	 * unaryは'+'または'-'がprimaryの前に0回か1回つけて表される。
+	 * unary = ("+" | "-")? unary | primary
 	 * @return _ptr_node 
 	*/
 	_ptr_node Node::unary()
 	{
 		if(Token::consume('+')){
-			return std::move(primary());
+			return std::move(unary());
 		}
 		if(Token::consume('-')){
-			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(0), std::move(primary()));
+			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(0), std::move(unary()));
 			return std::move(node);
 		}
 		return std::move(primary());
