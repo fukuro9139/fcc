@@ -30,12 +30,65 @@ namespace Parser{
 
     /**
      * @brief 
-     * exprはmulの和または差で表される。
-     * expr = mul ("+" mul | "-" mul)* 
+     * expr = equality
      * @return _ptr_node 
      */
     _ptr_node Node::expr()
     {
+		return std::move(equality());
+    }
+
+    /**
+     * @brief
+     * equality = relational ("==" relational | "!=" relational)*
+     * @return _ptr_node 
+     */
+	_ptr_node Node::equality()
+	{
+		_ptr_node node = std::move(relational());
+		for(;;){
+			if(Token::consume("==")){
+				node = std::make_unique<Node>(NodeKind::ND_EQ, std::move(node), std::move(relational()));
+			}else if(Token::consume("!=")){
+				node = std::make_unique<Node>(NodeKind::ND_NE, std::move(node), std::move(relational()));
+			}else{
+				return std::move(node);
+			}
+		}
+	}
+
+    /**
+     * @brief
+     * relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+     * @return _ptr_node
+     */
+	_ptr_node Node::relational()
+	{
+		_ptr_node node = std::move(add());
+		for(;;){
+			if(Token::consume("<")){
+				node = std::make_unique<Node>(NodeKind::ND_LT, std::move(node), std::move(add()));
+			}else if(Token::consume("<=")){
+				node = std::make_unique<Node>(NodeKind::ND_LE, std::move(node), std::move(add()));
+			}else if(Token::consume(">")){
+				/* lhs > rhs は rhs < lhs と読み替える */
+				node = std::make_unique<Node>(NodeKind::ND_LT, std::move(add()), std::move(node));
+			}else if(Token::consume(">=")){
+				/* lhs >= rhs は rhs <= lhs と読み替える */
+				node = std::make_unique<Node>(NodeKind::ND_LE, std::move(add()), std::move(node));
+			}else{
+				return std::move(node);
+			}
+		}
+	}
+
+    /**
+     * @brief
+     * add = mul ("+" mul | "-" mul)*
+     * @return _ptr_node
+     */
+	_ptr_node Node::add()
+	{
         _ptr_node node = std::move(mul());
         for(;;){
             if(Token::consume("+")){
@@ -46,9 +99,9 @@ namespace Parser{
                 return std::move(node);
             }
         }
-    }
+	}
 
-    /**
+	/**
      * @brief
      * mulはunaryの積または除算で表される。 \n 
      * mul = unary ("*" unary | "/" unary)*
@@ -108,7 +161,7 @@ namespace Parser{
     
     /**
      * @brief
-     * Nodeを計算する
+     * アセンブリコードを生成
      * @param node 抽象構文木のNode
      */
     void Node::gen(_unique_ptr_node node)

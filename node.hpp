@@ -9,16 +9,23 @@ namespace Parser{
         ND_SUB, /** @brief - */
         ND_MUL, /** @brief * */
         ND_DIV, /** @brief / */
+		ND_EQ,	/** @brief == */
+		ND_NE,	/** @brief != */
+		ND_LT,	/** @brief < */
+		ND_LE,	/** @brief <= */
         ND_NUM, /** @brief 整数 */
     };
 
     /**
-     * @brief 
-     * 以下のEBNFに従って抽象構文木を構成する。\n 
-     *   expr    = mul ("+" mul | "-" mul)* \n 
-     *   mul     = unary ("*" unary | "/" unary)* \n 
-	 *   unary	 = ("+" | "-")? unary | primary \n
-     *   primary = num | "(" expr ")" \n 
+     * @brief
+     * 以下のEBNFに従って抽象構文木を構成する。 \n
+	 *	expr       = equality
+	 *	equality   = relational ("==" relational | "!=" relational)*
+	 *	relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+	 *	add        = mul ("+" mul | "-" mul)*
+	 *	mul        = unary ("*" unary | "/" unary)*
+	 *	unary      = ("+" | "-")? primary
+	 *	primary    = num | "(" expr ")"
      */
     struct Node
     {
@@ -30,7 +37,10 @@ namespace Parser{
         ~Node();
 
         static _unique_ptr_node expr();
-        static _unique_ptr_node mul();
+		static _unique_ptr_node equality();
+        static _unique_ptr_node relational();
+		static _unique_ptr_node add();
+		static _unique_ptr_node mul();
 		static _unique_ptr_node unary();
         static _unique_ptr_node primary();
         static void gen(_unique_ptr_node node);
