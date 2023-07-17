@@ -70,7 +70,8 @@ namespace Parser{
     
     /**
      * @brief 
-     * 
+     * primaryは'数'または'(式)'で表される。 \n
+     * primary = num | "(" expr ")"
      * @return _ptr_node 
      */
     _ptr_node Node::primary()
