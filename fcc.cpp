@@ -7,7 +7,7 @@ using std::cout;
 using std::vector;
 using std::string;
 
-string user_input;
+extern std::string user_input;
 
 int main(int argc, char **argv){
 

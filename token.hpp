@@ -5,8 +5,6 @@
 #include <cstdlib>
 #include <iostream>
 
-extern std::string user_input;
-
 namespace Parser{
 
     /** @brief トークンの種類 */

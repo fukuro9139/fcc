@@ -1,5 +1,7 @@
 #include "token.hpp"
 
+std::string user_input;
+
 namespace Parser{
 
 	using std::string;
