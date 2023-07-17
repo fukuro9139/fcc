@@ -31,7 +31,7 @@ namespace Parser{
 		static std::string user_input;
 
         constexpr Token();
-        constexpr Token(const TokenKind &kind, const _itr_str &itr);
+        Token(const TokenKind &kind, const _itr_str &itr);
         ~Token();
 
         static void error(const std::string &msg);

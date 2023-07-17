@@ -12,7 +12,7 @@ namespace Parser{
 	/** @brief コンストラクタ */
 	constexpr Token::Token() = default;
 
-	constexpr Token::Token(const TokenKind &kind, const _itr_str &itr)
+	Token::Token(const TokenKind &kind, const _itr_str &itr)
 		: _kind(kind), _str(itr)
 	{}
 
