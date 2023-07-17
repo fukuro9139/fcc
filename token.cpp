@@ -118,6 +118,7 @@ namespace Parser{
 			if( _start_with(it, last, "==") || _start_with(it, last, "!=") ||
 			    _start_with(it, last, "<=") || _start_with(it, last, ">=")) {
 					cur = new_token(TokenKind::TK_RESERVED, cur, it, 2);
+					continue;
 			}
 
 			/* 1文字演算子 */
@@ -168,6 +169,6 @@ namespace Parser{
 	bool Token::_start_with(const _itr_str &first, const _itr_str &last, const std::string &op)
 	{
 		const size_t len = std::distance(first, last);
-		return (len >= op.size() && std::equal(op.begin(), op.end(), first));
+		return (len >= op.length() && std::equal(op.begin(), op.end(), first));
 	}
 }
