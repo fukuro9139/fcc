@@ -110,14 +110,18 @@ namespace Parser{
 		_ptr_token head = std::make_unique<Token>();
 		Token *cur = head.get();
 
-		for(_itr_str it = str.begin(), last = str.end(); it != last; ++it){
+		for(_itr_str it = str.begin(), last = str.end(); it != last;){
 			/* 空白文字をスキップ */
-			if(std::isspace(*it)){continue;}
+			if(std::isspace(*it)){
+				++it;
+				continue;
+			}
 			
 			/* 2文字演算子 */
 			if( _start_with(it, last, "==") || _start_with(it, last, "!=") ||
 			    _start_with(it, last, "<=") || _start_with(it, last, ">=")) {
 					cur = new_token(TokenKind::TK_RESERVED, cur, it, 2);
+					it += 2;
 					continue;
 			}
 
@@ -125,6 +129,7 @@ namespace Parser{
 			if(Token::_ops.find(*it) != string::npos) {
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
 				cur = new_token(TokenKind::TK_RESERVED, cur, it, 1);
+				++it;
 				continue;
 			}
 			if(isdigit(*it)){
@@ -135,7 +140,7 @@ namespace Parser{
 				size_t idx;
 				const string sub_str(it, str.end());
 				cur->_val = std::stoi(sub_str, &idx);
-				it += idx - 1;
+				it += idx;
 				continue;
 			}
 
