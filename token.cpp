@@ -8,6 +8,7 @@ namespace Parser{
 
 	_ptr_token Token::_token_cur = nullptr;
 	const string Token::_ops = "+-*/()";
+	std::string user_input = "";
 
 	/** @brief コンストラクタ */
 	constexpr Token::Token() = default;
