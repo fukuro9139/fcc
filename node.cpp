@@ -13,7 +13,7 @@ namespace Parser{
      * @param lhs 左辺
      * @param rhs 右辺
      */
-    constexpr Node::Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs)
+    Node::Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs)
         : _kind(kind), _lhs(std::move(lhs)), _rhs(std::move(rhs))
     {}
 

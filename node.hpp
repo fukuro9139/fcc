@@ -25,7 +25,7 @@ namespace Parser{
         using _unique_ptr_node = std::unique_ptr<Node>;
     public:
         constexpr Node();
-        constexpr Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs);
+        Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs);
         constexpr Node(const int &val);
         ~Node();
 
