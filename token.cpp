@@ -123,7 +123,7 @@ namespace Parser{
 			if(isdigit(*it)){
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
 				cur = new_token(TokenKind::TK_NUM, cur, it, 0);
-				
+
 				/* 数値変換 */
 				size_t idx;
 				const string sub_str(it, str.end());
@@ -138,16 +138,6 @@ namespace Parser{
 
 		cur = new_token(TokenKind::TK_EOF, std::move(cur), str.end(), 0);
 		_token_cur = std::move(head->next);
-	}
-
-	/**
-	 * @brief トークンが入力の終わりかどうか判定
-	 * 
-	 * @return true 
-	 * @return false 
-	 */
-	bool Token::at_eof() {
-	return _token_cur->_kind == TokenKind::TK_EOF;
 	}
 
 	/**
