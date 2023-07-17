@@ -197,6 +197,26 @@ namespace Parser{
             std::cout << " cqo\n";
             std::cout << " idiv rdi\n";
             break;
+		case NodeKind::ND_EQ :
+			std::cout << " cmp rax, rdi\n";
+			std::cout << " sete al\n";
+			std::cout << " movzb rax, al\n";
+			break;
+		case NodeKind::ND_NE :
+			std::cout << " cmp rax, rdi\n";
+			std::cout << " setne al\n";
+			std::cout << " movzb rax, al\n";
+			break;
+		case NodeKind::ND_LT :
+			std::cout << " cmp rax, rdi\n";
+			std::cout << " setl al\n";
+			std::cout << " movzb rax, al\n";
+			break;
+		case NodeKind::ND_LE :
+			std::cout << " cmp rax, rdi\n";
+			std::cout << " setle al\n";
+			std::cout << " movzb rax, al\n";
+			break;
         default:
             break;
         }
