@@ -31,7 +31,7 @@ namespace Parser{
         _unique_ptr_token next = nullptr;
 
         constexpr Token();
-        Token(const TokenKind &kind, const _itr_str &itr);
+        Token(const TokenKind &kind, const _itr_str &itr, const size_t &len);
         ~Token();
 
         static void error(const std::string &msg);
@@ -39,7 +39,7 @@ namespace Parser{
         static bool consume(const std::string &op);
         static void expect(const std::string &op);
         static int expect_number();
-        static Token* new_token( const TokenKind &kind, Token *cur, const _itr_str &itr);
+        static Token* new_token( const TokenKind &kind, Token *cur, const _itr_str &itr, const size_t &len);
         static void tokenize(const std::string &str);
         static bool at_eof();
 

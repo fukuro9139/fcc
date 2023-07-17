@@ -14,8 +14,8 @@ namespace Parser{
 	/** @brief コンストラクタ */
 	constexpr Token::Token() = default;
 
-	Token::Token(const TokenKind &kind, const _itr_str &itr)
-		: _kind(kind), _str(itr)
+	Token::Token(const TokenKind &kind, const _itr_str &itr, const size_t &len)
+		: _kind(kind), _str(itr), _len(len)
 	{}
 
     /** @brief デストラクタ */
@@ -23,7 +23,7 @@ namespace Parser{
 
 	/**
 	 * @brief エラー報告用の関数
-	 * @param err 
+	 * @param err
 	 */
 	void Token::error(const string &msg) {
 		std::cerr << msg << "\n";
@@ -91,9 +91,10 @@ namespace Parser{
 	 * @param kind 新しく生成するトークンの種類
 	 * @param cur 親となるトークン
 	 * @param str 新しく生成するトークン文字列
+	 * @param len トークン文字列の文字数
 	 * @return _unique_ptr_token 生成したトークンのポインタ
 	 */
-	Token* Token::new_token(const TokenKind &kind, Token *cur, const _itr_str &itr)
+	Token* Token::new_token(const TokenKind &kind, Token *cur, const _itr_str &itr, const size_t &len)
 	{	
 		_unique_ptr_token tok = std::make_unique<Token>(kind, itr);
 		cur->next = std::move(tok);
@@ -112,14 +113,16 @@ namespace Parser{
 			/* 空白文字をスキップ */
 			if(std::isspace(*it)){continue;}
 			
+
+			/* 1文字トークン */
 			if(Token::_ops.find(*it) != string::npos) {
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
-				cur = new_token(TokenKind::TK_RESERVED, cur, it);
+				cur = new_token(TokenKind::TK_RESERVED, cur, it, 1);
 				continue;
 			}
-			if(isdigit(*it)){	
+			if(isdigit(*it)){
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
-				cur = new_token(TokenKind::TK_NUM, cur, it);
+				cur = new_token(TokenKind::TK_NUM, cur, it, 0);
 				
 				/* 数値変換 */
 				size_t idx;
@@ -133,7 +136,7 @@ namespace Parser{
 
 		}
 
-		cur = new_token(TokenKind::TK_EOF, std::move(cur), str.end());
+		cur = new_token(TokenKind::TK_EOF, std::move(cur), str.end(), 0);
 		_token_cur = std::move(head->next);
 	}
 
