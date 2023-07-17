@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <iostream>
 
+extern std::string user_input;
+
 namespace Parser{
 
     /** @brief トークンの種類 */
@@ -24,11 +26,9 @@ namespace Parser{
         using _itr_str = std::string::const_iterator;
 
     public:
-       
+
         /** @brief 次のトークン */
         _unique_ptr_token next = nullptr;
-		/** @brief 入力文字列*/
-		static std::string user_input;
 
         constexpr Token();
         Token(const TokenKind &kind, const _itr_str &itr);
@@ -42,7 +42,6 @@ namespace Parser{
         static Token* new_token( const TokenKind &kind, Token *cur, const _itr_str &itr);
         static void tokenize(const std::string &str);
         static bool at_eof();
-        
 
     private:
         /** @brief トークンの型 */

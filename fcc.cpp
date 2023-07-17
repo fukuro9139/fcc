@@ -16,10 +16,10 @@ int main(int argc, char **argv){
 	}
 
 	std::vector<std::string> args(argv, argv + argc);
-	Token::user_input = args[1];
+	user_input = args[1];
 
 	/* トークナイズしてパースする */
-	Token::tokenize(Token::user_input);
+	Token::tokenize(user_input);
 	std::unique_ptr<Node> root = std::move(Node::expr());
 
 	/* アセンブリの前半部分を出力 */
