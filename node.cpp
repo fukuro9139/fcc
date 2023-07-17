@@ -49,26 +49,43 @@ namespace Parser{
     }
 
     /**
-     * @brief 
-     * mulはprimaryの積または除算で表される。 \n 
-     * mul = primary ("*" primary | "/" primary)*
-     * @return _ptr_node 
+     * @brief
+     * mulはunaryの積または除算で表される。 \n 
+     * mul = unary ("*" unary | "/" unary)*
+     * @return _ptr_node
      */
     _ptr_node Node::mul()
     {
-        _ptr_node node = std::move(primary());
+        _ptr_node node = std::move(unary());
         for(;;){
             if(Token::consume('*')){
-                node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), std::move(primary()));
+                node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), std::move(unary()));
             }else if(Token::consume('/')){
-                node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::move(primary()));
+                node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::move(unary()));
             }else{
                 return std::move(node);
             }
         }
     }
-    
-    /**
+
+	/**
+	 * @brief
+	 * unaryは'+'または'-'がprimaryの前に0回か1回つけて表される。
+	 * @return _ptr_node 
+	*/
+	_ptr_node Node::unary()
+	{
+		if(Token::consume('+')){
+			return std::move(primary());
+		}
+		if(Token::consume('-')){
+			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(0), std::move(primary()));
+			return std::move(node);
+		}
+		return std::move(primary());
+	}
+
+	/**
      * @brief 
      * primaryは'数'または'(式)'で表される。 \n
      * primary = num | "(" expr ")"

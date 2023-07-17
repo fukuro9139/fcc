@@ -16,7 +16,8 @@ namespace Parser{
      * @brief 
      * 以下のEBNFに従って抽象構文木を構成する。\n 
      *   expr    = mul ("+" mul | "-" mul)* \n 
-     *   mul     = primary ("*" primary | "/" primary)* \n 
+     *   mul     = unary ("*" unary | "/" unary)* \n 
+	 *   unary	 = ("+" | "-")? primary \n
      *   primary = num | "(" expr ")" \n 
      */
     struct Node
@@ -30,6 +31,7 @@ namespace Parser{
 
         static _unique_ptr_node expr();
         static _unique_ptr_node mul();
+		static _unique_ptr_node unary();
         static _unique_ptr_node primary();
         static void gen(_unique_ptr_node node);
 
