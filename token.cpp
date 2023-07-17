@@ -1,3 +1,4 @@
+#include<algorithm>
 #include "token.hpp"
 
 std::string user_input;
@@ -109,13 +110,13 @@ namespace Parser{
 		_ptr_token head = std::make_unique<Token>();
 		Token *cur = head.get();
 
-		for(_itr_str it = str.begin(), end = str.end(); it != end; ++it){
+		for(_itr_str it = str.begin(), last = str.end(); it != last; ++it){
 			/* 空白文字をスキップ */
 			if(std::isspace(*it)){continue;}
 			
 			/* 2文字演算子 */
-			if( _start_with(it, "==") || _start_with(it, "!=") ||
-			    _start_with(it, "<=") || _start_with(it, ">=")) {
+			if( _start_with(it, last, "==") || _start_with(it, last, "!=") ||
+			    _start_with(it, last, "<=") || _start_with(it, last, ">=")) {
 					cur = new_token(TokenKind::TK_RESERVED, cur, it, 2);
 			}
 
@@ -155,11 +156,7 @@ namespace Parser{
 	{
 		/* 長さの比較 */
 		if(op.length() != _token_cur->_len) { return false; }
-		/* 先頭から1文字ずつチェック */
-		for(size_t i = 0; i < _token_cur->_len; ++i){
-			if(op[i] != *(_token_cur->_str + i)) {return false;}
-		}
-		return true;
+		return std::equal(op.begin(), op.end(), _token_cur->_str);
 	}
 
 	/**
@@ -168,11 +165,9 @@ namespace Parser{
 	 * @return true 一致
 	 * @return false 不一致
 	 */
-	bool Token::_start_with(const _itr_str &itr, const std::string &op)
+	bool Token::_start_with(const _itr_str &first, const _itr_str &last, const std::string &op)
 	{
-		for(size_t i=0, len = op.length(); i < len; ++i){
-			if(op[i] != *(itr + i)){ return false; }
-		}
-		return true;
+		const size_t len = std::distance(first, last);
+		return (len >= op.size() && std::equal(op.begin(), op.end(), first));
 	}
 }

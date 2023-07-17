@@ -58,8 +58,7 @@ namespace Parser{
 		static const std::string _ops;
 
 		static bool _comp_op(const std::string &op);
-		static bool _start_with(const _itr_str &itr, const std::string &op);
-		
+		static bool _start_with(const _itr_str &first, const _itr_str &last, const std::string &op);
     };
 
 }
