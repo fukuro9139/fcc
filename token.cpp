@@ -132,6 +132,14 @@ namespace Parser{
 				++it;
 				continue;
 			}
+			
+			/* 変数 */
+			if('a' <= *it && *it <= 'z'){
+				cur = new_token(TokenKind::TK_IDENT, cur, it, 1);
+				++it;
+				continue;
+			}
+
 			if(isdigit(*it)){
 				/* 新しいトークンを生成してcurに繋ぎ、curを1つ進める */
 				cur = new_token(TokenKind::TK_NUM, cur, it, 0);

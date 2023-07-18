@@ -12,6 +12,7 @@ namespace Parser{
     /** @brief トークンの種類 */
     enum class TokenKind {
         TK_RESERVED,	/* 記号 */
+		TK_IDENT,		/* 識別子 */
         TK_NUM,			/* 整数トークン */
         TK_EOF,			/* 入力の終わりを表すトークン */
     };
