@@ -10,7 +10,7 @@ namespace Parser{
 	using _itr_str = Token::_itr_str;
 
 	_ptr_token Token::_token_cur = nullptr;
-	const string Token::_ops = "+-*/()<>";
+	const string Token::_ops = "+-*/()<>;";
 
 	/** @brief コンストラクタ */
 	constexpr Token::Token() = default;
