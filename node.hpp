@@ -18,6 +18,7 @@ namespace Parser{
         ND_NUM, 	/** @brief 整数 */
 
 		ND_LVAR, 	/** @brief 左辺値*/
+		ND_NONE,
     };
 
     /**
@@ -61,7 +62,7 @@ namespace Parser{
 
     private:
         /** @brief ノードの種類*/
-        NodeKind _kind;
+        NodeKind _kind = NodeKind::ND_NONE;
         /** @brief 左辺*/
         _unique_ptr_node _lhs = nullptr;
         /** @brief 右辺 */
