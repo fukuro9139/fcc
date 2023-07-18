@@ -76,7 +76,7 @@ namespace Parser{
 	{
 		_ptr_node node = std::move(equality());
 		if(Token::consume("=")){
-			node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), std::move(assign));
+			node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), std::move(assign()));
 		}
 		return std::move(node);
 	}
