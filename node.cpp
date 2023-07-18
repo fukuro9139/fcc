@@ -4,7 +4,7 @@ namespace Parser{
 
     using _ptr_node = Node::_unique_ptr_node;
 
-	std::unique_ptr<_ptr_node[]> code = std::make_unique<_ptr_node[]>(100);
+	std::unique_ptr<_ptr_node[]> Node::code = std::make_unique<_ptr_node[]>(100);
 
     /** @brief コンストラクタ */
     constexpr Node::Node() = default;
