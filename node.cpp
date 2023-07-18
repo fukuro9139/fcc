@@ -295,8 +295,18 @@ namespace Parser{
         std::cout << " push rax\n";
     }
 
-
+    /**
+     * @brief
+     * 左辺値を評価し、アセンブリコードを生成
+     * @param node 左辺値のNode
+     */
 	void Node::gen_lval(_unique_ptr_node node)
 	{
+		if( NodeKind::ND_LVAR != node->_kind){
+			Token::error("代入の左辺値が変数ではありません");
+		}
+		std::cout << " mov rax, rbp\n";
+		std::cout << " sub rax, " << node->_offset << "\n";
+		std::cout << " push rax\n";
 	}
 }
