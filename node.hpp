@@ -43,7 +43,7 @@ namespace Parser{
         constexpr Node(const NodeKind &kind, const int &val, const int &offset);
         ~Node();
 
-		static _unique_ptr_node program();
+		static void program();
 		static _unique_ptr_node stmt();
         static _unique_ptr_node expr();
 		static _unique_ptr_node assign();
@@ -54,6 +54,10 @@ namespace Parser{
 		static _unique_ptr_node unary();
         static _unique_ptr_node primary();
         static void gen(_unique_ptr_node node);
+		static void gen_lval(_unique_ptr_node node);
+
+		/** @brief パース結果 */
+		static std::unique_ptr<_unique_ptr_node[]> code;
 
     private:
         /** @brief ノードの種類*/
@@ -67,8 +71,6 @@ namespace Parser{
 		/** @brief kindがND_LVARの場合のみ使う、ベースポインタからのオフセット*/
 		int _offset = 0;
 
-		/** @brief パース結果 */
-		static std::unique_ptr<_unique_ptr_node[]> _code;
     };
 
 }

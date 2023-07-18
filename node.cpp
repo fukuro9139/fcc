@@ -4,7 +4,7 @@ namespace Parser{
 
     using _ptr_node = Node::_unique_ptr_node;
 
-	std::unique_ptr<_ptr_node[]> _code = std::make_unique<_ptr_node[]>(100);
+	std::unique_ptr<_ptr_node[]> code = std::make_unique<_ptr_node[]>(100);
 
     /** @brief コンストラクタ */
     constexpr Node::Node() = default;
@@ -35,14 +35,14 @@ namespace Parser{
      * program = stmt*
      * @return _ptr_node
      */
-	_ptr_node Node::program()
+	void Node::program()
 	{
 		int cnt = 0;
 		while(!Token::at_eof()){
-			_code[cnt] = std::move(stmt());
+			code[cnt] = std::move(stmt());
 			++cnt;
 		}
-		_code[cnt] = nullptr;
+		code[cnt] = nullptr;
 	}
 
 	/**
@@ -217,11 +217,30 @@ namespace Parser{
      */
     void Node::gen(_unique_ptr_node node)
     {
-        /* 数値ならPUSH命令を出力する */
-        if(NodeKind::ND_NUM == node->_kind){
-            std::cout << " push " << node->_val << "\n";
+        /* 数値 or 左辺値 or 代入演算子 */
+		switch(node->_kind)
+		{
+		case NodeKind::ND_NUM :
+			std::cout << " push " << node->_val << "\n";
             return;
-        }
+		case NodeKind::ND_LVAR :
+			gen_lval(std::move(node));
+			std::cout << " pop rax\n";
+			std::cout << " mov rax, [rax]\n";
+			std::cout << " push rax\n";
+			return;
+		case NodeKind::ND_ASSIGN :
+			gen_lval(std::move(node->_lhs));
+			gen(std::move(node->_rhs));
+
+			std::cout << " pop rdi\n";
+			std::cout << " pop rax\n";
+			std::cout << " mov [rax], rdi\n";
+			std::cout << " push rdi\n";
+			return;
+		default :
+			break;
+		}
 
         /* 左辺を計算 */
         gen(std::move(node->_lhs));
@@ -275,4 +294,9 @@ namespace Parser{
         /* 計算結果のPUSH命令を出力する */
         std::cout << " push rax\n";
     }
+
+
+	void Node::gen_lval(_unique_ptr_node node)
+	{
+	}
 }
