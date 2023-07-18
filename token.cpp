@@ -45,22 +45,37 @@ namespace Parser{
 	}
 
 	/**
-	 * @brief 
-	 * 次のトークンが期待している記号の時には、トークンを1つ進めてtrueを返す。 \n 
+	 * @brief
+	 * 次のトークンが期待している記号の時には、トークンを1つ進めてtrueを返す。 \n
 	 * それ以外の場合には偽を返す。
 	 * @param op 期待している記号
 	 * @return true 次のトークンが期待している記号
 	 * @return false それ以外
 	 */
 	bool Token::consume(const string &op) {
-		if(_token_cur->_kind != TokenKind::TK_RESERVED || !Token::_comp_op(op)) {return false;}
+		if( TokenKind::TK_RESERVED != _token_cur->_kind || !Token::_comp_op(op)) {return false;}
 		_token_cur = std::move(_token_cur->next);
 		return true;
 	}
+	/**
+	 * @brief
+	 * 次のトークンが期待している識別子の時には、識別子トークンのポインタを返し \n
+	 * トークンを1つ進める。 \n
+	 * それ以外の場合には偽を返す。
+	 * @return _unique_ptr_toke 次のトークンが識別子
+	 * @return nullptr それ以外
+	 */
+	_ptr_token Token::consume_ident()
+	{
+		if(TokenKind::TK_IDENT != _token_cur->_kind) {return nullptr;}
+		_ptr_token ret = std::move(_token_cur);
+		_token_cur = std::move(ret->next);
+		return std::move(ret);
+	}
 
 	/**
-	 * @brief 
-	 * 次のトークンが期待している記号の時はトークンを１つ進める。 \n 
+	 * @brief
+	 * 次のトークンが期待している記号の時はトークンを１つ進める。 \n
 	 * それ以外の場合にはエラーを報告する。
 	 * @param op 期待している記号
 	 */

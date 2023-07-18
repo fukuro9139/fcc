@@ -4,6 +4,8 @@ namespace Parser{
 
     using _ptr_node = Node::_unique_ptr_node;
 
+	std::unique_ptr<_ptr_node[]> _code = std::make_unique<_ptr_node[]>(100);
+
     /** @brief コンストラクタ */
     constexpr Node::Node() = default;
 
@@ -19,26 +21,67 @@ namespace Parser{
 
     /**
      * @brief コンストラクタ
-     * @param val 数値
+     * @param val 数値 or 識別子
      */
-    constexpr Node::Node(const int &val)
-        : _kind(NodeKind::ND_NUM), _val(val)
+    constexpr Node::Node(const NodeKind &kind, const int &val, const int &offset)
+        : _kind(kind), _val(val), _offset(offset)
     {}
 
     /** @brief デストラクタ */
     Node::~Node() = default;
 
-    /**
-     * @brief 
-     * expr = equality
-     * @return _ptr_node 
+	/**
+     * @brief
+     * program = stmt*
+     * @return _ptr_node
+     */
+	_ptr_node Node::program()
+	{
+		int cnt = 0;
+		while(!Token::at_eof()){
+			_code[cnt] = std::move(stmt());
+			++cnt;
+		}
+		_code[cnt] = nullptr;
+	}
+
+	/**
+     * @brief
+     * stmt = expr ";"
+     * @return _ptr_node
+     */
+	_ptr_node Node::stmt()
+	{
+		_ptr_node node = expr();
+		Token::expect(";");
+		return std::move(node);
+	}
+
+	/**
+     * @brief
+     * expr = assign
+     * @return _ptr_node
      */
     _ptr_node Node::expr()
     {
-		return std::move(equality());
+		return std::move(assign());
     }
 
-    /**
+	/**
+     * @brief
+     * assign = equality ("=" assign)?
+     * @return _ptr_node
+     */
+	_ptr_node Node::assign()
+	{
+		_ptr_node node = std::move(equality());
+		if(Token::consume("=")){
+			node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), std::move(assign));
+		}
+		return std::move(node);
+	}
+
+	/**
      * @brief
      * equality = relational ("==" relational | "!=" relational)*
      * @return _ptr_node 
@@ -133,7 +176,7 @@ namespace Parser{
 			return std::move(unary());
 		}
 		if(Token::consume("-")){
-			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(0), std::move(unary()));
+			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(TokenKind::TK_NUM, 0, 0), std::move(unary()));
 			return std::move(node);
 		}
 		return std::move(primary());
@@ -142,7 +185,7 @@ namespace Parser{
 	/**
      * @brief
      * primaryは'数'または'(式)'で表される。 \n
-     * primary = num | "(" expr ")"
+     * primary = num | ident | "(" expr ")"
      * @return _ptr_node
      */
     _ptr_node Node::primary()
@@ -154,9 +197,17 @@ namespace Parser{
             return std::move(node);
         }
 
+		/* 次のトークンが識別子の場合 */
+		Token::_unique_ptr_token tok = std::move(Token::consume_ident());
+		if(tok){
+			/* 1変数あたりオフセットとして8バイト設定 */
+			int offset = (*(tok->get_str()) - 'a' + 1 ) * 8;
+			return std::move(std::make_unique<Node>(NodeKind::ND_LVAR, 0, offset));
+		}
+
         /* そうでなければ数値のはず */
         int num = Token::expect_number();
-        return std::move(std::make_unique<Node>(num));
+        return std::move(std::make_unique<Node>(NodeKind::ND_NUM, num, 0));
     }
     
     /**

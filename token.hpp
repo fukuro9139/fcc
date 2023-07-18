@@ -38,11 +38,14 @@ namespace Parser{
         static void error(const std::string &msg);
         static void error_at(const std::string &msg, const _itr_str &loc);
         static bool consume(const std::string &op);
+		static _unique_ptr_token consume_ident();
         static void expect(const std::string &op);
         static int expect_number();
         static Token* new_token( const TokenKind &kind, Token *cur, const _itr_str &itr, const size_t &len);
         static void tokenize(const std::string &str);
 		static bool at_eof();
+
+		const _itr_str &get_str() const {return this->_str;}
 
     private:
         /** @brief トークンの型 */

@@ -1,31 +1,38 @@
 #pragma once
 
 #include "token.hpp"
+#include <vector>
 
 namespace Parser{
     /** @brief ノードの種類 */
     enum class NodeKind{
-        ND_ADD, /** @brief + */      
-        ND_SUB, /** @brief - */
-        ND_MUL, /** @brief * */
-        ND_DIV, /** @brief / */
-		ND_EQ,	/** @brief == */
-		ND_NE,	/** @brief != */
-		ND_LT,	/** @brief < */
-		ND_LE,	/** @brief <= */
-        ND_NUM, /** @brief 整数 */
+        ND_ADD, 	/** @brief + */      
+        ND_SUB, 	/** @brief - */
+        ND_MUL, 	/** @brief * */
+        ND_DIV, 	/** @brief / */
+		ND_ASSIGN, 	/** @brief = */
+		ND_EQ,		/** @brief == */
+		ND_NE,		/** @brief != */
+		ND_LT,		/** @brief < */
+		ND_LE,		/** @brief <= */
+        ND_NUM, 	/** @brief 整数 */
+
+		ND_LVAR, 	/** @brief 左辺値*/
     };
 
     /**
      * @brief
      * 以下のEBNFに従って抽象構文木を構成する。 \n
-	 *	expr       = equality
+	 *	program    = stmt*
+	 *	stmt       = expr ";"
+	 *	expr       = assign
+	 *	assign     = equality ("=" assign)?
 	 *	equality   = relational ("==" relational | "!=" relational)*
 	 *	relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 	 *	add        = mul ("+" mul | "-" mul)*
 	 *	mul        = unary ("*" unary | "/" unary)*
 	 *	unary      = ("+" | "-")? primary
-	 *	primary    = num | "(" expr ")"
+	 *	primary    = num | ident | "(" expr ")"
      */
     struct Node
     {
@@ -33,10 +40,13 @@ namespace Parser{
     public:
         constexpr Node();
         Node(const NodeKind &kind, _unique_ptr_node lhs, _unique_ptr_node rhs);
-        constexpr Node(const int &val);
+        constexpr Node(const NodeKind &kind, const int &val, const int &offset);
         ~Node();
 
+		static _unique_ptr_node program();
+		static _unique_ptr_node stmt();
         static _unique_ptr_node expr();
+		static _unique_ptr_node assign();
 		static _unique_ptr_node equality();
         static _unique_ptr_node relational();
 		static _unique_ptr_node add();
@@ -52,9 +62,13 @@ namespace Parser{
         _unique_ptr_node _lhs = nullptr;
         /** @brief 右辺 */
         _unique_ptr_node _rhs = nullptr;
-        /** @brief kindがND_NUMの場合のみ使う */
+        /** @brief kindがND_NUMの場合のみ使う、数値の値 */
         int _val = 0;
+		/** @brief kindがND_LVARの場合のみ使う、ベースポインタからのオフセット*/
+		int _offset = 0;
 
+		/** @brief パース結果 */
+		static std::unique_ptr<_unique_ptr_node[]> _code;
     };
 
 }
