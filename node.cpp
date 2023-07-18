@@ -176,7 +176,7 @@ namespace Parser{
 			return std::move(unary());
 		}
 		if(Token::consume("-")){
-			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(TokenKind::TK_NUM, 0, 0), std::move(unary()));
+			_ptr_node node = std::make_unique<Node>(NodeKind::ND_SUB, std::make_unique<Node>(NodeKind::ND_NUM, 0, 0), std::move(unary()));
 			return std::move(node);
 		}
 		return std::move(primary());
