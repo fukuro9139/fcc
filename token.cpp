@@ -162,6 +162,17 @@ namespace Parser{
 
 	/**
 	 * @brief 
+	 * 現在のトークンが終端かどうか
+	 * @return true 終端である
+	 * @return false 終端ではない
+	 */
+	bool Token::at_eof()
+	{
+		return TokenKind::TK_EOF == _token_cur->_kind;
+	}
+
+	/**
+	 * @brief 
 	 * 文字列と現在のトークン文字列の比較
 	 * @return true 一致
 	 * @return false 不一致

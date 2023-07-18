@@ -42,6 +42,7 @@ namespace Parser{
         static int expect_number();
         static Token* new_token( const TokenKind &kind, Token *cur, const _itr_str &itr, const size_t &len);
         static void tokenize(const std::string &str);
+		static bool at_eof();
 
     private:
         /** @brief トークンの型 */
