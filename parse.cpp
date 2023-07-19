@@ -37,7 +37,7 @@ Node::Node(NodeKind &&kind, node_ptr &&lhs, node_ptr &&rhs)
  */
 node_ptr Node::statement(token_ptr &current_token, token_ptr &&token)
 {
-	return std::move(expr_stmt(current_token, std::move(token)));
+	return expr_stmt(current_token, std::move(token));
 }
 
 /**
@@ -46,9 +46,9 @@ node_ptr Node::statement(token_ptr &current_token, token_ptr &&token)
  */
 node_ptr Node::expr_stmt(token_ptr &current_token, token_ptr &&token)
 {
-	node_ptr node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, std::move(expression(token, std::move(token))));
+	node_ptr node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(token, std::move(token)));
 	/* 文は';'で終わるはず */
-	current_token = std::move(Token::skip(std::move(token), ";"));
+	current_token = Token::skip(std::move(token), ";");
 	return std::move(node);
 }
 
@@ -58,7 +58,7 @@ node_ptr Node::expr_stmt(token_ptr &current_token, token_ptr &&token)
  */
 node_ptr Node::expression(token_ptr &current_token, token_ptr &&token)
 {
-	return std::move(assign(current_token, std::move(token)));
+	return assign(current_token, std::move(token));
 }
 
 /**
@@ -67,10 +67,10 @@ node_ptr Node::expression(token_ptr &current_token, token_ptr &&token)
  */
 node_ptr Node::assign(token_ptr &current_token, token_ptr &&token)
 {
-	node_ptr node = std::move(equality(token, std::move(token)));
+	node_ptr node = equality(token, std::move(token));
 	if (Token::is_equal(token, "="))
 	{
-		node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), std::move(assign(token, std::move(token->_next))));
+		node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), assign(token, std::move(token->_next)));
 	}
 	current_token = std::move(token);
 	return std::move(node);
@@ -82,19 +82,19 @@ node_ptr Node::assign(token_ptr &current_token, token_ptr &&token)
  */
 node_ptr Node::equality(token_ptr &current_token, token_ptr &&token)
 {
-	node_ptr node = std::move(relational(token, std::move(token)));
+	node_ptr node = relational(token, std::move(token));
 
 	for (;;)
 	{
 		if (Token::is_equal(token, "=="))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_EQ, std::move(node), std::move(relational(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_EQ, std::move(node), relational(token, std::move(token->_next)));
 			continue;
 		}
 
 		if (Token::is_equal(token, "!="))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_NE, std::move(node), std::move(relational(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_NE, std::move(node), relational(token, std::move(token->_next)));
 			continue;
 		}
 
@@ -109,33 +109,33 @@ node_ptr Node::equality(token_ptr &current_token, token_ptr &&token)
  */
 node_ptr Node::relational(token_ptr &current_token, token_ptr &&token)
 {
-	node_ptr node = std::move(add(token, std::move(token)));
+	node_ptr node = add(token, std::move(token));
 
 	for (;;)
 	{
 		if (Token::is_equal(token, "<"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LT, std::move(node), std::move(add(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_LT, std::move(node), add(token, std::move(token->_next)));
 			continue;
 		}
 
 		if (Token::is_equal(token, "<="))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LE, std::move(node), std::move(add(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_LE, std::move(node), add(token, std::move(token->_next)));
 			continue;
 		}
 
 		/* lhs > rhs は rhs < lhs と読み替える */
 		if (Token::is_equal(token, ">"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LT, std::move(add(token, std::move(token->_next))), std::move(node));
+			node = std::make_unique<Node>(NodeKind::ND_LT, add(token, std::move(token->_next)), std::move(node));
 			continue;
 		}
 
 		/* lhs >= rhs は rhs <= lhs と読み替える */
 		if (Token::is_equal(token, ">="))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LE, std::move(add(token, std::move(token->_next))), std::move(node));
+			node = std::make_unique<Node>(NodeKind::ND_LE, add(token, std::move(token->_next)), std::move(node));
 			continue;
 		}
 
@@ -150,19 +150,19 @@ node_ptr Node::relational(token_ptr &current_token, token_ptr &&token)
  */
 node_ptr Node::add(token_ptr &current_token, token_ptr &&token)
 {
-	node_ptr node = std::move(mul(token, std::move(token)));
+	node_ptr node = mul(token, std::move(token));
 
 	for (;;)
 	{
 		if (Token::is_equal(token, "+"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_ADD, std::move(node), std::move(mul(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_ADD, std::move(node), mul(token, std::move(token->_next)));
 			continue;
 		}
 
 		if (Token::is_equal(token, "-"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(node), std::move(mul(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(node), mul(token, std::move(token->_next)));
 			continue;
 		}
 
@@ -177,19 +177,19 @@ node_ptr Node::add(token_ptr &current_token, token_ptr &&token)
  */
 node_ptr Node::mul(token_ptr &current_token, token_ptr &&token)
 {
-	node_ptr node = std::move(unary(token, std::move(token)));
+	node_ptr node = unary(token, std::move(token));
 
 	for (;;)
 	{
 		if (Token::is_equal(token, "*"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), std::move(unary(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), unary(token, std::move(token->_next)));
 			continue;
 		}
 
 		if (Token::is_equal(token, "/"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::move(unary(token, std::move(token->_next))));
+			node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), unary(token, std::move(token->_next)));
 			continue;
 		}
 
@@ -211,7 +211,7 @@ node_ptr Node::unary(token_ptr &current_token, token_ptr &&token)
 
 	if (Token::is_equal(token, "-"))
 	{
-		return std::make_unique<Node>(NodeKind::ND_NEG, std::move(unary(current_token, std::move(token->_next))));
+		return std::make_unique<Node>(NodeKind::ND_NEG, unary(current_token, std::move(token->_next)));
 	}
 
 	return std::move(primary(current_token, std::move(token)));
@@ -226,16 +226,15 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	/* トークンが"("なら、"(" expression ")"のはず */
 	if (Token::is_equal(token, "("))
 	{
-		node_ptr node = std::move(expression(token, std::move(token->_next)));
-		current_token = std::move(Token::skip(std::move(token), ")"));
+		node_ptr node = expression(token, std::move(token->_next));
+		current_token = Token::skip(std::move(token), ")");
 		return std::move(node);
 	}
 
 	/* トークンが識別子の場合 */
 	if (TokenKind::TK_IDENT == token->_kind)
 	{
-		std::string name(token->_location, token->_location + token->_length);
-		node_ptr node = std::make_unique<Node>(std::move(name));
+		node_ptr node = std::make_unique<Node>(std::string(token->_location, token->_location + token->_length));
 		current_token = std::move(token->_next);
 		return std::move(node);
 	}
@@ -268,7 +267,7 @@ node_ptr Node::parse(std::unique_ptr<Token> &&token)
 	while (TokenKind::TK_EOF != token->_kind)
 	{
 		/* 現在の文から新しく抽象構文木を構築して木の根を現在のノードにに繋ぐ */
-		current_node->_next = std::move(statement(token, std::move(token)));
+		current_node->_next = statement(token, std::move(token));
 		/* 現在のノードを進める */
 		current_node = current_node->_next.get();
 	}
