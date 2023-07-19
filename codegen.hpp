@@ -3,6 +3,10 @@
 #include <cassert>
 #include <memory>
 
+/**
+ * @brief
+ * Intel記法でアセンブラを出力する
+*/
 class CodeGen
 {
 public:

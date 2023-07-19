@@ -36,13 +36,13 @@ void error_at(const std::string &msg, const std::string::const_iterator &loc)
 /** @brief コンストラクタ */
 Token::Token() = default;
 
-Token::Token(const TokenKind &kind, const std::string::const_iterator &start, const std::string::const_iterator &last)
-	: _kind(kind), _loc(start), _len(last - start)
+Token::Token(const TokenKind &kind, const std::string::const_iterator &first, const std::string::const_iterator &last)
+	: _kind(kind), _location(first), _length(last - first)
 {
 }
 
-Token::Token(const std::string::const_iterator &loc, const int &val)
-	: _kind(TokenKind::TK_NUM), _loc(loc) , _val(val)
+Token::Token(const std::string::const_iterator &loc, const int &value)
+	: _kind(TokenKind::TK_NUM), _location(loc), _value(value)
 {
 }
 
@@ -55,13 +55,16 @@ Token::~Token() = default;
  */
 token_const_ptr Token::tokenize(const std::string &input)
 {
+	/* 入力文字列の保存 */
 	current_input = input;
+
+	/* スタート地点としてダミーのトークンを作る */
 	token_ptr head = std::make_unique_for_overwrite<Token>();
-	Token *cur = head.get();
+	Token *current_token = head.get();
 	auto itr = current_input.cbegin();
 	auto last = current_input.cend();
 
-	for ( ; itr != last ; )
+	for (; itr != last;)
 	{
 		/* 空白文字をスキップ */
 		if (std::isspace(*itr))
@@ -73,12 +76,13 @@ token_const_ptr Token::tokenize(const std::string &input)
 		/* 数値 */
 		if (std::isdigit(*itr))
 		{
-			/* 数値変換 */
+			/* 数値変換する。変換にした数値を持つ数値トークンを生成し */
+			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
 			size_t idx;
 			const string sub_str(itr, last);
-			/* 新しいトークンを生成してcurに繋ぎcurを一つ進める */
-			cur->_next = std::make_unique<Token>(itr, std::stoi(sub_str, &idx));
-			cur = cur->_next.get();
+			/*  */
+			current_token->_next = std::make_unique<Token>(itr, std::stoi(sub_str, &idx));
+			current_token = current_token->_next.get();
 			itr += idx;
 			continue;
 		}
@@ -87,26 +91,29 @@ token_const_ptr Token::tokenize(const std::string &input)
 		if ('a' <= *itr && *itr <= 'z')
 		{
 			/* 新しいトークンを生成してcurに繋ぎcurを一つ進める */
-			cur->_next = std::make_unique<Token>(TokenKind::TK_IDENT, itr, itr + 1);
-			cur = cur->_next.get();
+			current_token->_next = std::make_unique<Token>(TokenKind::TK_IDENT, itr, itr + 1);
+			current_token = current_token->_next.get();
 			++itr;
 			continue;
 		}
 
-		/* 区切り文字 */
+		/* パンクチュエータ:構文的に意味を持つ記号 */
 		size_t punct_len = read_punct(itr, last);
 		if (punct_len)
 		{
 			/* 新しいトークンを生成してcurに繋ぎcurを一つ進める */
-			cur->_next = std::make_unique<Token>(TokenKind::TK_PUNCT, itr, itr + punct_len);
-			cur = cur->_next.get();
+			current_token->_next = std::make_unique<Token>(TokenKind::TK_PUNCT, itr, itr + punct_len);
+			current_token = current_token->_next.get();
 			itr += punct_len;
 			continue;
 		}
 
 		error_at("不正なトークンです", itr);
 	}
-	cur->_next = std::make_unique<Token>(TokenKind::TK_EOF, itr, itr);
+
+	/* 最後に終端トークンを作成して繋ぐ */
+	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, itr, itr);
+	/* ダミーの次のトークン以降を切り離して返す */
 	return std::move(head->_next);
 }
 
@@ -117,9 +124,9 @@ token_const_ptr Token::tokenize(const std::string &input)
  * @return true 一致
  * @return false 不一致
  */
-bool Token::is_equal(const Token* &tok, const std::string &op)
+bool Token::is_equal(const Token *&tok, const std::string &op)
 {
-	return op.length() == tok->_len && std::equal(op.begin(), op.end(), tok->_loc);
+	return op.length() == tok->_length && std::equal(op.begin(), op.end(), tok->_location);
 }
 
 /**
@@ -128,11 +135,11 @@ bool Token::is_equal(const Token* &tok, const std::string &op)
  * @param op 期待している演算子
  * @return 次のトークン
  */
-const Token* Token::skip(const Token* &tok, const std::string &op)
+const Token *Token::skip(const Token *&tok, const std::string &op)
 {
 	if (!is_equal(tok, op))
 	{
-		error_at(op + "ではありません", tok->_loc);
+		error_at(op + "が必要です", tok->_location);
 	}
 	return tok->_next.get();
 }
@@ -143,21 +150,21 @@ const Token* Token::skip(const Token* &tok, const std::string &op)
  * @return true 一致
  * @return false 不一致
  */
-bool Token::start_with(const std::string::const_iterator &start, const std::string::const_iterator &last, const std::string &op)
+bool Token::start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, const std::string &op)
 {
-	return last - start >= op.length() && std::equal(op.begin(), op.end(), start);
+	return last - first >= op.length() && std::equal(op.begin(), op.end(), first);
 }
 
 /**
  * @brief
- * itrから始まる記号トークンを読み、その長さを返す
+ * itrから始まるパンクチュエーターを読み、その長さを返す
  */
-size_t Token::read_punct(const std::string::const_iterator &start, const std::string::const_iterator &last)
+size_t Token::read_punct(const std::string::const_iterator &first, const std::string::const_iterator &last)
 {
-	if (start_with(start, last, "==") || start_with(start, last, "!=") ||
-		start_with(start, last, "<=") || start_with(start, last, ">="))
+	if (start_with(first, last, "==") || start_with(first, last, "!=") ||
+		start_with(first, last, "<=") || start_with(first, last, ">="))
 	{
 		return 2;
 	}
-	return std::ispunct(*start) ? 1 : 0;
+	return std::ispunct(*first) ? 1 : 0;
 }
