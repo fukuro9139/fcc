@@ -206,7 +206,7 @@ node_ptr Node::unary(token_ptr &current_token, token_ptr &&token)
 {
 	if (Token::is_equal(token, "+"))
 	{
-		return std::move(unary(current_token, std::move(token->_next)));
+		return unary(current_token, std::move(token->_next));
 	}
 
 	if (Token::is_equal(token, "-"))
@@ -214,7 +214,7 @@ node_ptr Node::unary(token_ptr &current_token, token_ptr &&token)
 		return std::make_unique<Node>(NodeKind::ND_NEG, unary(current_token, std::move(token->_next)));
 	}
 
-	return std::move(primary(current_token, std::move(token)));
+	return primary(current_token, std::move(token));
 }
 
 /**
