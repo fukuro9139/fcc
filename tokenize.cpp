@@ -21,11 +21,11 @@ void error(std::string &&msg)
 /**
  * @brief エラー箇所を報告して終了する
  * @param msg エラーメッセージ
- * @param loc エラー箇所
+ * @param location エラー箇所
  */
-void error_at(std::string &&msg, std::string::const_iterator &&loc)
+void error_at(std::string &&msg, std::string::const_iterator &&location)
 {
-	size_t pos = loc - current_input.begin();
+	size_t pos = location - current_input.begin();
 	cerr << current_input << "\n";
 	cerr << string(pos, ' ') << "^ ";
 	cerr << msg << endl;
@@ -40,12 +40,10 @@ Token::Token(TokenKind &&kind, const std::string::const_iterator &first, std::st
 {
 }
 
-Token::Token(const std::string::const_iterator &loc, int &&value)
-	: _kind(TokenKind::TK_NUM), _location(loc), _value(std::move(value))
+Token::Token(const std::string::const_iterator &location, int &&value)
+	: _kind(TokenKind::TK_NUM), _location(location), _value(std::move(value))
 {
 }
-
-
 
 /**
  * @brief 文字列inputをトークナイズして新しいトークン列を返す
@@ -77,9 +75,7 @@ token_ptr Token::tokenize(std::string && input)
 			/* 数値変換する。変換にした数値を持つ数値トークンを生成し */
 			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
 			size_t idx;
-			const string sub_str(itr, last);
-			/*  */
-			current_token->_next = std::make_unique<Token>(itr, std::stoi(sub_str, &idx));
+			current_token->_next = std::make_unique<Token>(itr, std::stoi(string(itr, last), &idx));
 			current_token = current_token->_next.get();
 			itr += idx;
 			continue;

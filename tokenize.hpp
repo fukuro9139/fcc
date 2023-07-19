@@ -5,7 +5,7 @@
 #include <locale>
 
 void error(std::string &&msg);
-void error_at(std::string &&msg, std::string::const_iterator &&loc);
+void error_at(std::string &&msg, std::string::const_iterator &&location);
 
 /** @brief トークンの種類 */
 enum class TokenKind
@@ -31,7 +31,7 @@ public:
 
 	Token();
 	Token(TokenKind &&kind, const std::string::const_iterator &first, std::string::const_iterator &&last);
-	Token(const std::string::const_iterator &loc, int &&val);
+	Token(const std::string::const_iterator &location, int &&val);
 
 	static std::unique_ptr<Token> tokenize(std::string &&input);
 	static bool is_equal(const std::unique_ptr<Token> &tok, std::string &&op);
