@@ -39,7 +39,7 @@ void CodeGen::generate_address(const Node *node)
 	if (NodeKind::ND_VAR == node->_kind)
 	{
 		int offset = (node->_name[0] - 'a' + 1) * 8;
-		cout << " move rax, rbp\n";
+		cout << " mov rax, rbp\n";
 		cout << " sub rax, " << offset << "\n";
 		return;
 	}
