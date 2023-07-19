@@ -34,8 +34,8 @@ public:
 	Token(const std::string::const_iterator &location, int &&val);
 
 	static std::unique_ptr<Token> tokenize(std::string &&input);
-	static bool is_equal(const std::unique_ptr<Token> &tok, std::string &&op);
-	static std::unique_ptr<Token> skip(std::unique_ptr<Token> &&tok, std::string &&op);
+	static bool is_equal(const std::unique_ptr<Token> &token, std::string &&op);
+	static std::unique_ptr<Token> skip(std::unique_ptr<Token> &&token, std::string &&op);
 
 private:
 	static bool start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, std::string &&op);

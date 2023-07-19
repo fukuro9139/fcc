@@ -118,9 +118,9 @@ token_ptr Token::tokenize(std::string &&input)
  * @return true 一致
  * @return false 不一致
  */
-bool Token::is_equal(const token_ptr &tok, std::string &&op)
+bool Token::is_equal(const token_ptr &token, std::string &&op)
 {
-	return op.length() == tok->_length && std::equal(op.begin(), op.end(), tok->_location);
+	return op.length() == token->_length && std::equal(op.begin(), op.end(), token->_location);
 }
 
 /**
@@ -129,13 +129,13 @@ bool Token::is_equal(const token_ptr &tok, std::string &&op)
  * @param op 期待している演算子
  * @return 次のトークン
  */
-token_ptr Token::skip(token_ptr &&tok, std::string &&op)
+token_ptr Token::skip(token_ptr &&token, std::string &&op)
 {
-	if (!is_equal(tok, std::move(op)))
+	if (!is_equal(token, std::move(op)))
 	{
-		error_at("不正な構文です", std::move(tok->_location));
+		error_at("不正な構文です", std::move(token->_location));
 	}
-	return std::move(tok->_next);
+	return std::move(token->_next);
 }
 
 /**
