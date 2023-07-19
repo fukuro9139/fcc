@@ -4,3 +4,4 @@ tmp*
 a.out
 fcc
 *.json
+*.d

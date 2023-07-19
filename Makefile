@@ -1,7 +1,7 @@
 CXX = g++
 
 #For Linux
-CFLAGS = -std=c++20 -g -static
+CFLAGS = -std=c++20 -g -MMD -MP -static
 #For Windows
 #CFLAGS = -std=c++20 -g -static -fexec-charset=cp932
 
@@ -40,6 +40,4 @@ clean:
 #	del fcc.exe $(OBJS)
 
 #ヘッダフィルの依存関係
-token.o: token.hpp
-node.o: token.hpp node.hpp
-fcc.o: token.hpp
+-include *.d
