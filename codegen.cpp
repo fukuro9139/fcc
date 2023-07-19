@@ -4,6 +4,8 @@ using std::cout;
 using std::endl;
 using std::string;
 
+using node_ptr = std::unique_ptr<Node>;
+
 /* スタックの深さ */
 static int depth = 0;
 
@@ -21,7 +23,7 @@ void CodeGen::push()
  * @brief
  * スタックからpopしてregに値を書き込むコードを生成
  */
-void CodeGen::pop(const string &reg)
+void CodeGen::pop(string &&reg)
 {
 	cout << " pop " << reg << "\n";
 	--depth;
@@ -33,7 +35,7 @@ void CodeGen::pop(const string &reg)
  * 計算結果は'rax'にストアする
  * ノードが変数ではないときエラーとする。
  */
-void CodeGen::generate_address(const Node *node)
+void CodeGen::generate_address(node_ptr &&node)
 {
 	/* 1変数当たり8バイト確保 */
 	if (NodeKind::ND_VAR == node->_kind)
@@ -51,7 +53,7 @@ void CodeGen::generate_address(const Node *node)
  * 式ノードのコードを出力する。
  * 計算結果はraxにストア
  */
-void CodeGen::generate_expression(const Node *node)
+void CodeGen::generate_expression(node_ptr &&node)
 {
 	switch (node->_kind)
 	{
@@ -63,25 +65,25 @@ void CodeGen::generate_expression(const Node *node)
 	/* 単項演算子の'-' */
 	case NodeKind::ND_NEG:
 		/* '-'がかかる式を評価 */
-		generate_expression(node->_lhs.get());
+		generate_expression(std::move(node->_lhs));
 		/* 符号を反転させる */
 		cout << " neg rax\n";
 		return;
 	/* 変数 */
 	case NodeKind::ND_VAR:
 		/* 変数のアドレスを計算 */
-		generate_address(node);
+		generate_address(std::move(node));
 		/* 変数のアドレスから値を'rax'に読み込む */
 		cout << " mov rax, [rax]\n";
 		return;
 	/* 代入 */
 	case NodeKind::ND_ASSIGN:
 		/* 左辺の代入先の変数のアドレスを計算 */
-		generate_address(node->_lhs.get());
+		generate_address(std::move(node->_lhs));
 		/* 変数のアドレスをスタックにpush */
 		push();
 		/* 右辺を評価する。評価結果は'rax' */
-		generate_expression(node->_rhs.get());
+		generate_expression(std::move(node->_rhs));
 		/* 変数のアドレスを'rdi にpop*/
 		pop("rdi");
 		/* 'rax'の値を'rdi'のアドレスのメモリに格納 */
@@ -92,11 +94,11 @@ void CodeGen::generate_expression(const Node *node)
 	}
 
 	/* 右辺を計算 */
-	generate_expression(node->_rhs.get());
+	generate_expression(std::move(node->_rhs));
 	/* 計算結果をスタックにpush */
 	push();
 	/* 左辺を計算 */
-	generate_expression(node->_lhs.get());
+	generate_expression(std::move(node->_lhs));
 	/* 右辺の計算結果を'rdi'にpop */
 	pop("rdi");
 
@@ -154,10 +156,11 @@ void CodeGen::generate_expression(const Node *node)
  * 文ノードのコードを出力する。
  * ノードが文ノードでないときエラーとする
  */
-void CodeGen::generate_statement(const Node * node)
+void CodeGen::generate_statement(node_ptr &&node)
 {
-	if(NodeKind::ND_EXPR_STMT == node->_kind){
-		generate_expression(node->_lhs.get());
+	if (NodeKind::ND_EXPR_STMT == node->_kind)
+	{
+		generate_expression(std::move(node->_lhs));
 		return;
 	}
 	error("不正な文です");
@@ -166,9 +169,9 @@ void CodeGen::generate_statement(const Node * node)
  * @brief
  * プログラム全体のコードを出力する。
  */
-void CodeGen::generate_code(std::unique_ptr<const Node> node)
+void CodeGen::generate_code(node_ptr &&node)
 {
-		/* アセンブリの前半部分を出力 */
+	/* アセンブリの前半部分を出力 */
 	cout << ".intel_syntax noprefix\n";
 	cout << ".globl main\n";
 	cout << "main:\n";
@@ -180,8 +183,14 @@ void CodeGen::generate_code(std::unique_ptr<const Node> node)
 	cout << " mov rbp, rsp\n";
 	cout << " sub rsp, 208\n";
 
-	for(const Node* p = node.get(); p; p = p->_next.get()){
-		generate_statement(p);
+	for (node_ptr next_node = std::move(node->_next); node;)
+	{
+		generate_statement(std::move(node));
+		node = std::move(next_node);
+		if (node)
+		{
+			next_node = std::move(node->_next);
+		}
 		assert(0 == depth);
 	}
 	/* エピローグ */

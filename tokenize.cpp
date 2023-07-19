@@ -49,7 +49,7 @@ Token::Token(const std::string::const_iterator &location, int &&value)
  * @brief 文字列inputをトークナイズして新しいトークン列を返す
  * @param input トークナイズする対象文字列
  */
-token_ptr Token::tokenize(std::string && input)
+token_ptr Token::tokenize(std::string &&input)
 {
 	/* 入力文字列の保存 */
 	current_input = std::move(input);
@@ -118,7 +118,7 @@ token_ptr Token::tokenize(std::string && input)
  * @return true 一致
  * @return false 不一致
  */
-bool Token::is_equal(const token_ptr &tok, std::string && op)
+bool Token::is_equal(const token_ptr &tok, std::string &&op)
 {
 	return op.length() == tok->_length && std::equal(op.begin(), op.end(), tok->_location);
 }
@@ -129,7 +129,7 @@ bool Token::is_equal(const token_ptr &tok, std::string && op)
  * @param op 期待している演算子
  * @return 次のトークン
  */
-token_ptr Token::skip(token_ptr &&tok, std::string && op)
+token_ptr Token::skip(token_ptr &&tok, std::string &&op)
 {
 	if (!is_equal(tok, std::move(op)))
 	{

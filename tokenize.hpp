@@ -19,14 +19,14 @@ enum class TokenKind
 /**
  * @brief
  * トークン：プログラムコードを意味ごとに分解したもの
-*/
+ */
 class Token
 {
 public:
 	std::unique_ptr<Token> _next = nullptr; /** 次のトークン */
 	TokenKind _kind;						/** トークンの型 */
 	int _value = 0;							/** kindがTK_NUMの場合、その数値 */
-	std::string::const_iterator _location;		/** トークン文字列の開始位置 */
+	std::string::const_iterator _location;	/** トークン文字列の開始位置 */
 	size_t _length = 0;						/** トークンの長さ */
 
 	Token();

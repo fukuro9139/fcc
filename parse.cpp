@@ -30,7 +30,6 @@ Node::Node(NodeKind &&kind, node_ptr &&lhs, node_ptr &&rhs)
 {
 }
 
-
 /**
  * @brief
  * statement = expression-statement
