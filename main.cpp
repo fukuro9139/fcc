@@ -8,10 +8,10 @@ int main(int argc, char **argv) {
 	}
 
 	/* 入力文字列をトークナイズする */
-	std::unique_ptr<const Token> tok = std::move(Token::tokenize(std::string(argv[1])));
+	std::unique_ptr<Token> tok = Token::tokenize(std::string(argv[1]));
 
 	/* トークン列をパースし抽象構文木を構築する */
-	std::unique_ptr<const Node>  node = std::move(Node::parse(std::move(tok)));
+	std::unique_ptr<Node>  node = Node::parse(std::move(tok));
 
 	/*　抽象構文木を下りながらコード生成　*/
 	CodeGen::generate_code(std::move(node));

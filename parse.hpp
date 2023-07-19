@@ -37,25 +37,23 @@ public:
 	std::string _name = "";					 /* kindがND_VARの場合のみ使う、 変数の名前*/
 
 	Node();
-	Node(const NodeKind &kind);
-	Node(const NodeKind &kind, std::unique_ptr<Node> lhs, std::unique_ptr<Node> rhs);
-	Node(const NodeKind &kind, std::unique_ptr<Node> lhs);
-	Node(const int &val);
-	Node(const std::string &name);
+	Node(NodeKind &&kind);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs);
+	Node(int &&val);
+	Node(std::string &&name);
 
-	~Node();
-
-	static std::unique_ptr<const Node> parse(const std::unique_ptr<const Token> token);
+	static std::unique_ptr<Node> parse(std::unique_ptr<Token> &&token);
 
 private:
-	static std::unique_ptr<Node> statement(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> expression(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> expr_stmt(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> assign(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> equality(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> relational(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> add(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> mul(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> unary(const Token *&current_token, const Token *token);
-	static std::unique_ptr<Node> primary(const Token *&current_token, const Token *token);
+	static std::unique_ptr<Node> statement(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> expression(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> expr_stmt(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> assign(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> equality(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> relational(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> add(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> mul(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> unary(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> primary(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
 };

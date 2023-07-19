@@ -1,9 +1,9 @@
 CXX = g++
 
 #For Linux
-CFLAGS = -std=c++20 -g -MMD -MP -static
+#CFLAGS = -std=c++20 -g -MMD -MP -static
 #For Windows
-#CFLAGS = -std=c++20 -g -static -fexec-charset=cp932
+CFLAGS = -std=c++20 -g -static -fexec-charset=cp932
 
 #プログラム名とオブジェクトファイル名
 TARGET = fcc
@@ -34,10 +34,10 @@ test: fcc
 #不要ファイル削除
 clean:
 #For Linux
-	$(RM) $(TARGET) $(OBJS) *~ tmp*
+#	$(RM) $(TARGET) $(OBJS) *~ tmp*
 
 #For Windows
-#	del fcc.exe $(OBJS)
+	del fcc.exe $(OBJS)
 
 #ヘッダフィルの依存関係
 -include *.d

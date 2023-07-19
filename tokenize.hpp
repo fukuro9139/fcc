@@ -4,8 +4,8 @@
 #include <iostream>
 #include <locale>
 
-void error(const std::string &msg);
-void error_at(const std::string &msg, const std::string::const_iterator &loc);
+void error(std::string &&msg);
+void error_at(std::string &&msg, std::string::const_iterator &&loc);
 
 /** @brief トークンの種類 */
 enum class TokenKind
@@ -30,15 +30,14 @@ public:
 	size_t _length = 0;						/** トークンの長さ */
 
 	Token();
-	Token(const TokenKind &kind, const std::string::const_iterator &first, const std::string::const_iterator &last);
-	Token(const std::string::const_iterator &loc, const int &val);
-	~Token();
+	Token(TokenKind &&kind, const std::string::const_iterator &first, std::string::const_iterator &&last);
+	Token(const std::string::const_iterator &loc, int &&val);
 
-	static std::unique_ptr<const Token> tokenize(const std::string &input);
-	static bool is_equal(const Token *&tok, const std::string &op);
-	static const Token *skip(const Token *&tok, const std::string &op);
+	static std::unique_ptr<Token> tokenize(std::string &&input);
+	static bool is_equal(const std::unique_ptr<Token> &tok, std::string &&op);
+	static std::unique_ptr<Token> skip(std::unique_ptr<Token> &&tok, std::string &&op);
 
 private:
-	static bool start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, const std::string &op);
+	static bool start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, std::string &&op);
 	static size_t read_punct(const std::string::const_iterator &first, const std::string::const_iterator &last);
 };

@@ -1,7 +1,6 @@
 #include "tokenize.hpp"
 
 using token_ptr = std::unique_ptr<Token>;
-using token_const_ptr = std::unique_ptr<const Token>;
 using std::cerr;
 using std::endl;
 using std::string;
@@ -13,7 +12,7 @@ static string current_input = "";
  * @brief エラーを報告して終了する
  * @param msg エラーメッセージ
  */
-void error(const std::string &msg)
+void error(std::string &&msg)
 {
 	cerr << msg << endl;
 	exit(1);
@@ -24,7 +23,7 @@ void error(const std::string &msg)
  * @param msg エラーメッセージ
  * @param loc エラー箇所
  */
-void error_at(const std::string &msg, const std::string::const_iterator &loc)
+void error_at(std::string &&msg, std::string::const_iterator &&loc)
 {
 	size_t pos = loc - current_input.begin();
 	cerr << current_input << "\n";
@@ -36,27 +35,26 @@ void error_at(const std::string &msg, const std::string::const_iterator &loc)
 /** @brief コンストラクタ */
 Token::Token() = default;
 
-Token::Token(const TokenKind &kind, const std::string::const_iterator &first, const std::string::const_iterator &last)
-	: _kind(kind), _location(first), _length(last - first)
+Token::Token(TokenKind &&kind, const std::string::const_iterator &first, std::string::const_iterator &&last)
+	: _kind(std::move(kind)), _location(first), _length(last - first)
 {
 }
 
-Token::Token(const std::string::const_iterator &loc, const int &value)
-	: _kind(TokenKind::TK_NUM), _location(loc), _value(value)
+Token::Token(const std::string::const_iterator &loc, int &&value)
+	: _kind(TokenKind::TK_NUM), _location(loc), _value(std::move(value))
 {
 }
 
-/** @brief デストラクタ */
-Token::~Token() = default;
+
 
 /**
  * @brief 文字列inputをトークナイズして新しいトークン列を返す
  * @param input トークナイズする対象文字列
  */
-token_const_ptr Token::tokenize(const std::string &input)
+token_ptr Token::tokenize(std::string && input)
 {
 	/* 入力文字列の保存 */
-	current_input = input;
+	current_input = std::move(input);
 
 	/* スタート地点としてダミーのトークンを作る */
 	token_ptr head = std::make_unique_for_overwrite<Token>();
@@ -108,11 +106,11 @@ token_const_ptr Token::tokenize(const std::string &input)
 			continue;
 		}
 
-		error_at("不正なトークンです", itr);
+		error_at("不正なトークンです", std::move(itr));
 	}
 
 	/* 最後に終端トークンを作成して繋ぐ */
-	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, itr, itr);
+	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, itr, std::move(itr));
 	/* ダミーの次のトークン以降を切り離して返す */
 	return std::move(head->_next);
 }
@@ -124,7 +122,7 @@ token_const_ptr Token::tokenize(const std::string &input)
  * @return true 一致
  * @return false 不一致
  */
-bool Token::is_equal(const Token *&tok, const std::string &op)
+bool Token::is_equal(const token_ptr &tok, std::string && op)
 {
 	return op.length() == tok->_length && std::equal(op.begin(), op.end(), tok->_location);
 }
@@ -135,13 +133,13 @@ bool Token::is_equal(const Token *&tok, const std::string &op)
  * @param op 期待している演算子
  * @return 次のトークン
  */
-const Token *Token::skip(const Token *&tok, const std::string &op)
+token_ptr Token::skip(token_ptr &&tok, std::string && op)
 {
-	if (!is_equal(tok, op))
+	if (!is_equal(tok, std::move(op)))
 	{
-		error_at(op + "が必要です", tok->_location);
+		error_at("不正な構文です", std::move(tok->_location));
 	}
-	return tok->_next.get();
+	return std::move(tok->_next);
 }
 
 /**
@@ -150,7 +148,7 @@ const Token *Token::skip(const Token *&tok, const std::string &op)
  * @return true 一致
  * @return false 不一致
  */
-bool Token::start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, const std::string &op)
+bool Token::start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, std::string &&op)
 {
 	return last - first >= op.length() && std::equal(op.begin(), op.end(), first);
 }
