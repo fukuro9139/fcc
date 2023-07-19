@@ -48,7 +48,7 @@ node_ptr Node::expr_stmt(token_ptr &current_token, token_ptr &&token)
 	node_ptr node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(token, std::move(token)));
 	/* 文は';'で終わるはず */
 	current_token = Token::skip(std::move(token), ";");
-	return std::move(node);
+	return node;
 }
 
 /**
@@ -72,7 +72,7 @@ node_ptr Node::assign(token_ptr &current_token, token_ptr &&token)
 		node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), assign(token, std::move(token->_next)));
 	}
 	current_token = std::move(token);
-	return std::move(node);
+	return node;
 }
 
 /**
@@ -98,7 +98,7 @@ node_ptr Node::equality(token_ptr &current_token, token_ptr &&token)
 		}
 
 		current_token = std::move(token);
-		return std::move(node);
+		return node;
 	}
 }
 
@@ -139,7 +139,7 @@ node_ptr Node::relational(token_ptr &current_token, token_ptr &&token)
 		}
 
 		current_token = std::move(token);
-		return std::move(node);
+		return node;
 	}
 }
 
@@ -166,7 +166,7 @@ node_ptr Node::add(token_ptr &current_token, token_ptr &&token)
 		}
 
 		current_token = std::move(token);
-		return std::move(node);
+		return node;
 	}
 }
 
@@ -193,7 +193,7 @@ node_ptr Node::mul(token_ptr &current_token, token_ptr &&token)
 		}
 
 		current_token = std::move(token);
-		return std::move(node);
+		return node;
 	}
 }
 
@@ -227,7 +227,7 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	{
 		node_ptr node = expression(token, std::move(token->_next));
 		current_token = Token::skip(std::move(token), ")");
-		return std::move(node);
+		return node;
 	}
 
 	/* トークンが識別子の場合 */
@@ -235,7 +235,7 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	{
 		node_ptr node = std::make_unique<Node>(std::string(token->_location, token->_location + token->_length));
 		current_token = std::move(token->_next);
-		return std::move(node);
+		return node;
 	}
 
 	/* トークンが数値の場合 */
@@ -243,13 +243,13 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	{
 		node_ptr node = std::make_unique<Node>(std::move(token->_value));
 		current_token = std::move(token->_next);
-		return std::move(node);
+		return node;
 	}
 
 	/* どれでもなければエラー */
 	error_at("式ではありません", std::move(token->_location));
 
-	/* コンパイルエラー対策、error_at()内でプログラムは終了するためnullptrが変えることはない */
+	/* コンパイルエラー対策、error_at()内でプログラムは終了するためnullptrが返ることはない */
 	return nullptr;
 }
 
