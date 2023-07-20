@@ -109,7 +109,7 @@ token_ptr Token::tokenize(std::string &&input)
 			continue;
 		}
 
-		/* パンクチュエータ:構文的に意味を持つ記号 */
+		/* パンクチュエータ:構文的に意味を持つ記号またはキーワードこの段階では区別しない */
 		size_t punct_len = read_punct(itr, last);
 		if (punct_len)
 		{
@@ -125,6 +125,8 @@ token_ptr Token::tokenize(std::string &&input)
 
 	/* 最後に終端トークンを作成して繋ぐ */
 	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, itr, std::move(itr));
+	/* キーワードトークンを識別子トークンから分離する */
+	Token::convert_keywords(head->_next);
 	/* ダミーの次のトークン以降を切り離して返す */
 	return std::move(head->_next);
 }
@@ -199,4 +201,18 @@ bool Token::is_first_char_of_ident(const char &c)
 bool Token::is_char_of_ident(const char &c)
 {
 	return is_first_char_of_ident(c) || ('0' <= c && c <= '9');
+}
+
+/**
+ * @brief
+ * トークンを順番にみていってキーワードと一致していれば種類をキーワードに帰る
+ * */
+void Token::convert_keywords(token_ptr &token)
+{
+	for (Token *t = token.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+	{
+		if(TokenKind::TK_IDENT == t->_kind && std::equal(t->_location, t->_location + t->_length, "return") ){
+			t->_kind = TokenKind::TK_KEYWORD;
+		}
+	}
 }

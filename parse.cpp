@@ -109,10 +109,18 @@ Node::Node(NodeKind &&kind, node_ptr &&lhs, node_ptr &&rhs)
 
 /**
  * @brief
- * statement = expression-statement
+ * statement = "return" expression ";" | expression-statement
  */
 node_ptr Node::statement(token_ptr &current_token, token_ptr &&token)
 {
+	if (Token::is_equal(token, "return"))
+	{
+		node_ptr node = std::make_unique<Node>(NodeKind::ND_RETURN, expression(token, std::move(token->_next)));
+		/* 文は';'で終わるはず */
+		current_token = Token::skip(std::move(token), ";");
+		return node;
+	}
+
 	return expr_stmt(current_token, std::move(token));
 }
 

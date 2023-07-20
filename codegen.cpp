@@ -157,10 +157,19 @@ void CodeGen::generate_expression(node_ptr &&node)
  */
 void CodeGen::generate_statement(node_ptr &&node)
 {
-	if (NodeKind::ND_EXPR_STMT == node->_kind)
+	switch (node->_kind)
 	{
+	case NodeKind::ND_RETURN:
+		/* return の後の式を評価 */
+		generate_expression(std::move(node->_lhs));
+		/* エピローグまでjmpする */
+		cout << " jmp .L.return\n";
+		return;
+	case NodeKind::ND_EXPR_STMT:
 		generate_expression(std::move(node->_lhs));
 		return;
+	default:
+		break;
 	}
 	error("不正な文です");
 }
@@ -198,6 +207,7 @@ void CodeGen::generate_code(std::unique_ptr<Function> &&program)
 	}
 	/* エピローグ */
 	/* 最後の結果がRAXに残っているのでそれが返り値になる */
+	cout << ".L.return:\n";
 	cout << " mov rsp, rbp\n";
 	cout << " pop rbp\n";
 	cout << " ret\n";

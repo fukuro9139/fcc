@@ -13,6 +13,7 @@ enum class NodeKind
 	ND_DIV,		  /* / */
 	ND_NEG,		  /* 負の単項 */
 	ND_ASSIGN,	  /* = */
+	ND_RETURN,	  /* return */
 	ND_EQ,		  /* == */
 	ND_NE,		  /* != */
 	ND_LT,		  /* < */
