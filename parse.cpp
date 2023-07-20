@@ -2,6 +2,77 @@
 
 using node_ptr = std::unique_ptr<Node>;
 using token_ptr = std::unique_ptr<Token>;
+using obj_ptr = std::unique_ptr<Object>;
+
+/* 変数や関数オブジェクトのリスト */
+/* パース中に生成される全てのローカル変数はこのリストに連結される。 */
+static obj_ptr locals = nullptr;
+
+/* コンストラクタ */
+Object::Object() = default;
+
+Object::Object(std::string &&name) : _name(std::move(name))
+{
+}
+
+/**
+ * @brief
+ * nameを名前として持つ新しい変数を生成してlocalsの先頭に追加する。
+ * 生成した変数へのポインタを返す。
+ */
+const Object *Object::new_lvar(std::string &&name)
+{
+	obj_ptr var = std::make_unique<Object>(std::move(name));
+	var->_next = std::move(locals);
+		locals = std::move(var);
+	return locals.get();
+}
+
+/**
+ * @brief
+ * 変数を名前で検索する。見つからなかった場合はNULLを返す。
+ */
+const Object *Object::find_var(const token_ptr &token)
+{
+	for (const Object *val = locals.get(); val; val = val->_next.get())
+	{
+		if (val->_name.length() == token->_length && std::equal(val->_name.begin(), val->_name.end(), token->_location))
+		{
+			return val;
+		}
+	}
+	return nullptr;
+}
+
+/* コンストラクタ */
+Function::Function() = default;
+
+Function::Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals)
+	: _body(std::move(body)), _locals(std::move(locals))
+{
+}
+
+/**
+ * @brief
+ * 'n'を切り上げて最も近い'align'の倍数にする。
+ * 例：align_to(5,8) = 8, align_to(11,8) = 16
+*/
+int Function::align_to(int && n, int && align)
+{
+	return (n + align -1) / align * align;
+}
+
+/* プログラムに必要なスタックサイズを計算する */
+void Function::assign_lvar_offsets()
+{
+	int offset = 0;
+	for(Object* var = this->_locals.get(); var;var = var->_next.get()){
+		offset += 8;
+		var->_offset = offset;
+	}
+	this->_stack_size = align_to(std::move(offset), 16);
+}
+
 
 Node::Node() = default;
 
@@ -20,8 +91,8 @@ Node::Node(int &&val)
 {
 }
 
-Node::Node(std::string &&name)
-	: _kind(NodeKind::ND_VAR), _name(std::move(name))
+Node::Node(const Object *var)
+	: _kind(NodeKind::ND_VAR), _var(std::move(var))
 {
 }
 
@@ -233,9 +304,12 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	/* トークンが識別子の場合 */
 	if (TokenKind::TK_IDENT == token->_kind)
 	{
-		node_ptr node = std::make_unique<Node>(std::string(token->_location, token->_location + token->_length));
+		const Object *var = Object::find_var(token);
+		if(!var){
+			var = Object::new_lvar(std::string(token->_location, token->_location + token->_length));
+		}
 		current_token = std::move(token->_next);
-		return node;
+		return std::make_unique<Node>(var);
 	}
 
 	/* トークンが数値の場合 */
@@ -257,7 +331,7 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
  * @brief
  * program = statement*
  */
-node_ptr Node::parse(std::unique_ptr<Token> &&token)
+std::unique_ptr<Function> Node::parse(std::unique_ptr<Token> &&token)
 {
 	/* スタート地点としてダミーのノードを作る */
 	node_ptr head = std::make_unique_for_overwrite<Node>();
@@ -270,6 +344,7 @@ node_ptr Node::parse(std::unique_ptr<Token> &&token)
 		/* 現在のノードを進める */
 		current_node = current_node->_next.get();
 	}
-	/* ダミーの次のノード以降を切り離して返す */
-	return std::move(head->_next);
+	/* ダミーの次のノード以降を切り離してFunctionのbodyに繋ぐ */
+	std::unique_ptr<Function> prog = std::make_unique<Function>(std::move(head->_next), std::move(locals));
+	return std::move(prog);
 }

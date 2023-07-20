@@ -40,9 +40,8 @@ void CodeGen::generate_address(node_ptr &&node)
 	/* 1変数当たり8バイト確保 */
 	if (NodeKind::ND_VAR == node->_kind)
 	{
-		int offset = (node->_name[0] - 'a' + 1) * 8;
 		cout << " mov rax, rbp\n";
-		cout << " sub rax, " << offset << "\n";
+		cout << " sub rax, " << node->_var->_offset << "\n";
 		return;
 	}
 	error("左辺値ではありません");
@@ -169,20 +168,24 @@ void CodeGen::generate_statement(node_ptr &&node)
  * @brief
  * プログラム全体のコードを出力する。
  */
-void CodeGen::generate_code(node_ptr &&node)
+void CodeGen::generate_code(std::unique_ptr<Function> &&program)
 {
 	/* アセンブリの前半部分を出力 */
 	cout << ".intel_syntax noprefix\n";
 	cout << ".globl main\n";
 	cout << "main:\n";
 
+	/* スタックサイズを計算 */
+	program->assign_lvar_offsets();
+
 	/* プロローグ */
-	/* 変数２６個分の領域を確保する */
+	/* スタックサイズの領域を確保する */
 	/* 1変数につき8バイト */
 	cout << " push rbp\n";
 	cout << " mov rbp, rsp\n";
-	cout << " sub rsp, 208\n";
+	cout << " sub rsp, "<<  program->_stack_size <<"\n";
 
+	node_ptr node = std::move(program->_body);
 	for (node_ptr next_node = std::move(node->_next); node;)
 	{
 		generate_statement(std::move(node));

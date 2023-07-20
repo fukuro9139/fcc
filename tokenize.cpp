@@ -35,7 +35,17 @@ void error_at(std::string &&msg, std::string::const_iterator &&location)
 /** @brief コンストラクタ */
 Token::Token() = default;
 
+Token::Token(TokenKind &&kind, std::string::const_iterator &&first, const std::string::const_iterator &last)
+	:_length(last - first), _kind(std::move(kind)), _location(std::move(first))
+{
+}
+
 Token::Token(TokenKind &&kind, const std::string::const_iterator &first, std::string::const_iterator &&last)
+	: _kind(std::move(kind)), _location(first), _length(last - first)
+{
+}
+
+Token::Token(TokenKind &&kind, const std::string::const_iterator &first, const std::string::const_iterator &last)
 	: _kind(std::move(kind)), _location(first), _length(last - first)
 {
 }
@@ -82,12 +92,20 @@ token_ptr Token::tokenize(std::string &&input)
 		}
 
 		/* 変数 */
-		if ('a' <= *itr && *itr <= 'z')
+		if (is_first_char_of_ident(*itr))
 		{
+			/* 先頭は現在のイテレーター */
+			auto start = itr;
+			/* 1文字ずつ識別子となりうる文字かみていく */
+			/* 識別子となりえない文字が出てくるまで1つの識別子として認識する */
+			do
+			{
+				++itr;
+			} while (is_char_of_ident(*itr));
+
 			/* 新しいトークンを生成してcurに繋ぎcurを一つ進める */
-			current_token->_next = std::make_unique<Token>(TokenKind::TK_IDENT, itr, itr + 1);
+			current_token->_next = std::make_unique<Token>(TokenKind::TK_IDENT, std::move(start), itr);
 			current_token = current_token->_next.get();
-			++itr;
 			continue;
 		}
 
@@ -161,4 +179,24 @@ size_t Token::read_punct(const std::string::const_iterator &first, const std::st
 		return 2;
 	}
 	return std::ispunct(*first) ? 1 : 0;
+}
+
+/**
+ * @brief
+ * cが識別子の先頭の文字となりうるか判定。
+ * アルファベットの小文字 or 大文字 or アンダースコア'_'
+ */
+bool Token::is_first_char_of_ident(const char &c)
+{
+	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+/**
+ * @brief
+ * cが識別子の先頭以外の文字となりうるか判定。
+ * アルファベットの小文字 or 大文字 or アンダースコア'_' or 数字
+ * */
+bool Token::is_char_of_ident(const char &c)
+{
+	return is_first_char_of_ident(c) || ('0' <= c && c <= '9');
 }

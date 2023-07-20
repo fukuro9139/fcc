@@ -30,7 +30,9 @@ public:
 	size_t _length = 0;						/** トークンの長さ */
 
 	Token();
+	Token(TokenKind &&kind, std::string::const_iterator &&first, const std::string::const_iterator &last);
 	Token(TokenKind &&kind, const std::string::const_iterator &first, std::string::const_iterator &&last);
+	Token(TokenKind &&kind, const std::string::const_iterator &first, const std::string::const_iterator &last);
 	Token(const std::string::const_iterator &location, int &&val);
 
 	static std::unique_ptr<Token> tokenize(std::string &&input);
@@ -40,4 +42,6 @@ public:
 private:
 	static bool start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, std::string &&op);
 	static size_t read_punct(const std::string::const_iterator &first, const std::string::const_iterator &last);
+	static bool is_first_char_of_ident(const char &c);
+	static bool is_char_of_ident(const char &c);
 };

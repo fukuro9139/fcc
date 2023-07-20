@@ -10,7 +10,7 @@
 class CodeGen
 {
 public:
-	static void generate_code(std::unique_ptr<Node> &&node);
+	static void generate_code(std::unique_ptr<Function> &&program);
 
 private:
 	static void push();
