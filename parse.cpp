@@ -8,6 +8,8 @@ using obj_ptr = std::unique_ptr<Object>;
 /* パース中に生成される全てのローカル変数はこのリストに連結される。 */
 static obj_ptr locals = nullptr;
 
+/****************************** Object class ******************************/
+
 /* コンストラクタ */
 Object::Object() = default;
 
@@ -24,7 +26,7 @@ const Object *Object::new_lvar(std::string &&name)
 {
 	obj_ptr var = std::make_unique<Object>(std::move(name));
 	var->_next = std::move(locals);
-		locals = std::move(var);
+	locals = std::move(var);
 	return locals.get();
 }
 
@@ -44,6 +46,8 @@ const Object *Object::find_var(const token_ptr &token)
 	return nullptr;
 }
 
+/****************************** Function class ******************************/
+
 /* コンストラクタ */
 Function::Function() = default;
 
@@ -56,23 +60,25 @@ Function::Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&local
  * @brief
  * 'n'を切り上げて最も近い'align'の倍数にする。
  * 例：align_to(5,8) = 8, align_to(11,8) = 16
-*/
-int Function::align_to(int && n, int && align)
+ */
+int Function::align_to(int &&n, int &&align)
 {
-	return (n + align -1) / align * align;
+	return (n + align - 1) / align * align;
 }
 
 /* プログラムに必要なスタックサイズを計算する */
 void Function::assign_lvar_offsets()
 {
 	int offset = 0;
-	for(Object* var = this->_locals.get(); var;var = var->_next.get()){
+	for (Object *var = this->_locals.get(); var; var = var->_next.get())
+	{
 		offset += 8;
 		var->_offset = offset;
 	}
 	this->_stack_size = align_to(std::move(offset), 16);
 }
 
+/****************************** Node class ******************************/
 
 Node::Node() = default;
 
@@ -305,7 +311,8 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	if (TokenKind::TK_IDENT == token->_kind)
 	{
 		const Object *var = Object::find_var(token);
-		if(!var){
+		if (!var)
+		{
 			var = Object::new_lvar(std::string(token->_location, token->_location + token->_length));
 		}
 		current_token = std::move(token->_next);

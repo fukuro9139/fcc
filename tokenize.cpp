@@ -36,7 +36,7 @@ void error_at(std::string &&msg, std::string::const_iterator &&location)
 Token::Token() = default;
 
 Token::Token(TokenKind &&kind, std::string::const_iterator &&first, const std::string::const_iterator &last)
-	:_length(last - first), _kind(std::move(kind)), _location(std::move(first))
+	: _length(last - first), _kind(std::move(kind)), _location(std::move(first))
 {
 }
 

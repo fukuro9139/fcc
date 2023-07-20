@@ -183,7 +183,7 @@ void CodeGen::generate_code(std::unique_ptr<Function> &&program)
 	/* 1変数につき8バイト */
 	cout << " push rbp\n";
 	cout << " mov rbp, rsp\n";
-	cout << " sub rsp, "<<  program->_stack_size <<"\n";
+	cout << " sub rsp, " << program->_stack_size << "\n";
 
 	node_ptr node = std::move(program->_body);
 	for (node_ptr next_node = std::move(node->_next); node;)

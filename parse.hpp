@@ -4,8 +4,6 @@
 #include <memory>
 #include <string>
 
-
-
 /** @brief ノードの種類 */
 enum class NodeKind
 {
@@ -33,7 +31,7 @@ struct Object
 	int _offset = 0;						 /* RBPからのオフセット */
 
 	Object();
-	Object(std::string && name);
+	Object(std::string &&name);
 
 	static const Object *new_lvar(std::string &&name);
 
@@ -46,9 +44,9 @@ class Node;
 /* 関数 */
 struct Function
 {
-	std::unique_ptr<Node> _body = nullptr;	/* 関数の表す内容を抽象構文木で表す。根のノードを持つ */
+	std::unique_ptr<Node> _body = nullptr;	   /* 関数の表す内容を抽象構文木で表す。根のノードを持つ */
 	std::unique_ptr<Object> _locals = nullptr; /* オブジェクトとしての情報 */
-	int _stack_size = 0;					/* 使用するスタックの深さ */
+	int _stack_size = 0;					   /* 使用するスタックの深さ */
 
 	Function();
 	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals);
@@ -69,7 +67,7 @@ public:
 	std::unique_ptr<Node> _rhs = nullptr;	 /* 右辺 */
 	std::unique_ptr<Node> _next = nullptr;	 /* ノードが木のrootである場合、次の木のrootノード */
 	int _val = 0;							 /* kindがND_NUMの場合のみ使う、数値の値 */
-	const Object *_var = nullptr;	 /* kindがND_VARの場合のみ使う、 オブジェクトの情報*/
+	const Object *_var = nullptr;			 /* kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
 	Node();
 	Node(NodeKind &&kind);
