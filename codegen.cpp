@@ -167,11 +167,11 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		cout << " jmp .L.end." << c << "\n";
 		
 		/* falseのとき実行 */
-		cout << " .L.else." << c << "\n";
+		cout << ".L.else." << c << ":\n";
 		if(node->_else){
 			generate_statement(std::move(node->_else));
 		}
-		cout << " .L.end." << c << "\n";
+		cout << ".L.end." << c << ":\n";
 		return;
 	}
 
