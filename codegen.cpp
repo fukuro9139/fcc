@@ -189,7 +189,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		if(node->_condition){
 			generate_expression(std::move(node->_condition));
 			cout << " cmp rax, 0\n";
-			cout << " je .L.end." << c << ":\n";
+			cout << " je .L.end." << c << "\n";
 		}
 		generate_statement(std::move(node->_then));
 		/* 加算処理 */
