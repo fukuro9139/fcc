@@ -1,3 +1,16 @@
+/**
+ * @file codegen.cpp
+ * @author K.fukunaga
+ * @brief 抽象構文木(AST)を意味解析してアセンブリを出力するコードジェネレーターの定義。
+ *
+ * x86-64用のアセンブリをIntel記法で出力する。
+ * @version 0.1
+ * @date 2023-07-22
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include "codegen.hpp"
 
 using std::cout;
@@ -8,34 +21,51 @@ using std::unique_ptr;
 /** スタックの深さ */
 static int depth = 0;
 
+/**
+ * @brief 新しいラベルの通し番号を返す。
+ *
+ * @return これまでに用意したラベルの数+1
+ */
 int CodeGen::label_count()
 {
 	static int i = 1;
 	return i++;
 }
 
+/** @brief 'rax'の数値をスタックにpushする */
 void CodeGen::push()
 {
 	cout << " push rax\n";
 	++depth;
 }
 
+/**
+ * @brief スタックからpopした数値を指定したレジスタにセットする
+ *
+ * @param reg 数値をセットするレジスタ
+ */
 void CodeGen::pop(string &&reg)
 {
 	cout << " pop " << reg << "\n";
 	--depth;
 }
 
+/**
+ * @brief 変数ノードの絶対アドレスを計算して'rax'にセットするコード
+ *
+ * @note ノードが変数ではないときエラーとする。
+ * @param node 対象ノード
+ */
 void CodeGen::generate_address(unique_ptr<Node> &&node)
 {
 	switch (node->_kind)
 	{
-	case ND_VAR:
+	case NodeKind::ND_VAR:
 		cout << " mov rax, rbp\n";
 		cout << " sub rax, " << node->_var->_offset << "\n";
 		return;
 	case NodeKind::ND_DEREF:
-		generate_expression(node->_lhs);
+		generate_expression(std::move(node->_lhs));
 		return;
 	default:
 		break;
@@ -43,6 +73,11 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	error_at("左辺値ではありません", std::move(node->_location));
 }
 
+/**
+ * @brief 式をアセンブリに変換
+ *
+ * @param node 変換対象のAST
+ */
 void CodeGen::generate_expression(unique_ptr<Node> &&node)
 {
 	switch (node->_kind)
@@ -69,14 +104,14 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	/* 参照外し */
 	case NodeKind::ND_DEREF:
 		/* 参照先のアドレスを計算 */
-		generate_expression(node->_lhs);
+		generate_expression(std::move(node->_lhs));
 		/* 参照先のアドレスの数値をセット */
 		cout << " mov rax, [rax]\n";
 		return;
 	/* 参照 */
 	case NodeKind::ND_ADDR:
 		/* アドレスを計算 */
-		generate_address(node->_lhs);
+		generate_address(std::move(node->_lhs));
 		return;
 	/* 代入 */
 	case NodeKind::ND_ASSIGN:
@@ -153,6 +188,11 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	error_at("不正な式です", std::move(node->_location));
 }
 
+/**
+ * @brief 文をアセンブリに変換
+ *
+ * @param node 変換対象のAST
+ */
 void CodeGen::generate_statement(unique_ptr<Node> &&node)
 {
 
@@ -252,6 +292,11 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 	error_at("不正な構文です", std::move(node->_location));
 }
 
+/**
+ * @brief 関数ごとにASTを意味解析し、Intel記法でアセンブリを出力する
+ *
+ * @param program アセンブリを出力する対象関数
+ */
 void CodeGen::generate_code(unique_ptr<Function> &&program)
 {
 	/* アセンブリの前半部分を出力 */
