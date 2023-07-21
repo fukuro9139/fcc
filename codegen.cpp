@@ -158,7 +158,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		/* 条件を評価 */
 		generate_expression(std::move(node->_condition));
 		/* 条件を比較 */
-		cout << " cmp rax 0\n";
+		cout << " cmp rax, 0\n";
 		/* 条件がfalseなら.L.else.cラベルに飛ぶ */
 		cout << " je .L.else." << c << "\n";
 		/* trueのときに実行 */
