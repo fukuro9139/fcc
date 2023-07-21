@@ -133,6 +133,11 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 
 unique_ptr<Node> Node::expr_stmt(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
+	/* 空のstatementに対応 */
+	if(Token::is_equal(token, ";")){
+		next_token = std::move(current_token->_next);
+		return std::make_unique<Node>(NodeKind::ND_BLOCK);
+	}
 	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(current_token, std::move(current_token)));
 	/* expression-statementは';'で終わるはず */
 	next_token = Token::skip(std::move(current_token), ";");
