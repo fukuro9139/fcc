@@ -9,17 +9,17 @@ using node_ptr = std::unique_ptr<Node>;
 /* スタックの深さ */
 static int depth = 0;
 
-/**
+/******************************************************************************************************
  * @brief
  * スタックにpushするコードを生成
- */
+ *****************************************************************************************************/
 void CodeGen::push()
 {
 	cout << " push rax\n";
 	++depth;
 }
 
-/**
+/******************************************************************************************************
  * @brief
  * スタックからpopしてregに値を書き込むコードを生成
  */
@@ -29,12 +29,12 @@ void CodeGen::pop(string &&reg)
 	--depth;
 }
 
-/**
+/******************************************************************************************************
  * @brief
  * 変数ノードの絶対アドレスを計算する。
  * 計算結果は'rax'にストアする
  * ノードが変数ではないときエラーとする。
- */
+ *****************************************************************************************************/
 void CodeGen::generate_address(node_ptr &&node)
 {
 	/* 1変数当たり8バイト確保 */
@@ -47,11 +47,11 @@ void CodeGen::generate_address(node_ptr &&node)
 	error("左辺値ではありません");
 }
 
-/**
+/******************************************************************************************************
  * @brief
- * 式ノードのコードを出力する。
+ * expressionを処理する。
  * 計算結果はraxにストア
- */
+ *****************************************************************************************************/
 void CodeGen::generate_expression(node_ptr &&node)
 {
 	switch (node->_kind)
@@ -150,13 +150,13 @@ void CodeGen::generate_expression(node_ptr &&node)
 	error("不正な式です");
 }
 
-/**
+/******************************************************************************************************
  * @brief
- * 文ノードのコードを出力する。
- * ノードが文ノードでないときエラーとする
- */
+ * statementのコードを出力する
+ *****************************************************************************************************/
 void CodeGen::generate_statement(node_ptr &&node)
 {
+
 	switch (node->_kind)
 	{
 	case NodeKind::ND_RETURN:
@@ -168,15 +168,37 @@ void CodeGen::generate_statement(node_ptr &&node)
 	case NodeKind::ND_EXPR_STMT:
 		generate_expression(std::move(node->_lhs));
 		return;
+	case NodeKind::ND_BLOCK:
+	{
+		/* これから処理を進めていくノード */
+		node_ptr current_node = std::move(node->_body);
+
+		/* ブロックの中が空なら何もしない */
+		if (!current_node)
+		{
+			return;
+		}
+		/* Bodyに含まれるノードをすべて評価する */
+		for (node_ptr next_node = std::move(current_node->_next); current_node;)
+		{
+			generate_statement(std::move(current_node));
+			current_node = std::move(next_node);
+			if (current_node)
+			{
+				next_node = std::move(current_node->_next);
+			}
+		}
+		return;
+	}
 	default:
 		break;
 	}
 	error("不正な文です");
 }
-/**
+/******************************************************************************************************
  * @brief
  * プログラム全体のコードを出力する。
- */
+ *****************************************************************************************************/
 void CodeGen::generate_code(std::unique_ptr<Function> &&program)
 {
 	/* アセンブリの前半部分を出力 */
@@ -194,17 +216,9 @@ void CodeGen::generate_code(std::unique_ptr<Function> &&program)
 	cout << " mov rbp, rsp\n";
 	cout << " sub rsp, " << program->_stack_size << "\n";
 
-	node_ptr node = std::move(program->_body);
-	for (node_ptr next_node = std::move(node->_next); node;)
-	{
-		generate_statement(std::move(node));
-		node = std::move(next_node);
-		if (node)
-		{
-			next_node = std::move(node->_next);
-		}
-		assert(0 == depth);
-	}
+	generate_statement(std::move(program->_body));
+	assert(0 == depth);
+
 	/* エピローグ */
 	/* 最後の結果がRAXに残っているのでそれが返り値になる */
 	cout << ".L.return:\n";

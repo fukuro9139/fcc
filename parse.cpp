@@ -1,12 +1,8 @@
 #include "parse.hpp"
 
-using node_ptr = std::unique_ptr<Node>;
-using token_ptr = std::unique_ptr<Token>;
-using obj_ptr = std::unique_ptr<Object>;
-
 /* 変数や関数オブジェクトのリスト */
 /* パース中に生成される全てのローカル変数はこのリストに連結される。 */
-static obj_ptr locals = nullptr;
+static std::unique_ptr<Object> locals = nullptr;
 
 /****************************** Object class ******************************/
 
@@ -17,24 +13,24 @@ Object::Object(std::string &&name) : _name(std::move(name))
 {
 }
 
-/**
+/******************************************************************************************************
  * @brief
  * nameを名前として持つ新しい変数を生成してlocalsの先頭に追加する。
  * 生成した変数へのポインタを返す。
- */
+ ******************************************************************************************************/
 const Object *Object::new_lvar(std::string &&name)
 {
-	obj_ptr var = std::make_unique<Object>(std::move(name));
+	std::unique_ptr<Object> var = std::make_unique<Object>(std::move(name));
 	var->_next = std::move(locals);
 	locals = std::move(var);
 	return locals.get();
 }
 
-/**
+/******************************************************************************************************
  * @brief
  * 変数を名前で検索する。見つからなかった場合はNULLを返す。
- */
-const Object *Object::find_var(const token_ptr &token)
+ ******************************************************************************************************/
+const Object *Object::find_var(const std::unique_ptr<Token> &token)
 {
 	for (const Object *val = locals.get(); val; val = val->_next.get())
 	{
@@ -56,11 +52,11 @@ Function::Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&local
 {
 }
 
-/**
+/******************************************************************************************************
  * @brief
  * 'n'を切り上げて最も近い'align'の倍数にする。
  * 例：align_to(5,8) = 8, align_to(11,8) = 16
- */
+ *****************************************************************************************************/
 int Function::align_to(int &&n, int &&align)
 {
 	return (n + align - 1) / align * align;
@@ -87,7 +83,7 @@ Node::Node(NodeKind &&kind)
 {
 }
 
-Node::Node(NodeKind &&kind, node_ptr &&lhs)
+Node::Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs)
 	: _kind(std::move(kind)), _lhs(std::move(lhs))
 {
 }
@@ -102,56 +98,115 @@ Node::Node(const Object *var)
 {
 }
 
-Node::Node(NodeKind &&kind, node_ptr &&lhs, node_ptr &&rhs)
+Node::Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs)
 	: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs))
 {
 }
 
-/**
+/******************************************************************************************************
  * @brief
- * statement = "return" expression ";" | expression-statement
- */
-node_ptr Node::statement(token_ptr &current_token, token_ptr &&token)
+ * statement ノードを生成する。
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 下記のEBNF規則に従う。 @n
+ * statement = "return" expression ";" | "{" compound-stmt | expression-statement
+ *****************************************************************************************************/
+std::unique_ptr<Node> Node::statement(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
 	if (Token::is_equal(token, "return"))
 	{
-		node_ptr node = std::make_unique<Node>(NodeKind::ND_RETURN, expression(token, std::move(token->_next)));
-		/* 文は';'で終わるはず */
+		/* "return"の次はexpresionがくる */
+		std::unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_RETURN, expression(token, std::move(token->_next)));
+		/* 最後は';'で終わるはず */
 		current_token = Token::skip(std::move(token), ";");
 		return node;
+	}
+
+	if (Token::is_equal(token, "{"))
+	{
+		return compound_statement(current_token, std::move(token));
 	}
 
 	return expr_stmt(current_token, std::move(token));
 }
 
-/**
+/******************************************************************************************************
  * @brief
- * expression-statement = expression ";"
- */
-node_ptr Node::expr_stmt(token_ptr &current_token, token_ptr &&token)
+ * compound_statementノードを生成する。
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 下記のEBNF規則に従う。 @n
+ * compound-stmt = stmt* "}"
+ *****************************************************************************************************/
+std::unique_ptr<Node> Node::compound_statement(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
-	node_ptr node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(token, std::move(token)));
-	/* 文は';'で終わるはず */
+	std::unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
+	Node *cur = head.get();
+	/* '}'が出てくるまでstatementをパースする */
+	while (!Token::is_equal(token, "}"))
+	{
+		cur->_next = statement(token, std::move(token));
+		cur = cur->_next.get();
+	}
+
+	/* ダミーのheadからの次のトークン以降を切り離し、新しいノードのbodyに繋ぐ*/
+	std::unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_BLOCK);
+	node->_body = std::move(head->_next);
+	/* '}' の次のトークンからパースを続ける*/
+	current_token = std::move(token->_next);
+	return node;
+}
+
+/******************************************************************************************************
+ * @brief
+ * expression-statementノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 下記のEBNF規則に従う。 @n
+ * expression-statement = expression ';'
+ *******************************************************************************************************/
+std::unique_ptr<Node> Node::expr_stmt(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
+{
+	std::unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(token, std::move(token)));
+	/* expression-statementは';'で終わるはず */
 	current_token = Token::skip(std::move(token), ";");
 	return node;
 }
 
-/**
+/******************************************************************************************************
  * @brief
+ * expressionノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * expression = assign
- */
-node_ptr Node::expression(token_ptr &current_token, token_ptr &&token)
+ *****************************************************************************************************/
+std::unique_ptr<Node> Node::expression(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
 	return assign(current_token, std::move(token));
 }
 
-/**
+/******************************************************************************************************
  * @brief
+ * assignノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * assign = equality ("=" assign)?
- */
-node_ptr Node::assign(token_ptr &current_token, token_ptr &&token)
+ *****************************************************************************************************/
+std::unique_ptr<Node> Node::assign(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
-	node_ptr node = equality(token, std::move(token));
+	std::unique_ptr<Node> node = equality(token, std::move(token));
 	if (Token::is_equal(token, "="))
 	{
 		node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), assign(token, std::move(token->_next)));
@@ -160,13 +215,19 @@ node_ptr Node::assign(token_ptr &current_token, token_ptr &&token)
 	return node;
 }
 
-/**
+/******************************************************************************************************
  * @brief
+ * equalityノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * equality = relational ("==" relational | "!=" relational)*
- */
-node_ptr Node::equality(token_ptr &current_token, token_ptr &&token)
+ *****************************************************************************************************/
+std::unique_ptr<Node> Node::equality(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
-	node_ptr node = relational(token, std::move(token));
+	std::unique_ptr<Node> node = relational(token, std::move(token));
 
 	for (;;)
 	{
@@ -187,13 +248,19 @@ node_ptr Node::equality(token_ptr &current_token, token_ptr &&token)
 	}
 }
 
-/**
+/******************************************************************************************************
  * @brief
+ * relationalノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * relational = add ("<" add | "<=" add | ">" add | ">=" add)*
- */
-node_ptr Node::relational(token_ptr &current_token, token_ptr &&token)
+ *****************************************************************************************************/
+std::unique_ptr<Node> Node::relational(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
-	node_ptr node = add(token, std::move(token));
+	std::unique_ptr<Node> node = add(token, std::move(token));
 
 	for (;;)
 	{
@@ -230,11 +297,17 @@ node_ptr Node::relational(token_ptr &current_token, token_ptr &&token)
 
 /**
  * @brief
+ * addノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * add = mul ("+" mul | "-" mul)*
  */
-node_ptr Node::add(token_ptr &current_token, token_ptr &&token)
+std::unique_ptr<Node> Node::add(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
-	node_ptr node = mul(token, std::move(token));
+	std::unique_ptr<Node> node = mul(token, std::move(token));
 
 	for (;;)
 	{
@@ -255,13 +328,24 @@ node_ptr Node::add(token_ptr &current_token, token_ptr &&token)
 	}
 }
 
+/******************************************************************************************************
+ * @brief
+ *
+ *****************************************************************************************************/
+
 /**
  * @brief
+ * mulノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * mul = unary ("*" unary | "/" unary)*
  */
-node_ptr Node::mul(token_ptr &current_token, token_ptr &&token)
+std::unique_ptr<Node> Node::mul(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
-	node_ptr node = unary(token, std::move(token));
+	std::unique_ptr<Node> node = unary(token, std::move(token));
 
 	for (;;)
 	{
@@ -284,9 +368,15 @@ node_ptr Node::mul(token_ptr &current_token, token_ptr &&token)
 
 /**
  * @brief
+ * unaryノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * unary = ("+" | "-") unary
  */
-node_ptr Node::unary(token_ptr &current_token, token_ptr &&token)
+std::unique_ptr<Node> Node::unary(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
 	if (Token::is_equal(token, "+"))
 	{
@@ -303,14 +393,20 @@ node_ptr Node::unary(token_ptr &current_token, token_ptr &&token)
 
 /**
  * @brief
+ * primaryノードを生成する
+ * @param current_token
+ * @param token
+ * @return std::unique_ptr<Node>
+ * @details
+ * 次のEBNF規則に従う
  * primary = "(" expression ")" | ident | num
  */
-node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
+std::unique_ptr<Node> Node::primary(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token)
 {
 	/* トークンが"("なら、"(" expression ")"のはず */
 	if (Token::is_equal(token, "("))
 	{
-		node_ptr node = expression(token, std::move(token->_next));
+		std::unique_ptr<Node> node = expression(token, std::move(token->_next));
 		current_token = Token::skip(std::move(token), ")");
 		return node;
 	}
@@ -330,7 +426,7 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	/* トークンが数値の場合 */
 	if (TokenKind::TK_NUM == token->_kind)
 	{
-		node_ptr node = std::make_unique<Node>(std::move(token->_value));
+		std::unique_ptr<Node> node = std::make_unique<Node>(std::move(token->_value));
 		current_token = std::move(token->_next);
 		return node;
 	}
@@ -342,24 +438,22 @@ node_ptr Node::primary(token_ptr &current_token, token_ptr &&token)
 	return nullptr;
 }
 
+
+
 /**
- * @brief
+ * @brief 
+ * トークン列をパースして抽象構文木を構築する
+ * @param token 
+ * @return std::unique_ptr<Function> 
+ * @details
+ * 次のEBNF規則に従う
  * program = statement*
  */
 std::unique_ptr<Function> Node::parse(std::unique_ptr<Token> &&token)
 {
-	/* スタート地点としてダミーのノードを作る */
-	node_ptr head = std::make_unique_for_overwrite<Node>();
-	Node *current_node = head.get();
+	/* 最初の'{'を飛ばす */
+	token = std::move(Token::skip(std::move(token), "{"));
 
-	while (TokenKind::TK_EOF != token->_kind)
-	{
-		/* 現在の文から新しく抽象構文木を構築して木の根を現在のノードにに繋ぐ */
-		current_node->_next = statement(token, std::move(token));
-		/* 現在のノードを進める */
-		current_node = current_node->_next.get();
-	}
-	/* ダミーの次のノード以降を切り離してFunctionのbodyに繋ぐ */
-	std::unique_ptr<Function> prog = std::make_unique<Function>(std::move(head->_next), std::move(locals));
+	std::unique_ptr<Function> prog = std::make_unique<Function>(std::move(compound_statement(token, std::move(token))), std::move(locals));
 	return std::move(prog);
 }

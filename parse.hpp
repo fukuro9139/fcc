@@ -14,6 +14,7 @@ enum class NodeKind
 	ND_NEG,		  /* 負の単項 */
 	ND_ASSIGN,	  /* = */
 	ND_RETURN,	  /* return */
+	ND_BLOCK,	  /* {...} */
 	ND_EQ,		  /* == */
 	ND_NE,		  /* != */
 	ND_LT,		  /* < */
@@ -67,8 +68,11 @@ public:
 	std::unique_ptr<Node> _lhs = nullptr;	 /* 左辺 */
 	std::unique_ptr<Node> _rhs = nullptr;	 /* 右辺 */
 	std::unique_ptr<Node> _next = nullptr;	 /* ノードが木のrootである場合、次の木のrootノード */
-	int _val = 0;							 /* kindがND_NUMの場合のみ使う、数値の値 */
-	const Object *_var = nullptr;			 /* kindがND_VARの場合のみ使う、 オブジェクトの情報*/
+
+	std::unique_ptr<Node> _body = nullptr; /* ブロック内{...}には複数の式を入れられる */
+
+	int _val = 0;				  /* kindがND_NUMの場合のみ使う、数値の値 */
+	const Object *_var = nullptr; /* kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
 	Node();
 	Node(NodeKind &&kind);
@@ -81,6 +85,7 @@ public:
 
 private:
 	static std::unique_ptr<Node> statement(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Node> compound_statement(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
 	static std::unique_ptr<Node> expression(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
 	static std::unique_ptr<Node> expr_stmt(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
 	static std::unique_ptr<Node> assign(std::unique_ptr<Token> &current_token, std::unique_ptr<Token> &&token);
