@@ -170,6 +170,8 @@ public:
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
+	std::string::const_iterator _location;	/* ノードと対応する入力文字列の位置 */
+
 	/*****************/
 	/* コンストラクタ */
 	/*****************/
@@ -185,7 +187,7 @@ public:
 	 *
 	 * @param kind ノードの種類
 	 */
-	Node(NodeKind &&kind);
+	Node(NodeKind &&kind, const std::string::const_iterator &location);
 
 	/**
 	 * @brief Construct a new Node object
@@ -194,7 +196,7 @@ public:
 	 * @param lhs 左辺のノード
 	 * @param rhs 右辺のノード
 	 */
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const std::string::const_iterator &location);
 
 	/**
 	 * @brief Construct a new Node object
@@ -202,21 +204,21 @@ public:
 	 * @param kind ノードの種類
 	 * @param lhs 左辺のノード
 	 */
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const std::string::const_iterator &location);
 
 	/**
 	 * @brief Construct a new Node object
 	 *
 	 * @param val ノードが表す数値
 	 */
-	Node(int &&val);
+	Node(int &&val, const std::string::const_iterator &location);
 
 	/**
 	 * @brief Construct a new Node object
 	 *
 	 * @param var ノードが表す変数
 	 */
-	Node(const Object *var);
+	Node(const Object *var, const std::string::const_iterator &location);
 
 	/**************************/
 	/* 静的メンバ関数 (public) */

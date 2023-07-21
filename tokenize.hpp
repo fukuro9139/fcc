@@ -69,24 +69,6 @@ public:
 	 * @param first トークン文字列の開始位置のイテレーター
 	 * @param last トークン文字列の末端位置のイテレーター
 	 */
-	Token(TokenKind &&kind, std::string::const_iterator &&first, const std::string::const_iterator &last);
-
-	/**
-	 * @brief Construct a new Token object
-	 *
-	 * @param kind トークンの種類
-	 * @param first トークン文字列の開始位置のイテレーター
-	 * @param last トークン文字列の末端位置のイテレーター
-	 */
-	Token(TokenKind &&kind, const std::string::const_iterator &first, std::string::const_iterator &&last);
-
-	/**
-	 * @brief Construct a new Token object
-	 *
-	 * @param kind トークンの種類
-	 * @param first トークン文字列の開始位置のイテレーター
-	 * @param last トークン文字列の末端位置のイテレーター
-	 */
 	Token(TokenKind &&kind, const std::string::const_iterator &first, const std::string::const_iterator &last);
 
 	/**
@@ -189,5 +171,5 @@ private:
 	 * @return true キーワードである
 	 * @return false キーワードではない
 	 */
-	static bool is_keyword(Token* &token);
+	static bool is_keyword(Token *&token);
 };

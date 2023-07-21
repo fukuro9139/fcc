@@ -35,7 +35,7 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 		cout << " sub rax, " << node->_var->_offset << "\n";
 		return;
 	}
-	error("左辺値ではありません");
+	error_at("左辺値ではありません", std::move(node->_location));
 }
 
 void CodeGen::generate_expression(unique_ptr<Node> &&node)
@@ -133,7 +133,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	}
 
 	/* エラー */
-	error("不正な式です");
+	error_at("不正な式です", std::move(node->_location));
 }
 
 void CodeGen::generate_statement(unique_ptr<Node> &&node)
@@ -232,7 +232,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 	default:
 		break;
 	}
-	error("不正な文です");
+	error_at("不正な構文です", std::move(node->_location));
 }
 
 void CodeGen::generate_code(unique_ptr<Function> &&program)

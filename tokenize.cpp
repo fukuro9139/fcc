@@ -33,16 +33,6 @@ void error_at(string &&msg, string::const_iterator &&location)
 
 Token::Token() = default;
 
-Token::Token(TokenKind &&kind, string::const_iterator &&first, const string::const_iterator &last)
-	: _length(last - first), _kind(std::move(kind)), _location(std::move(first))
-{
-}
-
-Token::Token(TokenKind &&kind, const string::const_iterator &first, string::const_iterator &&last)
-	: _kind(std::move(kind)), _location(first), _length(last - first)
-{
-}
-
 Token::Token(TokenKind &&kind, const string::const_iterator &first, const string::const_iterator &last)
 	: _kind(std::move(kind)), _location(first), _length(last - first)
 {
@@ -98,7 +88,7 @@ unique_ptr<Token> Token::tokenize(string &&input)
 			} while (is_char_of_ident(*itr));
 
 			/* 新しいトークンを生成してcurに繋ぎcurを一つ進める */
-			current_token->_next = std::make_unique<Token>(TokenKind::TK_IDENT, std::move(start), itr);
+			current_token->_next = std::make_unique<Token>(TokenKind::TK_IDENT, start, itr);
 			current_token = current_token->_next.get();
 			continue;
 		}
@@ -118,7 +108,7 @@ unique_ptr<Token> Token::tokenize(string &&input)
 	}
 
 	/* 最後に終端トークンを作成して繋ぐ */
-	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, itr, std::move(itr));
+	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, itr, itr);
 	/* キーワードトークンを識別子トークンから分離する */
 	Token::convert_keywords(head->_next);
 	/* ダミーの次のトークン以降を切り離して返す */
