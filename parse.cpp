@@ -518,7 +518,7 @@ unique_ptr<Node> Node::mul(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-") unary
+ * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&") unary
  */
 unique_ptr<Node> Node::unary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
@@ -530,6 +530,16 @@ unique_ptr<Node> Node::unary(unique_ptr<Token> &next_token, unique_ptr<Token> &&
 	if (Token::is_equal(current_token, "-"))
 	{
 		return std::make_unique<Node>(NodeKind::ND_NEG, unary(next_token, std::move(current_token->_next)), current_token->_location);
+	}
+
+	if (Token::is_equal(current_token, "&"))
+	{
+		return std::make_unique<Node>(NodeKind::ND_ADDR, unary(next_token, std::move(current_token->_next)), current_token->_location);
+	}
+
+	if (Token::is_equal(current_token, "*"))
+	{
+		return std::make_unique<Node>(NodeKind::ND_DEREF, unary(next_token, std::move(current_token->_next)), current_token->_location);
 	}
 
 	return primary(next_token, std::move(current_token));
