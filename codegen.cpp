@@ -3,39 +3,24 @@
 using std::cout;
 using std::endl;
 using std::string;
+using std::unique_ptr;
 
-using node_ptr = std::unique_ptr<Node>;
-
-/* スタックの深さ */
+/** スタックの深さ */
 static int depth = 0;
 
-/******************************************************************************************************
- * @brief
- * スタックにpushするコードを生成
- *****************************************************************************************************/
 void CodeGen::push()
 {
 	cout << " push rax\n";
 	++depth;
 }
 
-/******************************************************************************************************
- * @brief
- * スタックからpopしてregに値を書き込むコードを生成
- */
 void CodeGen::pop(string &&reg)
 {
 	cout << " pop " << reg << "\n";
 	--depth;
 }
 
-/******************************************************************************************************
- * @brief
- * 変数ノードの絶対アドレスを計算する。
- * 計算結果は'rax'にストアする
- * ノードが変数ではないときエラーとする。
- *****************************************************************************************************/
-void CodeGen::generate_address(node_ptr &&node)
+void CodeGen::generate_address(unique_ptr<Node> &&node)
 {
 	/* 1変数当たり8バイト確保 */
 	if (NodeKind::ND_VAR == node->_kind)
@@ -47,12 +32,7 @@ void CodeGen::generate_address(node_ptr &&node)
 	error("左辺値ではありません");
 }
 
-/******************************************************************************************************
- * @brief
- * expressionを処理する。
- * 計算結果はraxにストア
- *****************************************************************************************************/
-void CodeGen::generate_expression(node_ptr &&node)
+void CodeGen::generate_expression(unique_ptr<Node> &&node)
 {
 	switch (node->_kind)
 	{
@@ -150,11 +130,7 @@ void CodeGen::generate_expression(node_ptr &&node)
 	error("不正な式です");
 }
 
-/******************************************************************************************************
- * @brief
- * statementのコードを出力する
- *****************************************************************************************************/
-void CodeGen::generate_statement(node_ptr &&node)
+void CodeGen::generate_statement(unique_ptr<Node> &&node)
 {
 
 	switch (node->_kind)
@@ -171,7 +147,7 @@ void CodeGen::generate_statement(node_ptr &&node)
 	case NodeKind::ND_BLOCK:
 	{
 		/* これから処理を進めていくノード */
-		node_ptr current_node = std::move(node->_body);
+		unique_ptr<Node> current_node = std::move(node->_body);
 
 		/* ブロックの中が空なら何もしない */
 		if (!current_node)
@@ -179,7 +155,7 @@ void CodeGen::generate_statement(node_ptr &&node)
 			return;
 		}
 		/* Bodyに含まれるノードをすべて評価する */
-		for (node_ptr next_node = std::move(current_node->_next); current_node;)
+		for (unique_ptr<Node> next_node = std::move(current_node->_next); current_node;)
 		{
 			generate_statement(std::move(current_node));
 			current_node = std::move(next_node);
@@ -195,11 +171,8 @@ void CodeGen::generate_statement(node_ptr &&node)
 	}
 	error("不正な文です");
 }
-/******************************************************************************************************
- * @brief
- * プログラム全体のコードを出力する。
- *****************************************************************************************************/
-void CodeGen::generate_code(std::unique_ptr<Function> &&program)
+
+void CodeGen::generate_code(unique_ptr<Function> &&program)
 {
 	/* アセンブリの前半部分を出力 */
 	cout << ".intel_syntax noprefix\n";
