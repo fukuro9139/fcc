@@ -129,6 +129,7 @@ enum class NodeKind
 	ND_ASSIGN,	  /*!< = */
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
+	ND_FOR,		  /*!< for */
 	ND_BLOCK,	  /*!< {...} */
 	ND_EQ,		  /*!< == */
 	ND_NE,		  /*!< != */
@@ -156,10 +157,14 @@ public:
 	std::unique_ptr<Node> _lhs = nullptr; /*!< 左辺 */
 	std::unique_ptr<Node> _rhs = nullptr; /*!< 右辺 */
 
+	/* if or for */
 	std::unique_ptr<Node> _condition = nullptr; /*!< if文の条件 */
 	std::unique_ptr<Node> _then = nullptr;		/*!< trueのときに行う式 */
 	std::unique_ptr<Node> _else = nullptr;		/*!< falseのとき行う式 */
+	std::unique_ptr<Node> _init = nullptr;		/* 初期化処理 */
+	std::unique_ptr<Node> _inc = nullptr;		/* 加算処理 */
 
+	/* ブロック */
 	std::unique_ptr<Node> _body = nullptr; /*!< ブロック内{...}には複数の式を入れられる */
 
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
@@ -238,9 +243,10 @@ private:
 	 * @param current_token 現在処理しているトークン
 	 * @return std::unique_ptr<Node>
 	 * @details 下記のEBNF規則に従う。 @n
-	 * statement = "return" expression ";" 
+	 * statement = "return" expression ";"
 	 * 			 | "if" "(" expression ")" statement ("else" statement)?
-	 * 			 | "{" compound-stmt 
+	 * 			 | "for" "(" expression-statement expression? ";" expression? ")" stmt
+	 * 			 | "{" compound-stmt
 	 * 			 | expression-statement
 	 */
 	static std::unique_ptr<Node> statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
@@ -271,7 +277,7 @@ private:
 	 * @param next_token 次に処理するべきトークンを返すための参照
 	 * @param current_token 現在処理しているトークン
 	 * @return std::unique_ptr<Node>
-	 * @details 下記のEBNF規則に従う。 @n expression-statement = expression ';'
+	 * @details 下記のEBNF規則に従う。 @n expression-statement = expression? ';'
 	 */
 	static std::unique_ptr<Node> expr_stmt(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 

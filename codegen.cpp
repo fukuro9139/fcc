@@ -154,7 +154,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 	{
 		/* 通し番号を取得 */
 		const int c = label_count();
-		
+
 		/* 条件を評価 */
 		generate_expression(std::move(node->_condition));
 		/* 条件を比較 */
@@ -165,12 +165,38 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		generate_statement(std::move(node->_then));
 		/* elseは実行しない */
 		cout << " jmp .L.end." << c << "\n";
-		
+
 		/* falseのとき実行 */
 		cout << ".L.else." << c << ":\n";
-		if(node->_else){
+		if (node->_else)
+		{
 			generate_statement(std::move(node->_else));
 		}
+		cout << ".L.end." << c << ":\n";
+		return;
+	}
+
+	case NodeKind::ND_FOR:
+	{
+		/* 通し番号を取得 */
+		const int c = label_count();
+
+		/* 初期化処理 */
+		generate_statement(std::move(node->_init));
+
+		cout << ".L.begin." << c << ":\n";
+		/* 終了条件判定 */
+		if(node->_condition){
+			generate_expression(std::move(node->_condition));
+			cout << " cmp rax, 0\n";
+			cout << " je .L.end." << c << ":\n";
+		}
+		generate_statement(std::move(node->_then));
+		/* 加算処理 */
+		if(node->_inc){
+			generate_expression(std::move(node->_inc));
+		}
+		cout << " jmp .L.begin." << c << "\n";
 		cout << ".L.end." << c << ":\n";
 		return;
 	}

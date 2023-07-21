@@ -125,6 +125,34 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 		return node;
 	}
 
+	/* for */
+	if (Token::is_equal(current_token, "for"))
+	{
+		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FOR);
+		/* forの次は'('がくる */
+		current_token = Token::skip(std::move(current_token->_next), "(");
+
+		/* 初期化処理 */
+		node->_init = expr_stmt(current_token, std::move(current_token));
+
+		/* 次のトークンが';'でなければ条件が存在する */
+		if (!Token::is_equal(current_token, ";"))
+		{
+			node->_condition = expression(current_token, std::move(current_token));
+		}
+		current_token = Token::skip(std::move(current_token), ";");
+
+		/* 次のトークンが')'でなければ加算処理が存在する */
+		if (!Token::is_equal(current_token, ")"))
+		{
+			node->_inc = expression(current_token, std::move(current_token));
+		}
+		current_token = Token::skip(std::move(current_token), ")");
+		/* forの中の処理 */
+		node->_then = statement(next_token, std::move(current_token));
+		return node;
+	}
+
 	/* ブロック */
 	if (Token::is_equal(current_token, "{"))
 	{

@@ -175,12 +175,14 @@ void Token::convert_keywords(unique_ptr<Token> &token)
 	}
 }
 
-bool Token::is_keyword(Token* &token)
+bool Token::is_keyword(Token *&token)
 {
-	static std::vector<string> keyword = {"return", "if", "else"};
+	static const std::vector<string> keywords = {"return", "if", "else", "for"};
 
-	for(size_t i=0, sz = keyword.size(); i < sz; ++i){
-		if (std::equal(token->_location, token->_location + token->_length, keyword[i].begin())){
+	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
+	{
+		if (keywords[i].length() == token->_length && std::equal(keywords[i].begin(), keywords[i].end(), token->_location))
+		{
 			return true;
 		}
 	}
