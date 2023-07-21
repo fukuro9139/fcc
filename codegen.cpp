@@ -28,12 +28,17 @@ void CodeGen::pop(string &&reg)
 
 void CodeGen::generate_address(unique_ptr<Node> &&node)
 {
-	/* 1変数当たり8バイト確保 */
-	if (NodeKind::ND_VAR == node->_kind)
+	switch (node->_kind)
 	{
+	case ND_VAR:
 		cout << " mov rax, rbp\n";
 		cout << " sub rax, " << node->_var->_offset << "\n";
 		return;
+	case NodeKind::ND_DEREF:
+		generate_expression(node->_lhs);
+		return;
+	default:
+		break;
 	}
 	error_at("左辺値ではありません", std::move(node->_location));
 }
@@ -60,6 +65,18 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		generate_address(std::move(node));
 		/* 変数のアドレスから値を'rax'に読み込む */
 		cout << " mov rax, [rax]\n";
+		return;
+	/* 参照外し */
+	case NodeKind::ND_DEREF:
+		/* 参照先のアドレスを計算 */
+		generate_expression(node->_lhs);
+		/* 参照先のアドレスの数値をセット */
+		cout << " mov rax, [rax]\n";
+		return;
+	/* 参照 */
+	case NodeKind::ND_ADDR:
+		/* アドレスを計算 */
+		generate_address(node->_lhs);
 		return;
 	/* 代入 */
 	case NodeKind::ND_ASSIGN:

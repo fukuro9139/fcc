@@ -1,3 +1,23 @@
+/**
+ * @file parse.cpp
+ * @author K.Fukunaga
+ * @brief
+ * このファイルはC言語の再帰下降構文解析を行うパーサーを定義している。
+ *
+ * @details
+ * このファイルのほとんどの関数の名前は、入力トークン・リストから読み取る記号に対応している。 @n
+ * 例えば、statement() ははトークン・リストからステートメントを読み取ってステートメントに対応する @n
+ * 抽象構文木（abstract syntax tree、AST）ノードを返す。 @n
+ * 各関数はASTノードと入力トークンの残りの部分を返すように設計してある。 @n
+ * C言語は複数の戻り値をサポートしていないので、残りのトークンはポインタ引数を通じて呼び出し元に返される。 @n
+ *
+ * @version 0.1
+ * @date 2023-07-22
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #include "parse.hpp"
 
 using std::unique_ptr;

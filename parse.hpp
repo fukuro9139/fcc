@@ -127,6 +127,8 @@ enum class NodeKind
 	ND_DIV,		  /*!< / */
 	ND_NEG,		  /*!< 負の単項 */
 	ND_ASSIGN,	  /*!< = */
+	ND_ADDR,	  /* 単項 & */
+	ND_DEREF,	  /* 単項* */
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/
@@ -170,7 +172,7 @@ public:
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
-	std::string::const_iterator _location;	/* ノードと対応する入力文字列の位置 */
+	std::string::const_iterator _location; /* ノードと対応する入力文字列の位置 */
 
 	/*****************/
 	/* コンストラクタ */
