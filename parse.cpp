@@ -134,7 +134,7 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 unique_ptr<Node> Node::expr_stmt(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	/* 空のstatementに対応 */
-	if(Token::is_equal(token, ";")){
+	if(Token::is_equal(current_token, ";")){
 		next_token = std::move(current_token->_next);
 		return std::make_unique<Node>(NodeKind::ND_BLOCK);
 	}
