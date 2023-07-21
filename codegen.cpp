@@ -176,24 +176,30 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		return;
 	}
 
+	/* for or while */
 	case NodeKind::ND_FOR:
 	{
 		/* 通し番号を取得 */
 		const int c = label_count();
 
-		/* 初期化処理 */
-		generate_statement(std::move(node->_init));
+		/* forの場合、初期化処理 */
+		if (node->_init)
+		{
+			generate_statement(std::move(node->_init));
+		}
 
 		cout << ".L.begin." << c << ":\n";
 		/* 終了条件判定 */
-		if(node->_condition){
+		if (node->_condition)
+		{
 			generate_expression(std::move(node->_condition));
 			cout << " cmp rax, 0\n";
 			cout << " je .L.end." << c << "\n";
 		}
 		generate_statement(std::move(node->_then));
 		/* 加算処理 */
-		if(node->_inc){
+		if (node->_inc)
+		{
 			generate_expression(std::move(node->_inc));
 		}
 		cout << " jmp .L.begin." << c << "\n";

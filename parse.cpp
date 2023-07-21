@@ -153,6 +153,18 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 		return node;
 	}
 
+	/* while */
+	if(Token::is_equal(current_token, "while")){
+		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FOR);
+		/* whileの次は'('がくる */
+		current_token = Token::skip(std::move(current_token->_next), "(");
+		node->_condition = expression(current_token, std::move(current_token));
+		/* 条件文のは')'がくる */
+		current_token = std::move(Token::skip(std::move(current_token), ")"));
+		node->_then = statement(next_token, std::move(current_token));
+		return node;
+	}
+
 	/* ブロック */
 	if (Token::is_equal(current_token, "{"))
 	{

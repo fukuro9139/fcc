@@ -129,7 +129,7 @@ enum class NodeKind
 	ND_ASSIGN,	  /*!< = */
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
-	ND_FOR,		  /*!< for */
+	ND_FOR,		  /*!< for or while*/
 	ND_BLOCK,	  /*!< {...} */
 	ND_EQ,		  /*!< == */
 	ND_NE,		  /*!< != */
@@ -246,6 +246,7 @@ private:
 	 * statement = "return" expression ";"
 	 * 			 | "if" "(" expression ")" statement ("else" statement)?
 	 * 			 | "for" "(" expression-statement expression? ";" expression? ")" stmt
+	 * 			 | "while" "(" expr ")" stmt
 	 * 			 | "{" compound-stmt
 	 * 			 | expression-statement
 	 */

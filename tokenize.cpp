@@ -177,7 +177,7 @@ void Token::convert_keywords(unique_ptr<Token> &token)
 
 bool Token::is_keyword(Token *&token)
 {
-	static const std::vector<string> keywords = {"return", "if", "else", "for"};
+	static const std::vector<string> keywords = {"return", "if", "else", "for", "while"};
 
 	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
 	{
