@@ -126,7 +126,7 @@ std::unique_ptr<Node> Node::statement(std::unique_ptr<Token> &current_token, std
 
 	if (Token::is_equal(token, "{"))
 	{
-		return compound_statement(current_token, std::move(token));
+		return compound_statement(current_token, std::move(token->_next));
 	}
 
 	return expr_stmt(current_token, std::move(token));
