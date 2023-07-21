@@ -128,6 +128,7 @@ enum class NodeKind
 	ND_NEG,		  /*!< 負の単項 */
 	ND_ASSIGN,	  /*!< = */
 	ND_RETURN,	  /*!< return */
+	ND_IF,		  /*!< if */
 	ND_BLOCK,	  /*!< {...} */
 	ND_EQ,		  /*!< == */
 	ND_NE,		  /*!< != */
@@ -150,9 +151,14 @@ public:
 	/**********************/
 
 	NodeKind _kind = NodeKind::ND_EXPR_STMT; /*!< ノードの種類*/
-	std::unique_ptr<Node> _lhs = nullptr;	 /*!< 左辺 */
-	std::unique_ptr<Node> _rhs = nullptr;	 /*!< 右辺 */
 	std::unique_ptr<Node> _next = nullptr;	 /*!< ノードが木のrootである場合、次の木のrootノード */
+
+	std::unique_ptr<Node> _lhs = nullptr; /*!< 左辺 */
+	std::unique_ptr<Node> _rhs = nullptr; /*!< 右辺 */
+
+	std::unique_ptr<Node> _condition = nullptr; /*!< if文の条件 */
+	std::unique_ptr<Node> _then = nullptr;		/*!< trueのときに行う式 */
+	std::unique_ptr<Node> _else = nullptr;		/*!< falseのとき行う式 */
 
 	std::unique_ptr<Node> _body = nullptr; /*!< ブロック内{...}には複数の式を入れられる */
 
@@ -231,7 +237,11 @@ private:
 	 * @param next_token 次に処理するべきトークンを返すための参照
 	 * @param current_token 現在処理しているトークン
 	 * @return std::unique_ptr<Node>
-	 * @details 下記のEBNF規則に従う。 @n statement = "return" expression ";" | "{" compound-stmt | expression-statement
+	 * @details 下記のEBNF規則に従う。 @n
+	 * statement = "return" expression ";" 
+	 * 			 | "if" "(" expression ")" statement ("else" statement)?
+	 * 			 | "{" compound-stmt 
+	 * 			 | expression-statement
 	 */
 	static std::unique_ptr<Node> statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 

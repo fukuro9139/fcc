@@ -95,6 +95,7 @@ Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs)
 
 unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
+	/* return */
 	if (Token::is_equal(current_token, "return"))
 	{
 		/* "return"の次はexpresionがくる */
@@ -104,11 +105,33 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 		return node;
 	}
 
+	/* if */
+	if (Token::is_equal(current_token, "if"))
+	{
+		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_IF);
+		/* ifの次は'('がくる */
+		current_token = Token::skip(std::move(current_token->_next), "(");
+		/* 条件文 */
+		node->_condition = expression(current_token, std::move(current_token));
+		/* 条件文のは')'がくる */
+		current_token = std::move(Token::skip(std::move(current_token), ")"));
+		node->_then = statement(current_token, std::move(current_token));
+		/* else節が存在する */
+		if (Token::is_equal(current_token, "else"))
+		{
+			node->_else = std::move(statement(current_token, std::move(current_token->_next)));
+		}
+		next_token = std::move(current_token);
+		return node;
+	}
+
+	/* ブロック */
 	if (Token::is_equal(current_token, "{"))
 	{
 		return compound_statement(next_token, std::move(current_token->_next));
 	}
 
+	/* 式 */
 	return expr_stmt(next_token, std::move(current_token));
 }
 
@@ -134,7 +157,8 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 unique_ptr<Node> Node::expr_stmt(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	/* 空のstatementに対応 */
-	if(Token::is_equal(current_token, ";")){
+	if (Token::is_equal(current_token, ";"))
+	{
 		next_token = std::move(current_token->_next);
 		return std::make_unique<Node>(NodeKind::ND_BLOCK);
 	}

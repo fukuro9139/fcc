@@ -168,9 +168,21 @@ void Token::convert_keywords(unique_ptr<Token> &token)
 {
 	for (Token *t = token.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 	{
-		if (TokenKind::TK_IDENT == t->_kind && std::equal(t->_location, t->_location + t->_length, "return"))
+		if (TokenKind::TK_IDENT == t->_kind && is_keyword(t))
 		{
 			t->_kind = TokenKind::TK_KEYWORD;
 		}
 	}
+}
+
+bool Token::is_keyword(Token* &token)
+{
+	static std::vector<string> keyword = {"return", "if", "else"};
+
+	for(size_t i=0, sz = keyword.size(); i < sz; ++i){
+		if (std::equal(token->_location, token->_location + token->_length, keyword[i].begin())){
+			return true;
+		}
+	}
+	return false;
 }

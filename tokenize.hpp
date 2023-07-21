@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <locale>
+#include <vector>
 
 /***********/
 /* 汎用関数 */
@@ -180,4 +181,13 @@ private:
 	 * @param token トークン列
 	 */
 	static void convert_keywords(std::unique_ptr<Token> &token);
+
+	/**
+	 * @brief トークンの識別子がキーワードかどうか判定する
+	 *
+	 * @param token 対象のトークン
+	 * @return true キーワードである
+	 * @return false キーワードではない
+	 */
+	static bool is_keyword(Token* &token);
 };

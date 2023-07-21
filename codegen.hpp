@@ -3,8 +3,11 @@
 #include <cassert>
 #include <memory>
 
+
+
+
 /**
- * @brief　アセンブラを生成
+ * @brief　アセンブリを生成
  *
  */
 class CodeGen
@@ -15,9 +18,9 @@ public:
 	/**************************/
 
 	/**
-	 * @brief Intel記法でアセンブラを出力する
+	 * @brief Intel記法でアセンブリを出力する
 	 *
-	 * @param program アセンブラを出力sする対象関数
+	 * @param program アセンブリを出力sする対象関数
 	 */
 	static void generate_code(std::unique_ptr<Function> &&program);
 
@@ -27,7 +30,7 @@ private:
 	/**************************/
 
 	/**
-	 * @brief スタックにpushするアセンブラを生成
+	 * @brief スタックにpushするアセンブリを生成
 	 *
 	 */
 	static void push();
@@ -54,16 +57,24 @@ private:
 	static void generate_address(std::unique_ptr<Node> &&node);
 
 	/**
-	 * @brief expressionをアセンブラに変換
+	 * @brief expressionをアセンブリに変換
 	 *
 	 * @param node
 	 */
 	static void generate_expression(std::unique_ptr<Node> &&node);
 
 	/**
-	 * @brief statementをアセンブラに変換
+	 * @brief statementをアセンブリに変換
 	 *
 	 * @param node
 	 */
 	static void generate_statement(std::unique_ptr<Node> &&node);
+
+
+	/**
+	 * @brief 新しいラベルの通し番号を返す
+	 * 
+	 * @return int これまでに用意したラベルの数+1
+	 */
+	static int label_count();
 };

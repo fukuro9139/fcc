@@ -8,6 +8,12 @@ using std::unique_ptr;
 /** スタックの深さ */
 static int depth = 0;
 
+int CodeGen::label_count()
+{
+	static int i = 1;
+	return i++;
+}
+
 void CodeGen::push()
 {
 	cout << " push rax\n";
@@ -144,6 +150,31 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 	case NodeKind::ND_EXPR_STMT:
 		generate_expression(std::move(node->_lhs));
 		return;
+	case NodeKind::ND_IF:
+	{
+		/* 通し番号を取得 */
+		const int c = label_count();
+		
+		/* 条件を評価 */
+		generate_expression(std::move(node->_condition));
+		/* 条件を比較 */
+		cout << " cmp rax 0\n";
+		/* 条件がfalseなら.L.else.cラベルに飛ぶ */
+		cout << " je .L.else." << c << "\n";
+		/* trueのときに実行 */
+		generate_statement(std::move(node->_then));
+		/* elseは実行しない */
+		cout << " jmp .L.end." << c << "\n";
+		
+		/* falseのとき実行 */
+		cout << " .L.else." << c << "\n";
+		if(node->_else){
+			generate_statement(std::move(node->_else));
+		}
+		cout << " .L.end." << c << "\n";
+		return;
+	}
+
 	case NodeKind::ND_BLOCK:
 	{
 		/* これから処理を進めていくノード */
