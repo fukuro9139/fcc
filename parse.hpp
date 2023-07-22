@@ -165,4 +165,5 @@ private:
 	static std::unique_ptr<Node> primary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location);
+	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location);
 };

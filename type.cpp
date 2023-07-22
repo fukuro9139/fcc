@@ -2,7 +2,11 @@
 #include "parse.hpp"
 
 /** @brief int型を表す型クラスのオブジェクトを生成 */
-static std::shared_ptr<Type> ty_int = std::make_shared<Type>(TypeKind::TY_INT);
+std::shared_ptr<Type> ty_int()
+{
+	static auto p = std::make_shared<Type>(TypeKind::TY_INT);
+	return p;
+}
 
 /**************/
 /* Type Class */
@@ -71,7 +75,7 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_LE:
 	case NodeKind::ND_VAR:
 	case NodeKind::ND_NUM:
-		node->_ty = ty_int;
+		node->_ty = ty_int();
 		return;
 	/* 参照は参照先へのポインタ型 */
 	case NodeKind::ND_ADDR:
@@ -84,7 +88,7 @@ void Type::add_type(Node *node)
 			node->_ty = node->_lhs->_ty->_base;
 		else
 			/* デリファレンスの対象がポインタでないならint型を設定 */
-			node->_ty = ty_int;
+			node->_ty = ty_int();
 		return;
 	default:
 		break;

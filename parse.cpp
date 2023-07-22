@@ -480,7 +480,7 @@ unique_ptr<Node> Node::add(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
 
 		if (Token::is_equal(current_token, "-"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(node), mul(current_token, std::move(current_token->_next)), location);
+			node = new_sub(std::move(node), mul(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
@@ -640,7 +640,53 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, s
 	/* ptr + 数 */
 	rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(8, location), location);
 	return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), location);
+}
 
+/**
+ * @brief 左辺 - 右辺の計算結果を表すノードを生成する。
+ *
+ * @details
+ * C言語では、-演算子も'+'演算子と同様にポインタ演算を行うためにオーバーロードされている。
+ * ポインタ - ポインタは2つのポインタ間にある要素の数を返す。
+ * @param lhs 左辺
+ * @param rhs 右辺
+ * @param location ノードと対応する入力文字列の位置
+ * @return 対応するASTノード
+ */
+std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location)
+{
+	/* 右辺と左辺の型を確定する */
+	Type::add_type(lhs.get());
+	Type::add_type(rhs.get());
+
+	/* 数 - 数 */
+	if (Type::is_integer(lhs->_ty) && Type::is_integer(rhs->_ty))
+	{
+		return std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
+	}
+
+	/* ptr - 数 */
+	if (lhs->_ty->_base && !rhs->_ty->_base)
+	{
+		rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(8, location), location);
+		Type::add_type(rhs.get());
+		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
+		return node;
+	}
+
+	/* ptr - ptr */
+	if (lhs->_ty->_base && rhs->_ty->_base)
+	{
+		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
+		node->_ty = ty_int();
+		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(8, location), location);
+	}
+
+	/* 数 - ptr はエラー */
+	error_at("無効な演算です", std::move(location));
+
+	/* コンパイルエラー対策。直前のerror_at()で終了されるのでnullptrが返ることはない */
+	return nullptr;
 }
 
 /**

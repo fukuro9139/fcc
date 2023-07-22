@@ -50,3 +50,5 @@ static bool is_integer(const std::shared_ptr<Type> &ty);
 static void add_type(Node *node);
 
 };
+
+std::shared_ptr<Type> ty_int();
