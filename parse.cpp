@@ -217,13 +217,17 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 	if (Token::is_equal(current_token, "if"))
 	{
 		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_IF, current_token->_location);
+
 		/* ifの次は'('がくる */
 		current_token = Token::skip(std::move(current_token->_next), "(");
+
 		/* 条件文 */
 		node->_condition = expression(current_token, std::move(current_token));
+
 		/* 条件文のは')'がくる */
 		current_token = Token::skip(std::move(current_token), ")");
 		node->_then = statement(current_token, std::move(current_token));
+
 		/* else節が存在する */
 		if (Token::is_equal(current_token, "else"))
 		{
@@ -237,6 +241,7 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 	if (Token::is_equal(current_token, "for"))
 	{
 		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FOR, current_token->_location);
+
 		/* forの次は'('がくる */
 		current_token = Token::skip(std::move(current_token->_next), "(");
 
@@ -265,9 +270,11 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 	if (Token::is_equal(current_token, "while"))
 	{
 		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FOR, current_token->_location);
+
 		/* whileの次は'('がくる */
 		current_token = Token::skip(std::move(current_token->_next), "(");
 		node->_condition = expression(current_token, std::move(current_token));
+
 		/* 条件文のは')'がくる */
 		current_token = Token::skip(std::move(current_token), ")");
 		node->_then = statement(next_token, std::move(current_token));
@@ -299,11 +306,13 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 
 	unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
 	Node *cur = head.get();
+
 	/* '}'が出てくるまでstatementをパースする */
 	while (!Token::is_equal(current_token, "}"))
 	{
 		cur->_next = statement(current_token, std::move(current_token));
 		cur = cur->_next.get();
+		Type::add_type(cur);
 	}
 
 	/* ダミーのheadからの次のトークン以降を切り離し、新しいノードのbodyに繋ぐ*/
@@ -465,7 +474,7 @@ unique_ptr<Node> Node::add(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
 		auto location = current_token->_location;
 		if (Token::is_equal(current_token, "+"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_ADD, std::move(node), mul(current_token, std::move(current_token->_next)), location);
+			node = new_add(std::move(node), mul(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
@@ -589,6 +598,49 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 
 	/* コンパイルエラー対策、error_at()内でプログラムは終了するためnullptrが返ることはない */
 	return nullptr;
+}
+
+/**
+ * @brief 左辺 + 右辺の計算結果を表すノードを生成する。
+ *
+ * @details
+ * C言語では、+演算子はポインタ演算を行うためにオーバーロードされている。
+ * もしpがポインタである場合、p+nはnを加えるのではなく、sizeof(*p)*nをpの値に加える。
+ * そのため、p+nはpからn個先の要素（バイトではなく）を指すようになる。
+ * 言い換えれば、ポインタ値に加える前に整数値をスケールする必要があり、この関数はそのスケーリングを処理する。
+ * @param lhs 左辺
+ * @param rhs 右辺
+ * @param location ノードと対応する入力文字列の位置
+ * @return 対応するASTノード
+ */
+unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, std::string::const_iterator &location)
+{
+	/* 右辺と左辺の型を確定する */
+	Type::add_type(lhs.get());
+	Type::add_type(rhs.get());
+
+	/* 数 + 数 */
+	if (Type::is_integer(lhs->_ty) && Type::is_integer(rhs->_ty))
+	{
+		return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), location);
+	}
+
+	/* ptr + ptr は無効な演算 */
+	if (lhs->_ty->_base && rhs->_ty->_base)
+	{
+		error_at("無効な演算です", std::move(location));
+	}
+
+	/* "数 + ptr" を "ptr + 数" に変換する*/
+	if (!lhs->_ty->_base && rhs->_ty->_base)
+	{
+		std::swap(lhs, rhs);
+	}
+
+	/* ptr + 数 */
+	rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(8, location), location);
+	return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), location);
+
 }
 
 /**

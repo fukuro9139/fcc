@@ -11,9 +11,10 @@
 
 #pragma once
 
-#include "tokenize.hpp"
 #include <memory>
 #include <string>
+#include "tokenize.hpp"
+#include "type.hpp"
 
 /** @brief 変数を表すオブジェクトリスト、各変数は名前によって区別する */
 struct Object
@@ -109,6 +110,7 @@ public:
 
 	NodeKind _kind = NodeKind::ND_EXPR_STMT; /*!< ノードの種類*/
 	std::unique_ptr<Node> _next = nullptr;	 /*!< ノードが木のrootである場合、次の木のrootノード */
+	std::shared_ptr<Type> _ty = nullptr;	 /*!< 型情報 e.g. int or pointer to int */
 
 	std::unique_ptr<Node> _lhs = nullptr; /*!< 左辺 */
 	std::unique_ptr<Node> _rhs = nullptr; /*!< 右辺 */
@@ -161,4 +163,6 @@ private:
 	static std::unique_ptr<Node> mul(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> unary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> primary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+
+	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location);
 };

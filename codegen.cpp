@@ -21,6 +21,10 @@ using std::unique_ptr;
 /** スタックの深さ */
 static int depth = 0;
 
+/*****************/
+/* CodeGen Class */
+/*****************/
+
 /**
  * @brief 新しいラベルの通し番号を返す。
  *
