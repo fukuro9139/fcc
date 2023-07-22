@@ -222,12 +222,12 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 		/* 条件文 */
 		node->_condition = expression(current_token, std::move(current_token));
 		/* 条件文のは')'がくる */
-		current_token = std::move(Token::skip(std::move(current_token), ")"));
+		current_token = Token::skip(std::move(current_token), ")");
 		node->_then = statement(current_token, std::move(current_token));
 		/* else節が存在する */
 		if (Token::is_equal(current_token, "else"))
 		{
-			node->_else = std::move(statement(current_token, std::move(current_token->_next)));
+			node->_else = statement(current_token, std::move(current_token->_next));
 		}
 		next_token = std::move(current_token);
 		return node;
@@ -269,7 +269,7 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 		current_token = Token::skip(std::move(current_token->_next), "(");
 		node->_condition = expression(current_token, std::move(current_token));
 		/* 条件文のは')'がくる */
-		current_token = std::move(Token::skip(std::move(current_token), ")"));
+		current_token = Token::skip(std::move(current_token), ")");
 		node->_then = statement(next_token, std::move(current_token));
 		return node;
 	}
@@ -603,6 +603,6 @@ unique_ptr<Function> Node::parse(unique_ptr<Token> &&token)
 	/* 最初の'{'を飛ばす */
 	token = std::move(Token::skip(std::move(token), "{"));
 
-	unique_ptr<Function> prog = std::make_unique<Function>(std::move(compound_statement(token, std::move(token))), std::move(locals));
+	unique_ptr<Function> prog = std::make_unique<Function>(compound_statement(token, std::move(token)), std::move(locals));
 	return std::move(prog);
 }
