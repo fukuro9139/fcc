@@ -571,8 +571,9 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 		{
 			var = Object::new_lvar(std::string(current_token->_location, current_token->_location + current_token->_length));
 		}
+		unique_ptr<Node> node = std::make_unique<Node>(var, current_token->_location);
 		next_token = std::move(current_token->_next);
-		return std::make_unique<Node>(var, current_token->_location);
+		return node;
 	}
 
 	/* トークンが数値の場合 */
