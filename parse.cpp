@@ -50,9 +50,9 @@ Object::Object(std::string &&name) : _name(std::move(name))
  * @param name オブジェクトの名前
  * @return 生成した変数へのポインタ
  */
-const Object *Object::new_lvar(std::string &&name, std::shared_ptr<Type> &&ty)
+const Object *Object::new_lvar(std::shared_ptr<Type> &&ty)
 {
-	unique_ptr<Object> var = std::make_unique<Object>(std::move(name));
+	unique_ptr<Object> var = std::make_unique<Object>(std::string(ty->_location, ty->_location + ty->_length));
 	var->_next = std::move(locals);
 	var->_ty = std::move(ty);
 	locals = std::move(var);
@@ -183,23 +183,6 @@ Node::Node(const Object *var, const std::string::const_iterator &location)
 Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, const std::string::const_iterator &location)
 	: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _location(location)
 {
-}
-
-/**
- * @brief トークンが識別子であるときそのトークンの名前を取得する
- *
- * トークンの種類が識別子でない場合、エラーとする。
- * @param token 名前を取得するトークン
- * @return std::string トークンの名前
- */
-std::string Node::get_ident(const std::unique_ptr<Token> &token)
-{
-	/* トークンの種類が識別子でなければエラー */
-	if (TokenKind::TK_IDENT != token->_kind)
-	{
-		error_at("識別子ではありません", std::move(token->_location));
-	}
-	return std::string(token->_location, token->_location + token->_length);
 }
 
 /**
@@ -379,8 +362,8 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 			current_token = Token::skip(std::move(current_token), ",");
 		}
 		/* 変数の最終的な型を決定 */
-		shared_ptr<Type> ty = declarator(current_token, std::move(current_token), base);
-		const Object *var = Object::new_lvar(get_ident(ty->_name), std::move(ty));
+		shared_ptr<Type> ty = declarator(current_token, std::move(current_token), std::move(base));
+		const Object *var = Object::new_lvar(std::move(ty));
 
 		/* 宣言の後に初期化式がない場合は次のループへ */
 		if (!Token::is_equal(current_token, "="))
@@ -389,7 +372,7 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 		};
 
 		/* 変数を表すノードを生成 */
-		unique_ptr<Node> lhs = std::make_unique<Node>(var, var->_ty->_name->_location);
+		unique_ptr<Node> lhs = std::make_unique<Node>(var, var->_ty->_location);
 		/* 変数の初期化値を表すノードを生成 */
 		unique_ptr<Node> rhs = assign(current_token, std::move(current_token->_next));
 		/* 初期化を代入式として表すノードを生成 */
@@ -418,7 +401,7 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
  * @param ty 変数の型の基準
  * @return 変数の型
  */
-shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> ty)
+shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
 {
 	/* "*"の数だけ直前の型へのポインタになる */
 	while (Token::consume(current_token, std::move(current_token), "*"))
@@ -430,9 +413,10 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	{
 		error_at("識別子の名前ではありません", std::move(current_token->_location));
 	}
+	ty->_length = std::move(current_token->_length);
+	ty->_location = std::move(current_token->_location);
 	next_token = std::move(current_token->_next);
-	ty->_name = std::move(current_token);
-	return ty;
+	return std::move(ty);
 }
 
 /**
@@ -446,7 +430,7 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 shared_ptr<Type> Node::declspec(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	next_token = Token::skip(std::move(current_token), "int");
-	return ty_int();
+	return std::move(ty_int());
 }
 
 /**

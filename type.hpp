@@ -10,9 +10,8 @@ enum class TypeKind
 	TY_PTR, /*!< ポインター型 */
 };
 
-/* Node, Tokenクラスを使いたいので先に宣言 */
+/* Nodeクラスを使いたいので先に宣言 */
 class Node;
-class Token;
 
 /** @brief 型を表すクラス */
 class Type
@@ -22,9 +21,10 @@ public:
 	/* メンバ変数 (public) */
 	/**********************/
 
-	TypeKind _kind;							/*!< 型の種類 */
-	std::shared_ptr<Type> _base = nullptr;	/*!< kindがTY_PTRのとき、参照先の型 */
-	std::unique_ptr<Token> _name = nullptr; /* 宣言しているトークン */
+	TypeKind _kind;						   /*!< 型の種類 */
+	std::shared_ptr<Type> _base = nullptr; /*!< kindがTY_PTRのとき、参照先の型 */
+	size_t _length;						   /*<! 変数の長さ */
+	std::string::const_iterator _location; /*<! 変数に対応する入力文字列の位置 */
 
 	/*****************/
 	/* コンストラクタ */
