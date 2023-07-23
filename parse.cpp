@@ -344,7 +344,7 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
  */
 unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	shared_ptr<Type> base = declspec(current_token, std::move(current_token));
+	const shared_ptr<Type> base = declspec(current_token, std::move(current_token));
 
 	/* ノードリストの先頭としてダミーのノードを作成 */
 	unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
@@ -362,7 +362,7 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 			current_token = Token::skip(std::move(current_token), ",");
 		}
 		/* 変数の最終的な型を決定 */
-		shared_ptr<Type> ty = declarator(current_token, std::move(current_token), std::move(base));
+		shared_ptr<Type> ty = declarator(current_token, std::move(current_token), base);
 		const Object *var = Object::new_lvar(std::move(ty));
 
 		/* 宣言の後に初期化式がない場合は次のループへ */
@@ -401,7 +401,7 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
  * @param ty 変数の型の基準
  * @return 変数の型
  */
-shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
+shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> ty)
 {
 	/* "*"の数だけ直前の型へのポインタになる */
 	while (Token::consume(current_token, std::move(current_token), "*"))
