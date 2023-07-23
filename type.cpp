@@ -1,7 +1,7 @@
 #include "type.hpp"
 #include "parse.hpp"
 
-/** @brief int型を表す型クラスのオブジェクトを生成 */
+/** @brief int型を表す型クラスのオブジェクトのポインタを返す */
 std::shared_ptr<Type> ty_int()
 {
 	static auto p = std::make_shared<Type>(TypeKind::TY_INT);
@@ -27,6 +27,11 @@ Type::Type(TypeKind &&kind)
 
 Type::Type(const std::shared_ptr<Type> &base)
 	: _kind(TypeKind::TY_PTR), _base(base)
+{
+}
+
+Type::Type(std::shared_ptr<Type> &&base)
+	: _kind(TypeKind::TY_PTR), _base(std::move(base))
 {
 }
 
@@ -73,23 +78,31 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_NE:
 	case NodeKind::ND_LT:
 	case NodeKind::ND_LE:
-	case NodeKind::ND_VAR:
 	case NodeKind::ND_NUM:
 		node->_ty = ty_int();
 		return;
+
+	case NodeKind::ND_VAR:
+		/* オブジェクトの型に一致させる */
+		node->_ty = node->_var->_ty;
+		return;
+
 	/* 参照は参照先へのポインタ型 */
 	case NodeKind::ND_ADDR:
 		node->_ty = std::make_shared<Type>(node->_lhs->_ty);
 		return;
+
 	/* デリファレンス */
 	case NodeKind::ND_DEREF:
-		if (TypeKind::TY_PTR == node->_lhs->_ty->_kind)
-			/* デリファレンスの対象がポインタ型ならポインタのベース型 */
-			node->_ty = node->_lhs->_ty->_base;
+		/* デリファレンスできるのはポインタ型のみ */
+		if (TypeKind::TY_PTR != node->_lhs->_ty->_kind)
+			error_at("デリファレンスできるのはポインタ型のみです", std::move(node->_location));
 		else
-			/* デリファレンスの対象がポインタでないならint型を設定 */
-			node->_ty = ty_int();
+			/* ポインタのベース型 */
+			node->_ty = node->_lhs->_ty->_base;
+
 		return;
+
 	default:
 		break;
 	}

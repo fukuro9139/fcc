@@ -184,6 +184,26 @@ unique_ptr<Token> Token::skip(unique_ptr<Token> &&token, string &&op)
 	return std::move(token->_next);
 }
 
+
+
+/**
+ * @brief トークンが期待している文字列と一致する場合は次のトークンのポインタをnext_tokenにセットしtrueを返す。
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param op 比較する文字列
+ * @return 一致：true, 不一致：false
+ */
+bool Token::consume(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, string &&str)
+{
+	if(is_equal(current_token, std::move(str))){
+		next_token = std::move(current_token->_next);
+		return true;
+	}
+	next_token = std::move(current_token);
+	return false;
+}
+
 /**
  * @brief 文字列の先頭がopと一致するか
  *
@@ -264,7 +284,7 @@ void Token::convert_keywords(unique_ptr<Token> &token)
  */
 bool Token::is_keyword(Token *&token)
 {
-	static const std::vector<string> keywords = {"return", "if", "else", "for", "while"};
+	static const std::vector<string> keywords = {"return", "if", "else", "for", "while", "int"};
 
 	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
 	{

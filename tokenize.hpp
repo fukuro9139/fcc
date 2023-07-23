@@ -63,6 +63,7 @@ public:
 	static std::unique_ptr<Token> tokenize(std::string &&input);
 	static bool is_equal(const std::unique_ptr<Token> &token, std::string &&op);
 	static std::unique_ptr<Token> skip(std::unique_ptr<Token> &&token, std::string &&op);
+	static bool consume(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::string &&str);
 
 private:
 	/**************************/

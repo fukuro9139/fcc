@@ -19,6 +19,7 @@
 
 #include "parse.hpp"
 
+using std::shared_ptr;
 using std::unique_ptr;
 
 /**
@@ -49,10 +50,11 @@ Object::Object(std::string &&name) : _name(std::move(name))
  * @param name オブジェクトの名前
  * @return 生成した変数へのポインタ
  */
-const Object *Object::new_lvar(std::string &&name)
+const Object *Object::new_lvar(std::string &&name, std::shared_ptr<Type> &&ty)
 {
 	unique_ptr<Object> var = std::make_unique<Object>(std::move(name));
 	var->_next = std::move(locals);
+	var->_ty = std::move(ty);
 	locals = std::move(var);
 	return locals.get();
 }
@@ -184,6 +186,23 @@ Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, cons
 }
 
 /**
+ * @brief トークンが識別子であるときそのトークンの名前を取得する
+ *
+ * トークンの種類が識別子でない場合、エラーとする。
+ * @param token 名前を取得するトークン
+ * @return std::string トークンの名前
+ */
+std::string Node::get_ident(const std::unique_ptr<Token> &token)
+{
+	/* トークンの種類が識別子でなければエラー */
+	if (TokenKind::TK_IDENT != token->_kind)
+	{
+		error_at("識別子ではありません", std::move(token->_location));
+	}
+	return std::string(token->_location, token->_location + token->_length);
+}
+
+/**
  * @brief プログラム を読み取る。
  *
  * @param next_token 残りのトークンを返すための参照
@@ -297,7 +316,7 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n compound-statement = statement* "}"
+ * @details 下記のEBNF規則に従う。 @n compound-statement = (declaration | statement)* "}"
  */
 unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
@@ -310,7 +329,17 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 	/* '}'が出てくるまでstatementをパースする */
 	while (!Token::is_equal(current_token, "}"))
 	{
-		cur->_next = statement(current_token, std::move(current_token));
+		/* 変数宣言 */
+		if (Token::is_equal(current_token, "int"))
+		{
+			cur->_next = declaration(current_token, std::move(current_token));
+		}
+		/* 宣言以外の文 */
+		else
+		{
+			cur->_next = statement(current_token, std::move(current_token));
+		}
+
 		cur = cur->_next.get();
 		Type::add_type(cur);
 	}
@@ -320,6 +349,104 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 	/* '}' の次のトークンからパースを続ける*/
 	next_token = std::move(current_token->_next);
 	return node;
+}
+
+/**
+ * @brief 変数宣言を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n declaration = declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
+ */
+unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	shared_ptr<Type> base = declspec(current_token, std::move(current_token));
+
+	/* ノードリストの先頭としてダミーのノードを作成 */
+	unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
+	Node *cur = head.get();
+
+	/* この文で宣言している変数の個数 */
+	int cnt = 0;
+
+	/* ";"が出てくるまで読み取りを続ける */
+	while (!Token::is_equal(current_token, ";"))
+	{
+		/* 2個目以降の宣言には",""区切りが必要 */
+		if (cnt++ > 0)
+		{
+			current_token = Token::skip(std::move(current_token), ",");
+		}
+		/* 変数の最終的な型を決定 */
+		shared_ptr<Type> ty = declarator(current_token, std::move(current_token), base);
+		const Object *var = Object::new_lvar(get_ident(ty->_name), std::move(ty));
+
+		/* 宣言の後に初期化式がない場合は次のループへ */
+		if (!Token::is_equal(current_token, "="))
+		{
+			continue;
+		};
+
+		/* 変数を表すノードを生成 */
+		unique_ptr<Node> lhs = std::make_unique<Node>(var, var->_ty->_name->_location);
+		/* 変数の初期化値を表すノードを生成 */
+		unique_ptr<Node> rhs = assign(current_token, std::move(current_token->_next));
+		/* 初期化を代入式として表すノードを生成 */
+		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(lhs), std::move(rhs), current_token->_location);
+		/* ノードリストの末尾に単文ノードとして追加 */
+		cur->_next = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, std::move(node), current_token->_location);
+		/* ノードリストの末尾を更新 */
+		cur = cur->_next.get();
+	}
+	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
+	/* ヘッダの次のノード以降を切り離してnodeのbodyに繋ぐ */
+	node->_body = std::move(head->_next);
+	next_token = std::move(current_token->_next);
+	return node;
+}
+
+/**
+ * @brief 変数宣言を変数名部分を読み取る
+ *
+ * @details
+ * 変数の型は変数名に辿りつくまで確定できない。 @n
+ * 例：int a, *b, **c; aはint型、bはint型へのポインタ、cはint型へのポインタへのポインタ @n
+ * 下記のEBNF規則に従う。 @n declarator = "*"* ident
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 変数の型の基準
+ * @return 変数の型
+ */
+shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> ty)
+{
+	/* "*"の数だけ直前の型へのポインタになる */
+	while (Token::consume(current_token, std::move(current_token), "*"))
+	{
+		ty = std::make_shared<Type>(std::move(ty));
+	}
+	/* トークンの種類が識別子でないときエラー */
+	if (TokenKind::TK_IDENT != current_token->_kind)
+	{
+		error_at("識別子の名前ではありません", std::move(current_token->_location));
+	}
+	next_token = std::move(current_token->_next);
+	ty->_name = std::move(current_token);
+	return ty;
+}
+
+/**
+ * @brief 変数宣言の型宣言部分を読み取る
+ *
+ * @details 下記のEBNF規則に従う。 @n declspec = "int"
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 変数の型
+ */
+shared_ptr<Type> Node::declspec(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	next_token = Token::skip(std::move(current_token), "int");
+	return ty_int();
 }
 
 /**
@@ -338,8 +465,7 @@ unique_ptr<Node> Node::expression_statement(unique_ptr<Token> &next_token, uniqu
 		next_token = std::move(current_token->_next);
 		return std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
 	}
-	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, current_token->_location);
-	node->_lhs = expression(current_token, std::move(current_token));
+	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(current_token, std::move(current_token)), current_token->_location);
 
 	/* expression-statementは';'で終わるはず */
 	next_token = Token::skip(std::move(current_token), ";");
@@ -576,9 +702,11 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 	if (TokenKind::TK_IDENT == current_token->_kind)
 	{
 		const Object *var = Object::find_var(current_token);
+
+		/* 変数が宣言されていない場合はエラー */
 		if (!var)
 		{
-			var = Object::new_lvar(std::string(current_token->_location, current_token->_location + current_token->_length));
+			error_at("未宣言の変数です", std::move(current_token->_location));
 		}
 		unique_ptr<Node> node = std::make_unique<Node>(var, current_token->_location);
 		next_token = std::move(current_token->_next);
