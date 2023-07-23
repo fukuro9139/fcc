@@ -67,11 +67,11 @@ const Object *Object::new_lvar(std::shared_ptr<Type> &&ty)
  */
 const Object *Object::find_var(const unique_ptr<Token> &token)
 {
-	for (const Object *val = locals.get(); val; val = val->_next.get())
+	for (const Object *var = locals.get(); var; var = var->_next.get())
 	{
-		if (val->_name.length() == token->_length && std::equal(val->_name.begin(), val->_name.end(), token->_location))
+		if (var->_name.length() == token->_length && std::equal(var->_name.begin(), var->_name.end(), token->_location))
 		{
-			return val;
+			return var;
 		}
 	}
 	return nullptr;
