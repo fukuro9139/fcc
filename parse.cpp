@@ -670,7 +670,9 @@ unique_ptr<Node> Node::unary(unique_ptr<Token> &next_token, unique_ptr<Token> &&
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n primary = "(" expression ")" | ident | num
+ * @details 下記のEBNF規則に従う。 @n
+ * primary = "(" expression ")" | identifier args? | num @n
+ * args = "(" ")"
  */
 unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
@@ -685,6 +687,15 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 	/* トークンが識別子の場合 */
 	if (TokenKind::TK_IDENT == current_token->_kind)
 	{
+		/* 識別子の後に()がついていたら関数呼び出し */
+		if(Token::is_equal(current_token, "(")){
+			unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token->_location);
+			node->func_name = std::string(current_token->_location, current_token->_location + current_token->_length);
+			next_token = Token::skip(std::move(current_token->_next), ")");
+			return node;
+		}
+
+		/* それ以外なら普通の変数 */
 		const Object *var = Object::find_var(current_token);
 
 		/* 変数が宣言されていない場合はエラー */

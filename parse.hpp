@@ -92,6 +92,7 @@ enum class NodeKind
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/
 	ND_BLOCK,	  /*!< {...} */
+	ND_FUNCALL,	  /* 関数呼び出し */
 	ND_EQ,		  /*!< == */
 	ND_NE,		  /*!< != */
 	ND_LT,		  /*!< < */
@@ -120,11 +121,14 @@ public:
 	std::unique_ptr<Node> _condition = nullptr; /*!< if文の条件 */
 	std::unique_ptr<Node> _then = nullptr;		/*!< trueのときに行う式 */
 	std::unique_ptr<Node> _else = nullptr;		/*!< falseのとき行う式 */
-	std::unique_ptr<Node> _init = nullptr;		/* 初期化処理 */
-	std::unique_ptr<Node> _inc = nullptr;		/* 加算処理 */
+	std::unique_ptr<Node> _init = nullptr;		/*!< 初期化処理 */
+	std::unique_ptr<Node> _inc = nullptr;		/*!< 加算処理 */
 
 	/* ブロック */
 	std::unique_ptr<Node> _body = nullptr; /*!< ブロック内{...}には複数の式を入れられる */
+
+	/* 関数呼び出し */
+	std::string func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/

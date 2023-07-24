@@ -130,6 +130,10 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		/* 'rax'の値を'rdi'のアドレスのメモリに格納 */
 		cout << " mov [rdi], rax\n";
 		return;
+	case NodeKind::ND_FUNCALL:
+		cout << " mov rax, 0\n";
+		cout << " call " << node->func_name << "\n";
+		return;
 	default:
 		break;
 	}
