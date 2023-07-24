@@ -758,7 +758,7 @@ unique_ptr<Node> Node::function_call(unique_ptr<Token> &next_token, unique_ptr<T
 	/* 最後は")"" */
 	next_token = Token::skip(std::move(current_token), ")");
 	/* headの次のノード以降を切り離し返り値用のnodeのargsに繋ぐ */
-	node->_args = std::move(cur->_next);
+	node->_args = std::move(head->_next);
 	return node;
 }
 
