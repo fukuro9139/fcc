@@ -128,7 +128,8 @@ public:
 	std::unique_ptr<Node> _body = nullptr; /*!< ブロック内{...}には複数の式を入れられる */
 
 	/* 関数呼び出し */
-	std::string func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
+	std::string func_name = "";	 /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
+	std::unique_ptr<Node> _args; /*!< 引数  */
 
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
@@ -171,6 +172,7 @@ private:
 	static std::unique_ptr<Node> mul(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> unary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> primary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+	static std::unique_ptr<Node> function_call(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location);

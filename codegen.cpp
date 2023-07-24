@@ -11,6 +11,7 @@
  *
  */
 
+#include <vector>
 #include "codegen.hpp"
 
 using std::cout;
@@ -20,6 +21,8 @@ using std::unique_ptr;
 
 /** スタックの深さ */
 static int depth = 0;
+
+static const std::vector<string> arg_regs = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 /*****************/
 /* CodeGen Class */
@@ -49,6 +52,17 @@ void CodeGen::push()
  * @param reg 数値をセットするレジスタ
  */
 void CodeGen::pop(string &&reg)
+{
+	cout << " pop " << reg << "\n";
+	--depth;
+}
+
+/**
+ * @brief スタックからpopした数値を指定したレジスタにセットする
+ *
+ * @param reg 数値をセットするレジスタ
+ */
+void CodeGen::pop(const std::string &reg)
 {
 	cout << " pop " << reg << "\n";
 	--depth;
@@ -130,10 +144,34 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		/* 'rax'の値を'rdi'のアドレスのメモリに格納 */
 		cout << " mov [rdi], rax\n";
 		return;
+		/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
+	{
+		/* 引数の数 */
+		int nargs = 0;
+
+		auto arg = std::move(node->_args);
+		unique_ptr<Node> next_arg;
+
+		for (; arg; arg = std::move(next_arg))
+		{
+			next_arg = std::move(arg->_next);
+			/* 引数の値を評価 */
+			generate_expression(std::move(arg));
+			/* スタックに入れる */
+			push();
+			++nargs;
+		}
+		/* 引数の値を対応するレジスタにセット */
+		for (int i = nargs - 1; i >= 0; --i)
+		{
+			pop(arg_regs[i]);
+		}
 		cout << " mov rax, 0\n";
 		cout << " call " << node->func_name << "\n";
 		return;
+	}
+
 	default:
 		break;
 	}
@@ -282,15 +320,13 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		{
 			return;
 		}
+		unique_ptr<Node> next_node;
 		/* Bodyに含まれるノードをすべて評価する */
-		for (unique_ptr<Node> next_node = std::move(current_node->_next); current_node;)
+		for (; current_node;)
 		{
+			next_node = std::move(current_node->_next);
 			generate_statement(std::move(current_node));
 			current_node = std::move(next_node);
-			if (current_node)
-			{
-				next_node = std::move(current_node->_next);
-			}
 		}
 		return;
 	}

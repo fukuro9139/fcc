@@ -688,11 +688,9 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 	if (TokenKind::TK_IDENT == current_token->_kind)
 	{
 		/* 識別子の後に()がついていたら関数呼び出し */
-		if(Token::is_equal(current_token->_next, "(")){
-			unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token->_location);
-			node->func_name = std::string(current_token->_location, current_token->_location + current_token->_length);
-			next_token = Token::skip(std::move(current_token->_next->_next), ")");
-			return node;
+		if (Token::is_equal(current_token->_next, "("))
+		{
+			return function_call(next_token, std::move(current_token));
 		}
 
 		/* それ以外なら普通の変数 */
@@ -721,6 +719,47 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 
 	/* コンパイルエラー対策、error_at()内でプログラムは終了するためnullptrが返ることはない */
 	return nullptr;
+}
+
+/**
+ * @brief 関数呼び出し
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n
+ * function_call = identifier "(" (assign ("," assign)*)? ")"
+ */
+unique_ptr<Node> Node::function_call(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	/* 関数呼び出しノードを作成 */
+	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token->_location);
+	/* 関数の名前をセット */
+	node->func_name = std::string(current_token->_location, current_token->_location + current_token->_length);
+
+	current_token = std::move(current_token->_next->_next);
+
+	/* ノードリストの先頭としてダミーのノードを生成 */
+	unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
+	Node *cur = head.get();
+
+	/* ')'が出てくるまで読み込み続ける */
+	while (!Token::is_equal(current_token, ")"))
+	{
+		if (head.get() != cur)
+		{
+			/* 2個目以降の引数には区切りとして","が必要 */
+			current_token = Token::skip(std::move(current_token), ",");
+		}
+		cur->_next = assign(current_token, std::move(current_token));
+		cur = cur->_next.get();
+	}
+
+	/* 最後は")"" */
+	next_token = Token::skip(std::move(current_token), ")");
+	/* headの次のノード以降を切り離し返り値用のnodeのargsに繋ぐ */
+	node->_args = std::move(cur->_next);
+	return node;
 }
 
 /**
