@@ -688,7 +688,7 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 	if (TokenKind::TK_IDENT == current_token->_kind)
 	{
 		/* 識別子の後に()がついていたら関数呼び出し */
-		if(Token::is_equal(current_token, "(")){
+		if(Token::is_equal(current_token->_next, "(")){
 			unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token->_location);
 			node->func_name = std::string(current_token->_location, current_token->_location + current_token->_length);
 			next_token = Token::skip(std::move(current_token->_next), ")");
