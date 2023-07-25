@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	/* トークン列をパースし抽象構文木を構築する */
 	std::unique_ptr<Function> program = Node::parse(std::move(token));
 
-	/*　抽象構文木を巡回しながらコード生成　*/
+	/* 抽象構文木を巡回しながらコード生成 */
 	CodeGen::generate_code(std::move(program));
 
 	return 0;
