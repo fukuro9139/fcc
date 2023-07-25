@@ -92,7 +92,7 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	default:
 		break;
 	}
-	error_at("左辺値ではありません", std::move(node->_location));
+	error_at("左辺値ではありません", node->_location);
 }
 
 /**
@@ -172,7 +172,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 			pop(arg_regs[i]);
 		}
 		cout << " mov rax, 0\n";
-		cout << " call " << node->func_name << "\n";
+		cout << " call " << node->_func_name << "\n";
 		return;
 	}
 
@@ -235,7 +235,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	}
 
 	/* エラー */
-	error_at("不正な式です", std::move(node->_location));
+	error_at("不正な式です", node->_location);
 }
 
 /**
@@ -337,7 +337,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 	default:
 		break;
 	}
-	error_at("不正な構文です", std::move(node->_location));
+	error_at("不正な構文です", node->_location);
 }
 
 /**

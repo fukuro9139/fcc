@@ -19,7 +19,6 @@
 /** @brief 変数を表すオブジェクトリスト、各変数は名前によって区別する */
 struct Object
 {
-
 	/* メンバ変数 (public) */
 
 	std::unique_ptr<Object> _next; /*!< 次のオブジェクト */
@@ -30,7 +29,8 @@ struct Object
 	/* コンストラクタ */
 
 	Object() = default;
-	Object(const std::string &name);
+	Object(std::string &&name) : _name(std::move(name)){};
+	Object(std::string &&name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty) : _name(std::move(name)), _next(std::move(next)), _ty(std::move(ty)){};
 
 	/* メンバ関数 (public) */
 
@@ -49,15 +49,15 @@ struct Function
 
 	std::unique_ptr<Node> _body;	 /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
 	std::unique_ptr<Object> _locals; /*!< オブジェクトとしての情報 */
-	int _stack_size = 0;			 /*!< 使用するスタックの深さ */
+	int _stack_size;				 /*!< 使用するスタックの深さ */
 
 	std::unique_ptr<Function> _next; /*!< 関数リストの次の関数 */
-	std::string _name = "";			 /*!< 関数名 */
+	std::string _name;				 /*!< 関数名 */
 
 	/* コンストラクタ */
 
-	Function();
-	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals);
+	Function() = default;
+	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)){};
 
 	/* メンバ関数 (public) */
 
@@ -98,9 +98,9 @@ class Node
 public:
 	/* メンバ変数 (public) */
 
-	NodeKind _kind = NodeKind::ND_EXPR_STMT; /*!< ノードの種類*/
-	std::unique_ptr<Node> _next;			 /*!< ノードが木のrootである場合、次の木のrootノード */
-	std::shared_ptr<Type> _ty;				 /*!< 型情報 e.g. int or pointer to int */
+	NodeKind _kind;				 /*!< ノードの種類*/
+	std::unique_ptr<Node> _next; /*!< ノードが木のrootである場合、次の木のrootノード */
+	std::shared_ptr<Type> _ty;	 /*!< 型情報 e.g. int or pointer to int */
 
 	std::unique_ptr<Node> _lhs; /*!< 左辺 */
 	std::unique_ptr<Node> _rhs; /*!< 右辺 */
@@ -116,7 +116,7 @@ public:
 	std::unique_ptr<Node> _body; /*!< ブロック内{...}には複数の式を入れられる */
 
 	/* 関数呼び出し */
-	std::string func_name;		 /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
+	std::string _func_name;		 /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	std::unique_ptr<Node> _args; /*!< 引数  */
 
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
@@ -127,11 +127,21 @@ public:
 	/* コンストラクタ */
 
 	Node() = default;
-	Node(NodeKind &&kind, const int &location);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location);
-	Node(int &&val, const int &location);
-	Node(const Object *var, const int &location);
+
+	Node(NodeKind &&kind, const int &location)
+		: _kind(std::move(kind)), _location(location){};
+
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location)
+		: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _location(location){};
+
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location)
+		: _kind(std::move(kind)), _lhs(std::move(lhs)), _location(location){};
+
+	Node(const int &val, const int &location)
+		: _kind(NodeKind::ND_NUM), _val(val), _location(location){};
+
+	Node(const Object *var, const int &location)
+		: _kind(NodeKind::ND_VAR), _var(var), _location(location){};
 
 	/**************************/
 	/* 静的メンバ関数 (public) */
@@ -165,3 +175,16 @@ private:
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 };
+
+/**
+ * @brief 'n'を切り上げて最も近い'align'の倍数にする。
+ *
+ * @param n 切り上げ対象
+ * @param align 基数
+ * @return 切り上げた結果
+ * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
+ */
+inline int Function::align_to(const int &n, const int &align)
+{
+	return (n + align - 1) / align * align;
+}

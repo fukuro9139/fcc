@@ -10,24 +10,6 @@ using std::shared_ptr;
 const std::shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT);
 
 /**
- * @brief 型の種類を指定してオブジェクトを生成。
- *
- * @param kind 型
- */
-Type::Type(const TypeKind &kind,
-		   const std::shared_ptr<Type> &base,
-		   const std::string &name,
-		   const int &location,
-		   const std::shared_ptr<Type> &return_ty)
-	: _kind(std::move(kind)),
-	  _base(base),
-	  _name(name),
-	  _location(location),
-	  _return_ty(return_ty)
-{
-}
-
-/**
  * @brief 抽象構文木(AST)を巡回しながら型情報を設定する。
  *
  * @param node ASTのノード

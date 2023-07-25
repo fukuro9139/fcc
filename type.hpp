@@ -32,7 +32,12 @@ public:
 		 const std::shared_ptr<Type> &base = nullptr,
 		 const std::string &name = "",
 		 const int &location = 0,
-		 const std::shared_ptr<Type> &return_ty = nullptr);
+		 const std::shared_ptr<Type> &return_ty = nullptr)
+		: _kind(std::move(kind)),
+		  _base(base),
+		  _name(name),
+		  _location(location),
+		  _return_ty(return_ty){};
 
 	/* メンバ関数 (public) */
 

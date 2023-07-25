@@ -33,15 +33,6 @@ static unique_ptr<Object> locals = nullptr;
 /****************/
 
 /**
- * @brief 名前を付けてオブジェクトを生成
- *
- * @param name オブジェクトの名前
- */
-Object::Object(const std::string &name) : _name(name)
-{
-}
-
-/**
  * @brief nameを名前として持つ新しい変数を生成してlocalsの先頭に追加する。
  *
  * @param name オブジェクトの名前
@@ -49,10 +40,7 @@ Object::Object(const std::string &name) : _name(name)
  */
 const Object *Object::new_lvar(std::shared_ptr<Type> &&ty)
 {
-	unique_ptr<Object> var = std::make_unique<Object>(ty->_name);
-	var->_next = std::move(locals);
-	var->_ty = std::move(ty);
-	locals = std::move(var);
+	locals = std::make_unique<Object>(std::move(ty->_name), std::move(locals), std::move(ty));
 	return locals.get();
 }
 
@@ -78,33 +66,6 @@ const Object *Object::find_var(const unique_ptr<Token> &token)
 /* Function Class */
 /******************/
 
-/** @brief デフォルトコンストラクタ */
-Function::Function() = default;
-
-/**
- * @brief 関数の中身を定義してオブジェクトを生成
- *
- * @param body 関数内で行う処理
- * @param locals 関数内で使うローカル変数
- */
-Function::Function(unique_ptr<Node> &&body, unique_ptr<Object> &&locals)
-	: _body(std::move(body)), _locals(std::move(locals))
-{
-}
-
-/**
- * @brief 'n'を切り上げて最も近い'align'の倍数にする。
- *
- * @param n 切り上げ対象
- * @param align 基数
- * @return 切り上げた結果
- * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
- */
-int Function::align_to(const int &n, const int &align)
-{
-	return (n + align - 1) / align * align;
-}
-
 /** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。
  *
  * @param prog スタックサイズをセットする関数
@@ -128,64 +89,6 @@ void Function::assign_lvar_offsets(const std::unique_ptr<Function> &prog)
 /**************/
 
 /**
- * @brief 右辺と左辺を持たないノードオブジェクトを生成。
- *
- * @param kind ノードの種類
- * @param location ノードと対応する入力文字列の位置
- */
-Node::Node(NodeKind &&kind, const int &location)
-	: _kind(std::move(kind)), _location(location)
-{
-}
-
-/**
- * @brief 左辺を持つオブジェクトを生成。
- *
- * @param kind ノードの種類
- * @param lhs 左辺のノード
- * @param location ノードと対応する入力文字列の位置
- */
-Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, const int &location)
-	: _kind(std::move(kind)), _lhs(std::move(lhs)), _location(location)
-{
-}
-
-/**
- * @brief 数値を表すノードのオブジェクトを生成。
- *
- * @param val ノードが表す数値
- * @param location ノードと対応する入力文字列の位置
- */
-Node::Node(int &&val, const int &location)
-	: _kind(NodeKind::ND_NUM), _val(std::move(val)), _location(location)
-{
-}
-
-/**
- * @brief 変数を表すノードのオブジェクトを生成。
- *
- * @param var ノードが表す変数
- * @param location ノードと対応する入力文字列の位置
- */
-Node::Node(const Object *var, const int &location)
-	: _kind(NodeKind::ND_VAR), _var(std::move(var)), _location(location)
-{
-}
-
-/**
- * @brief 右辺と左辺を持つオブジェクトを生成。
- *
- * @param kind ノードの種類
- * @param lhs 左辺のノード
- * @param rhs 右辺のノード
- * @param location ノードと対応する入力文字列の位置
- */
-Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, const int &location)
-	: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _location(location)
-{
-}
-
-/**
  * @brief プログラム を読み取る。
  *
  * @param next_token 残りのトークンを返すための参照
@@ -204,10 +107,10 @@ Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, cons
 unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	/* return */
-	if (Token::is_equal(current_token, "return"))
+	if (current_token->is_equal("return"))
 	{
 		/* "return"の次はexpresionがくる */
-		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_RETURN, current_token->_location);
+		auto node = std::make_unique<Node>(NodeKind::ND_RETURN, current_token->_location);
 		node->_lhs = expression(current_token, std::move(current_token->_next));
 
 		/* 最後は';'で終わるはず */
@@ -216,9 +119,9 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 	}
 
 	/* if */
-	if (Token::is_equal(current_token, "if"))
+	if (current_token->is_equal("if"))
 	{
-		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_IF, current_token->_location);
+		auto node = std::make_unique<Node>(NodeKind::ND_IF, current_token->_location);
 
 		/* ifの次は'('がくる */
 		current_token = Token::skip(std::move(current_token->_next), "(");
@@ -231,7 +134,7 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 		node->_then = statement(current_token, std::move(current_token));
 
 		/* else節が存在する */
-		if (Token::is_equal(current_token, "else"))
+		if (current_token->is_equal("else"))
 		{
 			node->_else = statement(current_token, std::move(current_token->_next));
 		}
@@ -240,9 +143,9 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 	}
 
 	/* for */
-	if (Token::is_equal(current_token, "for"))
+	if (current_token->is_equal("for"))
 	{
-		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FOR, current_token->_location);
+		auto node = std::make_unique<Node>(NodeKind::ND_FOR, current_token->_location);
 
 		/* forの次は'('がくる */
 		current_token = Token::skip(std::move(current_token->_next), "(");
@@ -251,14 +154,14 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 		node->_init = expression_statement(current_token, std::move(current_token));
 
 		/* 次のトークンが';'でなければ条件が存在する */
-		if (!Token::is_equal(current_token, ";"))
+		if (!current_token->is_equal(";"))
 		{
 			node->_condition = expression(current_token, std::move(current_token));
 		}
 		current_token = Token::skip(std::move(current_token), ";");
 
 		/* 次のトークンが')'でなければ加算処理が存在する */
-		if (!Token::is_equal(current_token, ")"))
+		if (!current_token->is_equal(")"))
 		{
 			node->_inc = expression(current_token, std::move(current_token));
 		}
@@ -269,9 +172,9 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 	}
 
 	/* while */
-	if (Token::is_equal(current_token, "while"))
+	if (current_token->is_equal("while"))
 	{
-		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FOR, current_token->_location);
+		auto node = std::make_unique<Node>(NodeKind::ND_FOR, current_token->_location);
 
 		/* whileの次は'('がくる */
 		current_token = Token::skip(std::move(current_token->_next), "(");
@@ -284,7 +187,7 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 	}
 
 	/* ブロック */
-	if (Token::is_equal(current_token, "{"))
+	if (current_token->is_equal("{"))
 	{
 		return compound_statement(next_token, std::move(current_token->_next));
 	}
@@ -304,16 +207,16 @@ unique_ptr<Node> Node::statement(unique_ptr<Token> &next_token, unique_ptr<Token
 unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 
-	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
+	auto node = std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
 
-	unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
-	Node *cur = head.get();
+	auto head = std::make_unique_for_overwrite<Node>();
+	auto cur = head.get();
 
 	/* '}'が出てくるまでstatementをパースする */
-	while (!Token::is_equal(current_token, "}"))
+	while (!current_token->is_equal("}"))
 	{
 		/* 変数宣言 */
-		if (Token::is_equal(current_token, "int"))
+		if (current_token->is_equal("int"))
 		{
 			cur->_next = declaration(current_token, std::move(current_token));
 		}
@@ -369,17 +272,17 @@ unique_ptr<Function> Node::function_definition(unique_ptr<Token> &next_token, un
  */
 unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	const shared_ptr<Type> base = declspec(current_token, std::move(current_token));
+	const auto base = declspec(current_token, std::move(current_token));
 
 	/* ノードリストの先頭としてダミーのノードを作成 */
-	unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
-	Node *cur = head.get();
+	auto head = std::make_unique_for_overwrite<Node>();
+	auto cur = head.get();
 
 	/* この文で宣言している変数の個数 */
 	int cnt = 0;
 
 	/* ";"が出てくるまで読み取りを続ける */
-	while (!Token::is_equal(current_token, ";"))
+	while (!current_token->is_equal(";"))
 	{
 		/* 2個目以降の宣言には",""区切りが必要 */
 		if (cnt++ > 0)
@@ -387,27 +290,27 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 			current_token = Token::skip(std::move(current_token), ",");
 		}
 		/* 変数の最終的な型を決定 */
-		shared_ptr<Type> ty = declarator(current_token, std::move(current_token), base);
-		const Object *var = Object::new_lvar(std::move(ty));
+		auto ty = declarator(current_token, std::move(current_token), base);
+		const auto var = Object::new_lvar(std::move(ty));
 
 		/* 宣言の後に初期化式がない場合は次のループへ */
-		if (!Token::is_equal(current_token, "="))
+		if (!current_token->is_equal("="))
 		{
 			continue;
 		};
 
 		/* 変数を表すノードを生成 */
-		unique_ptr<Node> lhs = std::make_unique<Node>(var, var->_ty->_location);
+		auto lhs = std::make_unique<Node>(var, var->_ty->_location);
 		/* 変数の初期化値を表すノードを生成 */
-		unique_ptr<Node> rhs = assign(current_token, std::move(current_token->_next));
+		auto rhs = assign(current_token, std::move(current_token->_next));
 		/* 初期化を代入式として表すノードを生成 */
-		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(lhs), std::move(rhs), current_token->_location);
+		auto node = std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(lhs), std::move(rhs), current_token->_location);
 		/* ノードリストの末尾に単文ノードとして追加 */
 		cur->_next = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, std::move(node), current_token->_location);
 		/* ノードリストの末尾を更新 */
 		cur = cur->_next.get();
 	}
-	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
+	auto node = std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
 	/* ヘッダの次のノード以降を切り離してnodeのbodyに繋ぐ */
 	node->_body = std::move(head->_next);
 	next_token = std::move(current_token->_next);
@@ -427,7 +330,7 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
 {
 	/* 識別子名の後に()があれば関数 */
-	if (Token::is_equal(current_token, "("))
+	if (current_token->is_equal("("))
 	{
 		next_token = Token::skip(std::move(current_token->_next), ")");
 		return Type::func_type(std::move(ty));
@@ -459,7 +362,7 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	/* トークンの種類が識別子でないときエラー */
 	if (TokenKind::TK_IDENT != current_token->_kind)
 	{
-		error_at("識別子の名前ではありません", std::move(current_token->_location));
+		error_at("識別子の名前ではありません", current_token->_location);
 	}
 
 	/* 名前を設定 */
@@ -497,7 +400,7 @@ shared_ptr<Type> Node::declspec(unique_ptr<Token> &next_token, unique_ptr<Token>
 unique_ptr<Node> Node::expression_statement(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	/* 空のstatementに対応 */
-	if (Token::is_equal(current_token, ";"))
+	if (current_token->is_equal(";"))
 	{
 		next_token = std::move(current_token->_next);
 		return std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
@@ -532,8 +435,8 @@ unique_ptr<Node> Node::expression(unique_ptr<Token> &next_token, unique_ptr<Toke
  */
 unique_ptr<Node> Node::assign(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	unique_ptr<Node> node = equality(current_token, std::move(current_token));
-	if (Token::is_equal(current_token, "="))
+	auto node = equality(current_token, std::move(current_token));
+	if (current_token->is_equal("="))
 	{
 		return std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), assign(next_token, std::move(current_token->_next)), current_token->_location);
 	}
@@ -551,18 +454,18 @@ unique_ptr<Node> Node::assign(unique_ptr<Token> &next_token, unique_ptr<Token> &
  */
 unique_ptr<Node> Node::equality(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	unique_ptr<Node> node = relational(current_token, std::move(current_token));
+	auto node = relational(current_token, std::move(current_token));
 
 	for (;;)
 	{
 		auto location = current_token->_location;
-		if (Token::is_equal(current_token, "=="))
+		if (current_token->is_equal("=="))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_EQ, std::move(node), relational(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
-		if (Token::is_equal(current_token, "!="))
+		if (current_token->is_equal("!="))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_NE, std::move(node), relational(current_token, std::move(current_token->_next)), location);
 			continue;
@@ -585,36 +488,37 @@ unique_ptr<Node> Node::relational(unique_ptr<Token> &next_token, unique_ptr<Toke
 {
 	unique_ptr<Node> node = add(current_token, std::move(current_token));
 
-	for (;;)
+	while (true)
 	{
 
 		auto location = current_token->_location;
-		if (Token::is_equal(current_token, "<"))
+		if (current_token->is_equal("<"))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_LT, std::move(node), add(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
-		if (Token::is_equal(current_token, "<="))
+		if (current_token->is_equal("<="))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_LE, std::move(node), add(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
 		/* lhs > rhs は rhs < lhs と読み替える */
-		if (Token::is_equal(current_token, ">"))
+		if (current_token->is_equal(">"))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_LT, add(current_token, std::move(current_token->_next)), std::move(node), location);
 			continue;
 		}
 
 		/* lhs >= rhs は rhs <= lhs と読み替える */
-		if (Token::is_equal(current_token, ">="))
+		if (current_token->is_equal(">="))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_LE, add(current_token, std::move(current_token->_next)), std::move(node), location);
 			continue;
 		}
 
+		/* 比較演算子が出てこなくなったらループを抜ける */
 		next_token = std::move(current_token);
 		return node;
 	}
@@ -632,21 +536,22 @@ unique_ptr<Node> Node::add(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
 {
 	unique_ptr<Node> node = mul(current_token, std::move(current_token));
 
-	for (;;)
+	while (true)
 	{
 		auto location = current_token->_location;
-		if (Token::is_equal(current_token, "+"))
+		if (current_token->is_equal("+"))
 		{
 			node = new_add(std::move(node), mul(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
-		if (Token::is_equal(current_token, "-"))
+		if (current_token->is_equal("-"))
 		{
 			node = new_sub(std::move(node), mul(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
+		/* "+", "-"どちらも出てこなくなったらループを抜ける */
 		next_token = std::move(current_token);
 		return node;
 	}
@@ -664,21 +569,22 @@ unique_ptr<Node> Node::mul(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
 {
 	unique_ptr<Node> node = unary(current_token, std::move(current_token));
 
-	for (;;)
+	while (true)
 	{
 		auto location = current_token->_location;
-		if (Token::is_equal(current_token, "*"))
+		if (current_token->is_equal("*"))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), unary(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
-		if (Token::is_equal(current_token, "/"))
+		if (current_token->is_equal("/"))
 		{
 			node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), unary(current_token, std::move(current_token->_next)), location);
 			continue;
 		}
 
+		/* "*", "/"どちらも出てこなくなったらループを抜ける */
 		next_token = std::move(current_token);
 		return node;
 	}
@@ -694,22 +600,22 @@ unique_ptr<Node> Node::mul(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
  */
 unique_ptr<Node> Node::unary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	if (Token::is_equal(current_token, "+"))
+	if (current_token->is_equal("+"))
 	{
 		return unary(next_token, std::move(current_token->_next));
 	}
 
-	if (Token::is_equal(current_token, "-"))
+	if (current_token->is_equal("-"))
 	{
 		return std::make_unique<Node>(NodeKind::ND_NEG, unary(next_token, std::move(current_token->_next)), current_token->_location);
 	}
 
-	if (Token::is_equal(current_token, "&"))
+	if (current_token->is_equal("&"))
 	{
 		return std::make_unique<Node>(NodeKind::ND_ADDR, unary(next_token, std::move(current_token->_next)), current_token->_location);
 	}
 
-	if (Token::is_equal(current_token, "*"))
+	if (current_token->is_equal("*"))
 	{
 		return std::make_unique<Node>(NodeKind::ND_DEREF, unary(next_token, std::move(current_token->_next)), current_token->_location);
 	}
@@ -730,9 +636,9 @@ unique_ptr<Node> Node::unary(unique_ptr<Token> &next_token, unique_ptr<Token> &&
 unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	/* トークンが"("なら、"(" expression ")"のはず */
-	if (Token::is_equal(current_token, "("))
+	if (current_token->is_equal("("))
 	{
-		unique_ptr<Node> node = expression(current_token, std::move(current_token->_next));
+		auto node = expression(current_token, std::move(current_token->_next));
 		next_token = Token::skip(std::move(current_token), ")");
 		return node;
 	}
@@ -741,20 +647,20 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 	if (TokenKind::TK_IDENT == current_token->_kind)
 	{
 		/* 識別子の後に()がついていたら関数呼び出し */
-		if (Token::is_equal(current_token->_next, "("))
+		if (current_token->_next->is_equal("("))
 		{
 			return function_call(next_token, std::move(current_token));
 		}
 
 		/* それ以外なら普通の変数 */
-		const Object *var = Object::find_var(current_token);
+		const auto var = Object::find_var(current_token);
 
 		/* 変数が宣言されていない場合はエラー */
 		if (!var)
 		{
-			error_at("未宣言の変数です", std::move(current_token->_location));
+			error_at("未宣言の変数です", current_token->_location);
 		}
-		unique_ptr<Node> node = std::make_unique<Node>(var, current_token->_location);
+		auto node = std::make_unique<Node>(var, current_token->_location);
 		next_token = std::move(current_token->_next);
 		return node;
 	}
@@ -762,13 +668,13 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 	/* トークンが数値の場合 */
 	if (TokenKind::TK_NUM == current_token->_kind)
 	{
-		unique_ptr<Node> node = std::make_unique<Node>(std::move(current_token->_value), current_token->_location);
+		auto node = std::make_unique<Node>(std::move(current_token->_value), current_token->_location);
 		next_token = std::move(current_token->_next);
 		return node;
 	}
 
 	/* どれでもなければエラー */
-	error_at("式ではありません", std::move(current_token->_location));
+	error_at("式ではありません", current_token->_location);
 
 	/* コンパイルエラー対策、error_at()内でプログラムは終了するためnullptrが返ることはない */
 	return nullptr;
@@ -786,18 +692,18 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 unique_ptr<Node> Node::function_call(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	/* 関数呼び出しノードを作成 */
-	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token->_location);
+	auto node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token->_location);
 	/* 関数の名前をセット */
-	node->func_name = current_token->_str;
+	node->_func_name = std::move(current_token->_str);
 
 	current_token = std::move(current_token->_next->_next);
 
 	/* ノードリストの先頭としてダミーのノードを生成 */
-	unique_ptr<Node> head = std::make_unique_for_overwrite<Node>();
-	Node *cur = head.get();
+	auto head = std::make_unique_for_overwrite<Node>();
+	auto cur = head.get();
 
 	/* ')'が出てくるまで読み込み続ける */
-	while (!Token::is_equal(current_token, ")"))
+	while (!current_token->is_equal(")"))
 	{
 		if (head.get() != cur)
 		{
@@ -843,7 +749,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, c
 	/* ptr + ptr は無効な演算 */
 	if (lhs->_ty->_base && rhs->_ty->_base)
 	{
-		error_at("無効な演算です", std::move(location));
+		error_at("無効な演算です", location);
 	}
 
 	/* "数 + ptr" を "ptr + 数" に変換する*/
@@ -898,7 +804,7 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	}
 
 	/* 数 - ptr はエラー */
-	error_at("無効な演算です", std::move(location));
+	error_at("無効な演算です", location);
 
 	/* コンパイルエラー対策。直前のerror_at()で終了されるのでnullptrが返ることはない */
 	return nullptr;
