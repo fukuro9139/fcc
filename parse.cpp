@@ -434,7 +434,7 @@ shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Tok
 {
 	/* 識別子名の後に()があれば関数 */
 	if(Token::is_equal(current_token, "(")){
-		next_token = Token::skip(std::move(current_token), ")");
+		next_token = Token::skip(std::move(current_token->_next), ")");
 		return Type::func_type(std::move(ty));
 	}
 	/* そうでなければ普通の変数 */
