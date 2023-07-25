@@ -19,25 +19,20 @@
 /** @brief 変数を表すオブジェクトリスト、各変数は名前によって区別する */
 struct Object
 {
-	/**********************/
+
 	/* メンバ変数 (public) */
-	/**********************/
 
-	std::unique_ptr<Object> _next = nullptr; /*!< 次のオブジェクト */
-	std::string _name = "";					 /*!< 名前 */
-	std::shared_ptr<Type> _ty = nullptr;	 /* 型 */
-	int _offset = 0;						 /*!< RBPからのオフセット */
+	std::unique_ptr<Object> _next; /*!< 次のオブジェクト */
+	std::string _name;			   /*!< 名前 */
+	std::shared_ptr<Type> _ty;	   /* 型 */
+	int _offset;				   /*!< RBPからのオフセット */
 
-	/*****************/
 	/* コンストラクタ */
-	/*****************/
 
-	Object();
-	Object(std::string &&name);
+	Object() = default;
+	Object(const std::string &name);
 
-	/**********************/
 	/* メンバ関数 (public) */
-	/**********************/
 
 	static const Object *new_lvar(std::shared_ptr<Type> &&ty);
 	static const Object *find_var(const std::unique_ptr<Token> &token);
@@ -50,35 +45,25 @@ class Node;
 struct Function
 {
 
-	/**********************/
 	/* メンバ変数 (public) */
-	/**********************/
 
-	std::unique_ptr<Node> _body = nullptr;	   /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
-	std::unique_ptr<Object> _locals = nullptr; /*!< オブジェクトとしての情報 */
-	int _stack_size = 0;					   /*!< 使用するスタックの深さ */
+	std::unique_ptr<Node> _body;	 /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
+	std::unique_ptr<Object> _locals; /*!< オブジェクトとしての情報 */
+	int _stack_size = 0;			 /*!< 使用するスタックの深さ */
 
-	std::unique_ptr<Function> _next = nullptr; /*!< 関数リストの次の関数 */
-	std::string _name = "";					   /*!< 関数名 */
+	std::unique_ptr<Function> _next; /*!< 関数リストの次の関数 */
+	std::string _name = "";			 /*!< 関数名 */
 
-	/*****************/
 	/* コンストラクタ */
-	/*****************/
 
 	Function();
 	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals);
 
-	/**********************/
 	/* メンバ関数 (public) */
-	/**********************/
 
-	
-
-	/**************************/
 	/* 静的メンバ関数 (public) */
-	/**************************/
 
-	static int align_to(int &&n, int &&align);
+	static int align_to(const int &n, const int &align);
 	static void assign_lvar_offsets(const std::unique_ptr<Function> &prog);
 };
 
@@ -111,46 +96,42 @@ enum class NodeKind
 class Node
 {
 public:
-	/**********************/
 	/* メンバ変数 (public) */
-	/**********************/
 
 	NodeKind _kind = NodeKind::ND_EXPR_STMT; /*!< ノードの種類*/
-	std::unique_ptr<Node> _next = nullptr;	 /*!< ノードが木のrootである場合、次の木のrootノード */
-	std::shared_ptr<Type> _ty = nullptr;	 /*!< 型情報 e.g. int or pointer to int */
+	std::unique_ptr<Node> _next;			 /*!< ノードが木のrootである場合、次の木のrootノード */
+	std::shared_ptr<Type> _ty;				 /*!< 型情報 e.g. int or pointer to int */
 
-	std::unique_ptr<Node> _lhs = nullptr; /*!< 左辺 */
-	std::unique_ptr<Node> _rhs = nullptr; /*!< 右辺 */
+	std::unique_ptr<Node> _lhs; /*!< 左辺 */
+	std::unique_ptr<Node> _rhs; /*!< 右辺 */
 
 	/* if or for */
-	std::unique_ptr<Node> _condition = nullptr; /*!< if文の条件 */
-	std::unique_ptr<Node> _then = nullptr;		/*!< trueのときに行う式 */
-	std::unique_ptr<Node> _else = nullptr;		/*!< falseのとき行う式 */
-	std::unique_ptr<Node> _init = nullptr;		/*!< 初期化処理 */
-	std::unique_ptr<Node> _inc = nullptr;		/*!< 加算処理 */
+	std::unique_ptr<Node> _condition; /*!< if文の条件 */
+	std::unique_ptr<Node> _then;	  /*!< trueのときに行う式 */
+	std::unique_ptr<Node> _else;	  /*!< falseのとき行う式 */
+	std::unique_ptr<Node> _init;	  /*!< 初期化処理 */
+	std::unique_ptr<Node> _inc;		  /*!< 加算処理 */
 
 	/* ブロック */
-	std::unique_ptr<Node> _body = nullptr; /*!< ブロック内{...}には複数の式を入れられる */
+	std::unique_ptr<Node> _body; /*!< ブロック内{...}には複数の式を入れられる */
 
 	/* 関数呼び出し */
-	std::string func_name = "";	 /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
+	std::string func_name;		 /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	std::unique_ptr<Node> _args; /*!< 引数  */
 
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
-	std::string::const_iterator _location; /* ノードと対応する入力文字列の位置 */
+	int _location; /* ノードと対応する入力文字列の位置 */
 
-	/*****************/
 	/* コンストラクタ */
-	/*****************/
 
-	Node();
-	Node(NodeKind &&kind, const std::string::const_iterator &location);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const std::string::const_iterator &location);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const std::string::const_iterator &location);
-	Node(int &&val, const std::string::const_iterator &location);
-	Node(const Object *var, const std::string::const_iterator &location);
+	Node() = default;
+	Node(NodeKind &&kind, const int &location);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location);
+	Node(int &&val, const int &location);
+	Node(const Object *var, const int &location);
 
 	/**************************/
 	/* 静的メンバ関数 (public) */
@@ -181,6 +162,6 @@ private:
 	static std::unique_ptr<Node> primary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> function_call(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 
-	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location);
-	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location);
+	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
+	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 };

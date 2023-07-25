@@ -22,7 +22,7 @@
 /***********/
 
 void error(std::string &&msg);
-void error_at(std::string &&msg, std::string::const_iterator &&location);
+void error_at(const std::string &msg, const int &location);
 
 /** @brief トークンの種類 */
 enum class TokenKind
@@ -42,19 +42,20 @@ public:
 	/* メンバ変数 (public) */
 	/**********************/
 
-	std::unique_ptr<Token> _next = nullptr; /*!< 次のトークン */
-	TokenKind _kind;						/*!< トークンの型 */
-	int _value = 0;							/*!< kindがTK_NUMの場合、その数値 */
-	std::string::const_iterator _location;	/*!< トークン文字列の開始位置 */
-	size_t _length = 0;						/*!< トークンの長さ */
+	std::unique_ptr<Token> _next; /*!< 次のトークン */
+	TokenKind _kind;			  /*!< トークンの型 */
+	int _value;					  /*!< kindがTK_NUMの場合、その数値 */
+	int _location;				  /*!< トークン文字列の開始位置 */
+	std::string _str;			  /*!< トークンが表す文字列 */
 
 	/*****************/
 	/* コンストラクタ */
 	/*****************/
 
-	Token();
-	Token(TokenKind &&kind, const std::string::const_iterator &first, const std::string::const_iterator &last);
-	Token(const std::string::const_iterator &location, int &&val);
+	Token() = default;
+	Token(const TokenKind &kind);
+	Token(const int &location, const int &val);
+	Token(const TokenKind &kind, const int &location, const std::string &str);
 
 	/**************************/
 	/* 静的メンバ関数 (public) */
@@ -70,8 +71,8 @@ private:
 	/* 静的メンバ関数 (private) */
 	/**************************/
 
-	static bool start_with(const std::string::const_iterator &first, const std::string::const_iterator &last, std::string &&op);
-	static size_t read_punct(const std::string::const_iterator &first, const std::string::const_iterator &last);
+	static bool start_with(const std::string &str, std::string &&op);
+	static size_t read_punct(const std::string &str);
 	static bool is_first_char_of_ident(const char &c);
 	static bool is_char_of_ident(const char &c);
 	static void convert_keywords(std::unique_ptr<Token> &token);

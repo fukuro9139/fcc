@@ -32,15 +32,12 @@ static unique_ptr<Object> locals = nullptr;
 /* Object Class */
 /****************/
 
-/** @brief デフォルトコンストラクタ */
-Object::Object() = default;
-
 /**
  * @brief 名前を付けてオブジェクトを生成
  *
  * @param name オブジェクトの名前
  */
-Object::Object(std::string &&name) : _name(std::move(name))
+Object::Object(const std::string &name) : _name(name)
 {
 }
 
@@ -52,7 +49,7 @@ Object::Object(std::string &&name) : _name(std::move(name))
  */
 const Object *Object::new_lvar(std::shared_ptr<Type> &&ty)
 {
-	unique_ptr<Object> var = std::make_unique<Object>(std::string(ty->_location, ty->_location + ty->_length));
+	unique_ptr<Object> var = std::make_unique<Object>(ty->_name);
 	var->_next = std::move(locals);
 	var->_ty = std::move(ty);
 	locals = std::move(var);
@@ -69,7 +66,7 @@ const Object *Object::find_var(const unique_ptr<Token> &token)
 {
 	for (const Object *var = locals.get(); var; var = var->_next.get())
 	{
-		if (var->_name.length() == token->_length && std::equal(var->_name.begin(), var->_name.end(), token->_location))
+		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
 		{
 			return var;
 		}
@@ -103,7 +100,7 @@ Function::Function(unique_ptr<Node> &&body, unique_ptr<Object> &&locals)
  * @return 切り上げた結果
  * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
  */
-int Function::align_to(int &&n, int &&align)
+int Function::align_to(const int &n, const int &align)
 {
 	return (n + align - 1) / align * align;
 }
@@ -130,16 +127,13 @@ void Function::assign_lvar_offsets(const std::unique_ptr<Function> &prog)
 /* Node Class */
 /**************/
 
-/** @brief デフォルトコンストラクタ */
-Node::Node() = default;
-
 /**
  * @brief 右辺と左辺を持たないノードオブジェクトを生成。
  *
  * @param kind ノードの種類
  * @param location ノードと対応する入力文字列の位置
  */
-Node::Node(NodeKind &&kind, const std::string::const_iterator &location)
+Node::Node(NodeKind &&kind, const int &location)
 	: _kind(std::move(kind)), _location(location)
 {
 }
@@ -151,7 +145,7 @@ Node::Node(NodeKind &&kind, const std::string::const_iterator &location)
  * @param lhs 左辺のノード
  * @param location ノードと対応する入力文字列の位置
  */
-Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, const std::string::const_iterator &location)
+Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, const int &location)
 	: _kind(std::move(kind)), _lhs(std::move(lhs)), _location(location)
 {
 }
@@ -162,7 +156,7 @@ Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, const std::string::const_ite
  * @param val ノードが表す数値
  * @param location ノードと対応する入力文字列の位置
  */
-Node::Node(int &&val, const std::string::const_iterator &location)
+Node::Node(int &&val, const int &location)
 	: _kind(NodeKind::ND_NUM), _val(std::move(val)), _location(location)
 {
 }
@@ -173,7 +167,7 @@ Node::Node(int &&val, const std::string::const_iterator &location)
  * @param var ノードが表す変数
  * @param location ノードと対応する入力文字列の位置
  */
-Node::Node(const Object *var, const std::string::const_iterator &location)
+Node::Node(const Object *var, const int &location)
 	: _kind(NodeKind::ND_VAR), _var(std::move(var)), _location(location)
 {
 }
@@ -186,7 +180,7 @@ Node::Node(const Object *var, const std::string::const_iterator &location)
  * @param rhs 右辺のノード
  * @param location ノードと対応する入力文字列の位置
  */
-Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, const std::string::const_iterator &location)
+Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, const int &location)
 	: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _location(location)
 {
 }
@@ -357,7 +351,7 @@ unique_ptr<Function> Node::function_definition(unique_ptr<Token> &next_token, un
 	locals = nullptr;
 
 	auto fn = std::make_unique_for_overwrite<Function>();
-	fn->_name = std::string(ty->_location, ty->_location + ty->_length);
+	fn->_name = ty->_name;
 
 	current_token = Token::skip(std::move(current_token), "{");
 	fn->_body = compound_statement(current_token, std::move(current_token));
@@ -460,7 +454,7 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	/* "*"の数だけ直前の型へのポインタになる */
 	while (Token::consume(current_token, std::move(current_token), "*"))
 	{
-		ty = Type::pointer_to(std::move(ty));
+		ty = Type::pointer_to(ty);
 	}
 	/* トークンの種類が識別子でないときエラー */
 	if (TokenKind::TK_IDENT != current_token->_kind)
@@ -469,8 +463,8 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	}
 
 	/* 名前を設定 */
-	ty->_length = std::move(current_token->_length);
-	ty->_location = std::move(current_token->_location);
+	ty->_name = current_token->_str;
+	ty->_location = current_token->_location;
 
 	/* 関数か変数か */
 	ty = type_suffix(next_token, std::move(current_token->_next), std::move(ty));
@@ -794,7 +788,7 @@ unique_ptr<Node> Node::function_call(unique_ptr<Token> &next_token, unique_ptr<T
 	/* 関数呼び出しノードを作成 */
 	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token->_location);
 	/* 関数の名前をセット */
-	node->func_name = std::string(current_token->_location, current_token->_location + current_token->_length);
+	node->func_name = current_token->_str;
 
 	current_token = std::move(current_token->_next->_next);
 
@@ -834,7 +828,7 @@ unique_ptr<Node> Node::function_call(unique_ptr<Token> &next_token, unique_ptr<T
  * @param location ノードと対応する入力文字列の位置
  * @return 対応するASTノード
  */
-unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, std::string::const_iterator &location)
+unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, const int &location)
 {
 	/* 右辺と左辺の型を確定する */
 	Type::add_type(lhs.get());
@@ -874,7 +868,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, s
  * @param location ノードと対応する入力文字列の位置
  * @return 対応するASTノード
  */
-std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, std::string::const_iterator &location)
+std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location)
 {
 	/* 右辺と左辺の型を確定する */
 	Type::add_type(lhs.get());
