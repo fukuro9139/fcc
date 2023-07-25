@@ -109,7 +109,7 @@ int Function::align_to(int &&n, int &&align)
 }
 
 /** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。
- * 
+ *
  * @param prog スタックサイズをセットする関数
  */
 void Function::assign_lvar_offsets(const std::unique_ptr<Function> &prog)
@@ -433,7 +433,8 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
 {
 	/* 識別子名の後に()があれば関数 */
-	if(Token::is_equal(current_token, "(")){
+	if (Token::is_equal(current_token, "("))
+	{
 		next_token = Token::skip(std::move(current_token->_next), ")");
 		return Type::func_type(std::move(ty));
 	}
@@ -466,11 +467,14 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	{
 		error_at("識別子の名前ではありません", std::move(current_token->_location));
 	}
+
+	/* 関数か変数か */
+	ty = type_suffix(next_token, std::move(current_token->_next), std::move(ty));
+
 	/* 名前を設定 */
 	ty->_length = std::move(current_token->_length);
 	ty->_location = std::move(current_token->_location);
-	/* 関数か変数か */
-	ty = type_suffix(next_token, std::move(current_token->_next), std::move(ty));
+
 	return std::move(ty);
 }
 
@@ -920,7 +924,8 @@ unique_ptr<Function> Node::parse(unique_ptr<Token> &&token)
 	auto cur = head.get();
 
 	/* トークンリストを最後まで辿る*/
-	while(TokenKind::TK_EOF != token->_kind){
+	while (TokenKind::TK_EOF != token->_kind)
+	{
 		cur->_next = function_definition(token, std::move(token));
 		cur = cur->_next.get();
 	}
