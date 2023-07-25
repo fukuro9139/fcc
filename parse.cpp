@@ -468,12 +468,12 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 		error_at("識別子の名前ではありません", std::move(current_token->_location));
 	}
 
-	/* 関数か変数か */
-	ty = type_suffix(next_token, std::move(current_token->_next), std::move(ty));
-
 	/* 名前を設定 */
 	ty->_length = std::move(current_token->_length);
 	ty->_location = std::move(current_token->_location);
+
+	/* 関数か変数か */
+	ty = type_suffix(next_token, std::move(current_token->_next), std::move(ty));
 
 	return std::move(ty);
 }

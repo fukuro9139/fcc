@@ -133,9 +133,17 @@ shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
 	return ty;
 }
 
+/**
+ * @brief 戻り値の型がreturn_ty型である関数型を生成し返す
+ * 
+ * @param return_ty 戻り値の型
+ * @return 戻り値がreturn_ty型の関数型
+ */
 shared_ptr<Type> Type::func_type(shared_ptr<Type> &&return_ty)
 {
 	auto ty = std::make_shared<Type> (TypeKind::TY_FUNC);
+	ty->_location = return_ty->_location;
+	ty->_length = return_ty->_length;
 	ty->_return_ty = std::move(return_ty);
 	return ty;
 }
