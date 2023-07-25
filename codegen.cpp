@@ -384,7 +384,7 @@ void CodeGen::generate_code(unique_ptr<Function> &&program)
 
 		/* エピローグ */
 		/* 最後の結果がraxに残っているのでそれが返り値になる */
-		cout << ".L.return" << fn->_name << ":\n";
+		cout << ".L.return." << fn->_name << ":\n";
 		cout << " mov rsp, rbp\n";
 		cout << " pop rbp\n";
 		cout << " ret\n";
