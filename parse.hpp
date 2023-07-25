@@ -49,6 +49,7 @@ class Node;
 /** @brief 関数を表す */
 struct Function
 {
+
 	/**********************/
 	/* メンバ変数 (public) */
 	/**********************/
@@ -56,6 +57,9 @@ struct Function
 	std::unique_ptr<Node> _body = nullptr;	   /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
 	std::unique_ptr<Object> _locals = nullptr; /*!< オブジェクトとしての情報 */
 	int _stack_size = 0;					   /*!< 使用するスタックの深さ */
+
+	std::unique_ptr<Function> _next = nullptr; /*!< 関数リストの次の関数 */
+	std::string _name = "";					   /*!< 関数名 */
 
 	/*****************/
 	/* コンストラクタ */
@@ -68,13 +72,14 @@ struct Function
 	/* メンバ関数 (public) */
 	/**********************/
 
-	void assign_lvar_offsets();
+	
 
 	/**************************/
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
 	static int align_to(int &&n, int &&align);
+	static void assign_lvar_offsets(const std::unique_ptr<Function> &prog);
 };
 
 /** @brief ノードの種類 */
@@ -160,9 +165,11 @@ private:
 
 	static std::unique_ptr<Node> statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> compound_statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+	static std::unique_ptr<Function> function_definition(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::shared_ptr<Type> declspec(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::shared_ptr<Type> declarator(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> ty);
 	static std::unique_ptr<Node> declaration(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+	static std::shared_ptr<Type> type_suffix(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> &&ty);
 	static std::unique_ptr<Node> expression(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> expression_statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> assign(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);

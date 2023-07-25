@@ -22,7 +22,11 @@ using std::unique_ptr;
 /** スタックの深さ */
 static int depth = 0;
 
+/** 関数の引数を格納するレジスタ */
 static const std::vector<string> arg_regs = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+/** 現在処理中の関数*/
+static Function *current_func = nullptr;
 
 /*****************/
 /* CodeGen Class */
@@ -248,7 +252,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		/* return の後の式を評価 */
 		generate_expression(std::move(node->_lhs));
 		/* エピローグまでjmpする */
-		cout << " jmp .L.return\n";
+		cout << " jmp .L.return." << current_func->_name << "\n";
 		return;
 	case NodeKind::ND_EXPR_STMT:
 		generate_expression(std::move(node->_lhs));
@@ -343,28 +347,46 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
  */
 void CodeGen::generate_code(unique_ptr<Function> &&program)
 {
-	/* アセンブリの前半部分を出力 */
+
+	/* スタックサイズを計算してセット */
+	Function::assign_lvar_offsets(program);
+
+	/* intel記法であることを宣言 */
 	cout << ".intel_syntax noprefix\n";
-	cout << ".globl main\n";
-	cout << "main:\n";
 
-	/* スタックサイズを計算 */
-	program->assign_lvar_offsets();
+	auto fn = std::move(program);
+	std::unique_ptr<Function> next_fn;
 
-	/* プロローグ */
-	/* スタックサイズの領域を確保する */
-	/* 1変数につき8バイト */
-	cout << " push rbp\n";
-	cout << " mov rbp, rsp\n";
-	cout << " sub rsp, " << program->_stack_size << "\n";
+	/* 各関数ごとにアセンブリを出力 */
+	for (; fn; fn = std::move(next_fn))
+	{
+		next_fn = std::move(fn->_next);
 
-	generate_statement(std::move(program->_body));
-	assert(0 == depth);
+		/* 関数のラベル部分を出力 */
+		cout << ".globl " << fn->_name << "\n";
+		cout << fn->_name << ":\n";
 
-	/* エピローグ */
-	/* 最後の結果がRAXに残っているのでそれが返り値になる */
-	cout << ".L.return:\n";
-	cout << " mov rsp, rbp\n";
-	cout << " pop rbp\n";
-	cout << " ret\n";
+		/* 現在の関数をセット */
+		current_func = fn.get();
+
+		/* プロローグ */
+		/* スタックサイズの領域を確保する */
+		/* 1変数につき8バイト */
+		cout << " push rbp\n";
+		cout << " mov rbp, rsp\n";
+		cout << " sub rsp, " << fn->_stack_size << "\n";
+
+		/* コードを出力 */
+		generate_statement(std::move(fn->_body));
+
+		/* 関数終了時にスタックの深さが0 (popし残し、popし過ぎがない) */
+		assert(0 == depth);
+
+		/* エピローグ */
+		/* 最後の結果がraxに残っているのでそれが返り値になる */
+		cout << ".L.return" << fn->_name << ":\n";
+		cout << " mov rsp, rbp\n";
+		cout << " pop rbp\n";
+		cout << " ret\n";
+	}
 }

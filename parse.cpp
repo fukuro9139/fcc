@@ -108,16 +108,22 @@ int Function::align_to(int &&n, int &&align)
 	return (n + align - 1) / align * align;
 }
 
-/** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。 */
-void Function::assign_lvar_offsets()
+/** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。
+ * 
+ * @param prog スタックサイズをセットする関数
+ */
+void Function::assign_lvar_offsets(const std::unique_ptr<Function> &prog)
 {
-	int offset = 0;
-	for (Object *var = this->_locals.get(); var; var = var->_next.get())
+	for (Function *fn = prog.get(); fn; fn = fn->_next.get())
 	{
-		offset += 8;
-		var->_offset = offset;
+		int offset = 0;
+		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
+		{
+			offset += 8;
+			var->_offset = offset;
+		}
+		fn->_stack_size = align_to(std::move(offset), 16);
 	}
-	this->_stack_size = align_to(std::move(offset), 16);
 }
 
 /**************/
@@ -335,6 +341,31 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 }
 
 /**
+ * @brief 関数宣言を読み取る。
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 読み取った関数のオブジェクト
+ * @details 下記のEBNF規則に従う。 @n function-definition = declspec declarator "{" compound-statement
+ */
+unique_ptr<Function> Node::function_definition(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	auto ty = declspec(current_token, std::move(current_token));
+	ty = declarator(current_token, std::move(current_token), ty);
+
+	/* 念ため明示的にnullptrで再初期化 */
+	locals = nullptr;
+
+	auto fn = std::make_unique_for_overwrite<Function>();
+	fn->_name = std::string(ty->_location, ty->_location + ty->_length);
+
+	current_token = Token::skip(std::move(current_token), "{");
+	fn->_body = compound_statement(current_token, std::move(current_token));
+	fn->_locals = std::move(locals);
+	return fn;
+}
+
+/**
  * @brief 変数宣言を読み取る
  *
  * @param next_token 残りのトークンを返すための参照
@@ -390,6 +421,28 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 }
 
 /**
+ * @brief 宣言を変数 or 関数か判断し結果の型を返す
+ *
+ * @details
+ * 例：int a; int型の変数 int fn(); 戻り値がint型の関数
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 宣言されている型
+ * @return 変数 or 関数の型
+ */
+shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
+{
+	/* 識別子名の後に()があれば関数 */
+	if(Token::is_equal(current_token, "(")){
+		next_token = Token::skip(std::move(current_token), ")");
+		return Type::func_type(std::move(ty));
+	}
+	/* そうでなければ普通の変数 */
+	next_token = std::move(current_token);
+	return ty;
+}
+
+/**
  * @brief 変数宣言を変数名部分を読み取る
  *
  * @details
@@ -406,16 +459,18 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	/* "*"の数だけ直前の型へのポインタになる */
 	while (Token::consume(current_token, std::move(current_token), "*"))
 	{
-		ty = std::make_shared<Type>(std::move(ty));
+		ty = Type::pointer_to(std::move(ty));
 	}
 	/* トークンの種類が識別子でないときエラー */
 	if (TokenKind::TK_IDENT != current_token->_kind)
 	{
 		error_at("識別子の名前ではありません", std::move(current_token->_location));
 	}
+	/* 名前を設定 */
 	ty->_length = std::move(current_token->_length);
 	ty->_location = std::move(current_token->_location);
-	next_token = std::move(current_token->_next);
+	/* 関数か変数か */
+	ty = type_suffix(next_token, std::move(current_token), std::move(ty));
 	return std::move(ty);
 }
 
@@ -430,7 +485,7 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 shared_ptr<Type> Node::declspec(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	next_token = Token::skip(std::move(current_token), "int");
-	return std::move(ty_int());
+	return Type::INT_BASE;
 }
 
 /**
@@ -840,7 +895,7 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	if (lhs->_ty->_base && rhs->_ty->_base)
 	{
 		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
-		node->_ty = ty_int();
+		node->_ty = Type::INT_BASE;
 		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(8, location), location);
 	}
 
@@ -856,13 +911,19 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
  *
  * @param token トークン・リストの先頭
  * @return 構文解析結果
- * @details program = statement*
+ * @details program = function-definition*
  */
 unique_ptr<Function> Node::parse(unique_ptr<Token> &&token)
 {
-	/* 最初の'{'を飛ばす */
-	token = std::move(Token::skip(std::move(token), "{"));
+	/* リストの先頭としてダミーのheadを生成 */
+	auto head = std::make_unique_for_overwrite<Function>();
+	auto cur = head.get();
 
-	unique_ptr<Function> prog = std::make_unique<Function>(compound_statement(token, std::move(token)), std::move(locals));
-	return std::move(prog);
+	/* トークンリストを最後まで辿る*/
+	while(TokenKind::TK_EOF != token->_kind){
+		cur->_next = function_definition(token, std::move(token));
+		cur = cur->_next.get();
+	}
+
+	return std::move(head->_next);
 }

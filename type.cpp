@@ -1,16 +1,13 @@
 #include "type.hpp"
 #include "parse.hpp"
 
-/** @brief int型を表す型クラスのオブジェクトのポインタを返す */
-std::shared_ptr<Type> ty_int()
-{
-	static auto p = std::make_shared<Type>(TypeKind::TY_INT);
-	return p;
-}
+using std::shared_ptr;
 
 /**************/
 /* Type Class */
 /**************/
+
+const std::shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT);
 
 /** @brief デフォルトコンストラクタ  */
 Type::Type() = default;
@@ -25,21 +22,22 @@ Type::Type(TypeKind &&kind)
 {
 }
 
-Type::Type(const std::shared_ptr<Type> &base)
-	: _kind(TypeKind::TY_PTR), _base(base)
-{
-}
-
-Type::Type(std::shared_ptr<Type> &&base)
-	: _kind(TypeKind::TY_PTR), _base(std::move(base))
-{
-}
-
+/**
+ * @brief 入力された型がint型かどうか判定
+ *
+ * @param ty 対象の型
+ * @return int型である:true, int型でない:false
+ */
 bool Type::is_integer(const std::shared_ptr<Type> &ty)
 {
 	return TypeKind::TY_INT == ty->_kind;
 }
 
+/**
+ * @brief 抽象構文木(AST)を巡回しながら型情報を設定する。
+ *
+ * @param node ASTのノード
+ */
 void Type::add_type(Node *node)
 {
 	/* ノードが存在しない or 既に型が設定されている場合は何もしない */
@@ -80,7 +78,7 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_LE:
 	case NodeKind::ND_NUM:
 	case NodeKind::ND_FUNCALL:
-		node->_ty = ty_int();
+		node->_ty = Type::INT_BASE;
 		return;
 
 	case NodeKind::ND_VAR:
@@ -90,7 +88,7 @@ void Type::add_type(Node *node)
 
 	/* 参照は参照先へのポインタ型 */
 	case NodeKind::ND_ADDR:
-		node->_ty = std::make_shared<Type>(node->_lhs->_ty);
+		node->_ty = Type::pointer_to(node->_lhs->_ty);
 		return;
 
 	/* デリファレンス */
@@ -107,4 +105,37 @@ void Type::add_type(Node *node)
 	default:
 		break;
 	}
+}
+
+/**
+ * @brief base型へのポインター型を生成して返す
+ *
+ * @param base 参照する型
+ * @return baseを参照するポインター型
+ */
+shared_ptr<Type> Type::pointer_to(shared_ptr<Type> &&base)
+{
+	auto ty = std::make_shared<Type>(TypeKind::TY_PTR);
+	ty->_base = std::move(base);
+	return ty;
+}
+
+/**
+ * @brief base型へのポインター型を生成して返す
+ *
+ * @param base 参照する型
+ * @return baseを参照するポインター型
+ */
+shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
+{
+	auto ty = std::make_shared<Type>(TypeKind::TY_PTR);
+	ty->_base = base;
+	return ty;
+}
+
+shared_ptr<Type> Type::func_type(shared_ptr<Type> &&return_ty)
+{
+	auto ty = std::make_shared<Type> (TypeKind::TY_FUNC);
+	ty->_return_ty = std::move(return_ty);
+	return ty;
 }
