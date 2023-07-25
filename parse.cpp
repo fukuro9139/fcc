@@ -841,7 +841,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, s
 	Type::add_type(rhs.get());
 
 	/* 数 + 数 */
-	if (Type::is_integer(lhs->_ty) && Type::is_integer(rhs->_ty))
+	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
 	{
 		return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), location);
 	}
@@ -881,7 +881,7 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	Type::add_type(rhs.get());
 
 	/* 数 - 数 */
-	if (Type::is_integer(lhs->_ty) && Type::is_integer(rhs->_ty))
+	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
 	{
 		return std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
 	}
