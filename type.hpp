@@ -48,6 +48,7 @@ public:
 	static void add_type(Node *node);
 	static std::shared_ptr<Type> pointer_to(const std::shared_ptr<Type> &base);
 	static std::shared_ptr<Type> func_type(const std::shared_ptr<Type> &return_ty);
+	static std::shared_ptr<Type> copy_type(const std::shared_ptr<Type> &ty);
 
 	/* 静的メンバ変数 (public) */
 
@@ -85,4 +86,12 @@ inline std::shared_ptr<Type> Type::pointer_to(const std::shared_ptr<Type> &base)
 inline std::shared_ptr<Type> Type::func_type(const std::shared_ptr<Type> &return_ty)
 {
 	return std::make_shared<Type>(return_ty->_name, return_ty->_location, return_ty);
+}
+
+inline std::shared_ptr<Type> Type::copy_type(const std::shared_ptr<Type> &ty)
+{
+	std::shared_ptr<Type> ret = std::make_shared<Type>(ty->_kind);
+	ret->_name = ty->_name;
+	ret->_base = ty->_base;
+	return ret;
 }

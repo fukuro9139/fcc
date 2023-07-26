@@ -280,17 +280,19 @@ unique_ptr<Function> Node::function_definition(unique_ptr<Token> &next_token, un
 	/* 念のため再初期化 */
 	locals = nullptr;
 
-	auto ty = declspec(current_token, std::move(current_token));
-	ty = declarator(current_token, std::move(current_token), ty);
-	Function::create_params_lvars(std::move(ty->_params));
-
 	auto fn = std::make_unique_for_overwrite<Function>();
 	current_func = fn.get();
+
+	auto ty = declspec(current_token, std::move(current_token));
+	ty = declarator(current_token, std::move(current_token), ty);
 	fn->_name = ty->_name;
+
+	Function::create_params_lvars(std::move(ty->_params));
+
 	fn->_params = std::move(locals);
 
 	current_token = Token::skip(std::move(current_token), "{");
-	fn->_body = compound_statement(current_token, std::move(current_token));
+	fn->_body = compound_statement(next_token, std::move(current_token));
 	fn->_locals = std::move(locals);
 	return fn;
 }
@@ -382,7 +384,7 @@ shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Tok
 				current_token = Token::skip(std::move(current_token), ",");
 			}
 			auto base = declspec(current_token, std::move(current_token));
-			cur->_next = declarator(current_token, std::move(current_token), base);
+			cur->_next = Type::copy_type(declarator(current_token, std::move(current_token), base));
 			cur = cur->_next.get();
 		}
 		ty = Type::func_type(ty);
@@ -420,12 +422,16 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 		error_at("識別子の名前ではありません", current_token->_location);
 	}
 
-	/* 名前を設定 */
-	ty->_name = current_token->_str;
-	ty->_location = current_token->_location;
+	/* 名前と位置を一時保存 */
+	auto name = current_token->_str;
+	auto location = current_token->_location;
 
 	/* 関数か変数か */
 	ty = type_suffix(next_token, std::move(current_token->_next), std::move(ty));
+
+	/* 名前を設定 */
+	ty->_name = name;
+	ty->_location = location;
 
 	return std::move(ty);
 }
