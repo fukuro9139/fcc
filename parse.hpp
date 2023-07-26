@@ -53,18 +53,18 @@ struct Function
 
 	std::unique_ptr<Function> _next; /*!< 関数リストの次の関数 */
 	std::string _name;				 /*!< 関数名 */
+	std::unique_ptr<Object> _params; /*!< 引数 */
 
 	/* コンストラクタ */
 
 	Function() = default;
 	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)){};
 
-	/* メンバ関数 (public) */
-
 	/* 静的メンバ関数 (public) */
 
 	static int align_to(const int &n, const int &align);
 	static void assign_lvar_offsets(const std::unique_ptr<Function> &prog);
+	static void create_params_lvars(std::shared_ptr<Type> &&param);
 };
 
 /** @brief ノードの種類 */

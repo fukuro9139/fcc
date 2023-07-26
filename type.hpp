@@ -20,24 +20,24 @@ class Type
 public:
 	/* メンバ変数 (public) */
 
-	const TypeKind _kind;					/*!< 型の種類 */
-	const std::shared_ptr<Type> _base;		/*!< kindがTY_PTRのとき、参照先の型 */
-	std::string _name;						/*!< 変数の名前 */
-	int _location;							/*!< 変数に対応する入力文字列の位置 */
-	const std::shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */
+	const TypeKind _kind;			  /*!< 型の種類 */
+	std::shared_ptr<Type> _base;	  /*!< kindがTY_PTRのとき、参照先の型 */
+	std::string _name;				  /*!< 変数の名前 */
+	int _location;					  /*!< 変数に対応する入力文字列の位置 */
+	std::shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */
+	std::shared_ptr<Type> _params;	  /*!< 引数の型  */
+	std::shared_ptr<Type> _next;	  /*!< リストの次の型 */
 
 	/* コンストラクタ */
+	Type() : _kind(TypeKind::TY_INT){};
 
-	Type(const TypeKind &kind = TypeKind::TY_INT,
-		 const std::shared_ptr<Type> &base = nullptr,
-		 const std::string &name = "",
-		 const int &location = 0,
-		 const std::shared_ptr<Type> &return_ty = nullptr)
-		: _kind(std::move(kind)),
-		  _base(base),
-		  _name(name),
-		  _location(location),
-		  _return_ty(return_ty){};
+	Type(const TypeKind &kind) : _kind(kind){};
+
+	Type(const std::shared_ptr<Type> &base)
+		: _kind(TypeKind::TY_PTR), _base(base){};
+
+	Type(const std::string &name, const int &location, const std::shared_ptr<Type> &return_ty)
+		: _kind(TypeKind::TY_FUNC), _name(name), _location(location), _return_ty(return_ty){};
 
 	/* メンバ関数 (public) */
 
@@ -73,7 +73,7 @@ inline bool Type::is_integer() const
  */
 inline std::shared_ptr<Type> Type::pointer_to(const std::shared_ptr<Type> &base)
 {
-	return std::make_shared<Type>(TypeKind::TY_PTR, base);
+	return std::make_shared<Type>(base);
 }
 
 /**
@@ -84,5 +84,5 @@ inline std::shared_ptr<Type> Type::pointer_to(const std::shared_ptr<Type> &base)
  */
 inline std::shared_ptr<Type> Type::func_type(const std::shared_ptr<Type> &return_ty)
 {
-	return std::make_shared<Type>(TypeKind::TY_FUNC, nullptr, return_ty->_name, return_ty->_location, return_ty);
+	return std::make_shared<Type>(return_ty->_name, return_ty->_location, return_ty);
 }

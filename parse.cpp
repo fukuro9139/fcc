@@ -22,20 +22,20 @@
 using std::shared_ptr;
 using std::unique_ptr;
 
-/**
- * @brief
- * 変数や関数オブジェクトのリスト。パース中に生成される全てのローカル変数はこのリストに連結される。
- */
+/** 変数や関数オブジェクトのリスト。パース中に生成される全てのローカル変数はこのリストに連結される。 */
 static unique_ptr<Object> locals = nullptr;
+
+/** 現在処理中の関数*/
+static Function *current_func = nullptr;
 
 /****************/
 /* Object Class */
 /****************/
 
 /**
- * @brief nameを名前として持つ新しい変数を生成してlocalsの先頭に追加する。
+ * @brief 新しい変数を生成してlocalsの先頭に追加する。
  *
- * @param name オブジェクトの名前
+ * @param  オブジェクトの型
  * @return 生成した変数へのポインタ
  */
 const Object *Object::new_lvar(std::shared_ptr<Type> &&ty)
@@ -52,7 +52,16 @@ const Object *Object::new_lvar(std::shared_ptr<Type> &&ty)
  */
 const Object *Object::find_var(const unique_ptr<Token> &token)
 {
-	for (const Object *var = locals.get(); var; var = var->_next.get())
+	/* 引数 */
+	for (const Object *var = current_func->_params.get(); var; var = var->_next.get())
+	{
+		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
+		{
+			return var;
+		}
+	}
+	/* ローカル変数 */
+	for (const Object *var = current_func->_locals.get(); var; var = var->_next.get())
 	{
 		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
 		{
@@ -75,12 +84,33 @@ void Function::assign_lvar_offsets(const std::unique_ptr<Function> &prog)
 	for (Function *fn = prog.get(); fn; fn = fn->_next.get())
 	{
 		int offset = 0;
+		/* 引数 */
+		for (Object *var = fn->_params.get(); var; var = var->_next.get())
+		{
+			offset += 8;
+			var->_offset = offset;
+		}
+		/* ローカル変数 */
 		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
 		{
 			offset += 8;
 			var->_offset = offset;
 		}
 		fn->_stack_size = align_to(std::move(offset), 16);
+	}
+}
+
+/**
+ * @brief 引数をローカル変数としてローカル変数のリストに繋ぐ
+ *
+ * @param param 引数のリスト
+ */
+void Function::create_params_lvars(shared_ptr<Type> &&param)
+{
+	if (param)
+	{
+		create_params_lvars(std::move(param->_next));
+		Object::new_lvar(std::move(param));
 	}
 }
 
@@ -247,14 +277,17 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
  */
 unique_ptr<Function> Node::function_definition(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	auto ty = declspec(current_token, std::move(current_token));
-	ty = declarator(current_token, std::move(current_token), ty);
-
-	/* 念ため明示的にnullptrで再初期化 */
+	/* 念のため再初期化 */
 	locals = nullptr;
 
+	auto ty = declspec(current_token, std::move(current_token));
+	ty = declarator(current_token, std::move(current_token), ty);
+	Function::create_params_lvars(std::move(ty->_params));
+
 	auto fn = std::make_unique_for_overwrite<Function>();
+	current_func = fn.get();
 	fn->_name = ty->_name;
+	fn->_params = std::move(locals);
 
 	current_token = Token::skip(std::move(current_token), "{");
 	fn->_body = compound_statement(current_token, std::move(current_token));
@@ -321,7 +354,10 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
  * @brief 宣言を変数 or 関数か判断し結果の型を返す
  *
  * @details
- * 例：int a; int型の変数 int fn(); 戻り値がint型の関数
+ * 例：int a; int型の変数 int fn(); 戻り値がint型の関数。次のEBNF規則に従う。 @n
+ * type-suffix = ("(" function-parameters? ")")? @n
+ * function-parameters = parameter ("," parameter)* @n
+ * parameter = declspec declarator
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param ty 宣言されている型
@@ -329,11 +365,30 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
  */
 shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
 {
-	/* 識別子名の後に()があれば関数 */
+	/* 識別子名の後に"("があれば関数 */
 	if (current_token->is_equal("("))
 	{
-		next_token = Token::skip(std::move(current_token->_next), ")");
-		return Type::func_type(std::move(ty));
+		current_token = std::move(current_token->_next);
+
+		auto head = std::make_unique_for_overwrite<Type>();
+		auto cur = head.get();
+
+		/* ")"が出てくるまで読み取りを続ける */
+		while (!current_token->is_equal(")"))
+		{
+			if (head.get() != cur)
+			{
+				/* 2個目以降の引数では","区切りが必要 */
+				current_token = Token::skip(std::move(current_token), ",");
+			}
+			auto base = declspec(current_token, std::move(current_token));
+			cur->_next = declarator(current_token, std::move(current_token), base);
+			cur = cur->_next.get();
+		}
+		ty = Type::func_type(ty);
+		ty->_params = std::move(head->_next);
+		next_token = std::move(current_token->_next);
+		return ty;
 	}
 	/* そうでなければ普通の変数 */
 	next_token = std::move(current_token);

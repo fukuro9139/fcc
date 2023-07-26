@@ -30,8 +30,11 @@ void Type::add_type(Node *node)
 	add_type(node->_init.get());
 	add_type(node->_inc.get());
 
-	for (Node *n = node->_body.get(); n; n = n->_next.get())
+	for (auto n = node->_body.get(); n; n = n->_next.get())
 	{
+		add_type(n);
+	}
+	for(auto n = node->_args.get(); n; n = n->_next.get()){
 		add_type(n);
 	}
 
