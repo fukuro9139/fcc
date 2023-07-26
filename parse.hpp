@@ -172,9 +172,9 @@ private:
 	static std::unique_ptr<Node> add(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> mul(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> unary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+	static std::unique_ptr<Node> postfix(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> primary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> function_call(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 };

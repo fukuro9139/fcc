@@ -724,7 +724,7 @@ unique_ptr<Node> Node::mul(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&") unary
+ * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&") unary | postfix
  */
 unique_ptr<Node> Node::unary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
@@ -748,7 +748,34 @@ unique_ptr<Node> Node::unary(unique_ptr<Token> &next_token, unique_ptr<Token> &&
 		return std::make_unique<Node>(NodeKind::ND_DEREF, unary(next_token, std::move(current_token->_next)), current_token->_location);
 	}
 
-	return primary(next_token, std::move(current_token));
+	return postfix(next_token, std::move(current_token));
+}
+
+/**
+ * @brief 配列の添え字[]を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]")*
+ */
+unique_ptr<Node> Node::postfix(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	/* 単項を読む */
+	auto node = primary(current_token, std::move(current_token));
+
+	/* 単項に続く[]がある限り読み進める */
+	while (current_token->is_equal("["))
+	{
+		/* x[y] を *(x+y) に置き換える */
+		int location = current_token->_location;
+		auto idx = expression(current_token, std::move(current_token->_next));
+		current_token = Token::skip(std::move(current_token), "]");
+		node = std::make_unique<Node>(NodeKind::ND_DEREF, new_add(std::move(node), std::move(idx), location), location);
+	}
+
+	next_token = std::move(current_token);
+	return node;
 }
 
 /**
