@@ -61,7 +61,7 @@ const Object *Object::find_var(const unique_ptr<Token> &token)
 		}
 	}
 	/* ローカル変数 */
-	for (const Object *var = current_func->_locals.get(); var; var = var->_next.get())
+	for (const Object *var = locals.get(); var; var = var->_next.get())
 	{
 		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
 		{
