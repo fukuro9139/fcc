@@ -925,9 +925,10 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	/* ptr - ptr */
 	if (lhs->_ty->_base && rhs->_ty->_base)
 	{
+		int sz = lhs->_ty->_base->_size;
 		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
 		node->_ty = Type::INT_BASE;
-		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(lhs->_ty->_base->_size, location), location);
+		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(sz, location), location);
 	}
 
 	/* 数 - ptr はエラー */
