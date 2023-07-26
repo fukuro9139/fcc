@@ -378,8 +378,9 @@ void CodeGen::generate_code(unique_ptr<Function> &&program)
 
 		/* 関数の場合、レジスタから引数を受け取って確保してあるスタック領域にローカル変数と同様にストアする */
 		int cnt = 0;
-		for(auto var = fn->_params.get(); var; var = var->_next.get()){
-			cout << " mov " << "[rbp -" << var->_offset << "], " << arg_regs[cnt++] << "\n";
+		for (auto var = fn->_params.get(); var; var = var->_next.get())
+		{
+			cout << " mov [rbp - " << var->_offset << "], " << arg_regs[cnt++] << "\n";
 		}
 
 		/* コードを出力 */

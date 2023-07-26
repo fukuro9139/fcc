@@ -384,7 +384,7 @@ shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Tok
 				current_token = Token::skip(std::move(current_token), ",");
 			}
 			auto base = declspec(current_token, std::move(current_token));
-			cur->_next = Type::copy_type(declarator(current_token, std::move(current_token), base));
+			cur->_next = std::make_shared<Type>(*(declarator(current_token, std::move(current_token), base)));
 			cur = cur->_next.get();
 		}
 		ty = Type::func_type(ty);
