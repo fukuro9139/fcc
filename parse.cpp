@@ -38,7 +38,7 @@ Object::Object() = default;
 
 Object::Object(std::string &&name) : _name(std::move(name)) {}
 
-Object::Object(std::string &&name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty)
+Object::Object(std::string &&name, unique_ptr<Object> &&next, shared_ptr<Type> &&ty)
 	: _name(std::move(name)), _next(std::move(next)), _ty(std::move(ty)) {}
 
 /**
@@ -87,7 +87,7 @@ const Object *Object::find_var(const unique_ptr<Token> &token)
 /* コンストラクタ */
 
 Function::Function() = default;
-Function::Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)) {}
+Function::Function(unique_ptr<Node> &&body, unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)) {}
 
 /**
  * @brief 'n'を切り上げて最も近い'align'の倍数にする。
@@ -106,7 +106,7 @@ int Function::align_to(const int &n, const int &align)
  *
  * @param prog スタックサイズをセットする関数
  */
-void Function::assign_lvar_offsets(const std::unique_ptr<Function> &prog)
+void Function::assign_lvar_offsets(const unique_ptr<Function> &prog)
 {
 	for (Function *fn = prog.get(); fn; fn = fn->_next.get())
 	{
@@ -151,10 +151,10 @@ Node::Node() = default;
 
 Node::Node(NodeKind &&kind, const int &location) : _kind(std::move(kind)), _location(location) {}
 
-Node::Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location)
+Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, const int &location)
 	: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _location(location) {}
 
-Node::Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location)
+Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, const int &location)
 	: _kind(std::move(kind)), _lhs(std::move(lhs)), _location(location) {}
 
 Node::Node(const int &val, const int &location) : _kind(NodeKind::ND_NUM), _val(val), _location(location) {}
@@ -533,7 +533,7 @@ unique_ptr<Node> Node::expression_statement(unique_ptr<Token> &next_token, uniqu
 		next_token = std::move(current_token->_next);
 		return std::make_unique<Node>(NodeKind::ND_BLOCK, current_token->_location);
 	}
-	unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(current_token, std::move(current_token)), current_token->_location);
+	auto node = std::make_unique<Node>(NodeKind::ND_EXPR_STMT, expression(current_token, std::move(current_token)), current_token->_location);
 
 	/* expression-statementは';'で終わるはず */
 	next_token = Token::skip(std::move(current_token), ";");
@@ -614,7 +614,7 @@ unique_ptr<Node> Node::equality(unique_ptr<Token> &next_token, unique_ptr<Token>
  */
 unique_ptr<Node> Node::relational(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	unique_ptr<Node> node = add(current_token, std::move(current_token));
+	auto node = add(current_token, std::move(current_token));
 
 	while (true)
 	{
@@ -662,7 +662,7 @@ unique_ptr<Node> Node::relational(unique_ptr<Token> &next_token, unique_ptr<Toke
  */
 unique_ptr<Node> Node::add(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	unique_ptr<Node> node = mul(current_token, std::move(current_token));
+	auto node = mul(current_token, std::move(current_token));
 
 	while (true)
 	{
@@ -695,7 +695,7 @@ unique_ptr<Node> Node::add(unique_ptr<Token> &next_token, unique_ptr<Token> &&cu
  */
 unique_ptr<Node> Node::mul(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	unique_ptr<Node> node = unary(current_token, std::move(current_token));
+	auto node = unary(current_token, std::move(current_token));
 
 	while (true)
 	{
@@ -785,7 +785,7 @@ unique_ptr<Node> Node::postfix(unique_ptr<Token> &next_token, unique_ptr<Token> 
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * primary = "(" expression ")" | identifier args? | num @n
+ * primary = "(" expression ")" | "sizeof" unary | identifier args? | num @n
  * args = "(" ")"
  */
 unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
@@ -796,6 +796,17 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 		auto node = expression(current_token, std::move(current_token->_next));
 		next_token = Token::skip(std::move(current_token), ")");
 		return node;
+	}
+
+	/* トークンがsizeof演算子の場合 */
+	if(current_token->is_equal("sizeof")){
+		int location = current_token->_location;
+		/* sizeofの対象を評価 */
+		auto node = unary(next_token, std::move(current_token->_next));
+		/* sizeofの対象の型を決定 */
+		Type::add_type(node.get());
+		/* 型のサイズの数値ノードを返す */
+		return std::make_unique<Node>(node->_ty->_size, location);
 	}
 
 	/* トークンが識別子の場合 */
@@ -929,7 +940,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, c
  * @param location ノードと対応する入力文字列の位置
  * @return 対応するASTノード
  */
-std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location)
+unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, const int &location)
 {
 	/* 右辺と左辺の型を確定する */
 	Type::add_type(lhs.get());
@@ -946,7 +957,7 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	{
 		rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(lhs->_ty->_base->_size, location), location);
 		Type::add_type(rhs.get());
-		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
+		auto node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
 		return node;
 	}
 
@@ -954,7 +965,7 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	if (lhs->_ty->_base && rhs->_ty->_base)
 	{
 		int sz = lhs->_ty->_base->_size;
-		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
+		auto node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
 		node->_ty = Type::INT_BASE;
 		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(sz, location), location);
 	}

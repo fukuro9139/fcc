@@ -7,7 +7,7 @@ using std::shared_ptr;
 /* Type Class */
 /**************/
 
-const std::shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 8);
+const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 8);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
 
@@ -15,9 +15,9 @@ Type::Type(const TypeKind &kind, const int &size) : _kind(kind), _size(size) {}
 
 Type::Type(const TypeKind &kind) : _kind(kind) {}
 
-Type::Type(const std::shared_ptr<Type> &base, const int &size) : _kind(TypeKind::TY_PTR), _base(base), _size(size) {}
+Type::Type(const shared_ptr<Type> &base, const int &size) : _kind(TypeKind::TY_PTR), _base(base), _size(size) {}
 
-Type::Type(const std::string &name, const int &location, const std::shared_ptr<Type> &return_ty)
+Type::Type(const std::string &name, const int &location, const shared_ptr<Type> &return_ty)
 	: _kind(TypeKind::TY_FUNC), _name(name), _location(location), _return_ty(return_ty) {}
 
 /**
@@ -131,7 +131,7 @@ bool Type::is_integer() const
  * @param base 参照する型
  * @return baseを参照するポインター型
  */
-std::shared_ptr<Type> Type::pointer_to(const std::shared_ptr<Type> &base)
+shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
 {
 	return std::make_shared<Type>(base, 8);
 }
@@ -142,7 +142,7 @@ std::shared_ptr<Type> Type::pointer_to(const std::shared_ptr<Type> &base)
  * @param return_ty 戻り値の型
  * @return 戻り値がreturn_ty型の関数型
  */
-std::shared_ptr<Type> Type::func_type(const std::shared_ptr<Type> &return_ty)
+shared_ptr<Type> Type::func_type(const shared_ptr<Type> &return_ty)
 {
 	return std::make_shared<Type>(return_ty->_name, return_ty->_location, return_ty);
 }
@@ -154,7 +154,7 @@ std::shared_ptr<Type> Type::func_type(const std::shared_ptr<Type> &return_ty)
  * @param length 配列の長さ
  * @return base型の要素を持つ配列型
  */
-std::shared_ptr<Type> Type::array_of(std::shared_ptr<Type> base, int length)
+shared_ptr<Type> Type::array_of(shared_ptr<Type> base, int length)
 {
 	auto ret = std::make_shared<Type>(TypeKind::TY_ARRAY);
 	ret->_size = base->_size * length;
