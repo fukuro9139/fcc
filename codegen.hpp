@@ -32,6 +32,8 @@ private:
 	static void push();
 	static void pop(std::string &&reg);
 	static void pop(const std::string &reg);
+	static void load(const std::shared_ptr<Type> &ty);
+	static void store();
 	static void generate_address(std::unique_ptr<Node> &&node);
 	static void generate_expression(std::unique_ptr<Node> &&node);
 	static void generate_statement(std::unique_ptr<Node> &&node);

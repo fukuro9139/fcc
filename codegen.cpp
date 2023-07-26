@@ -33,6 +33,35 @@ static Function *current_func = nullptr;
 /*****************/
 
 /**
+ * @brief raxがさすアドレスの値をロードする。
+ *
+ * @details
+ * 変数の型が配列型の場合、レジスタへ値をロードをしようとしてはいけない。
+ * これは一般的に配列全体をレジスタに読み込むことはできないからである。
+ * そのため配列型の変数の評価は配列そのものではなく配列のアドレスとなる。
+ * これは配列型が暗黙に配列の最初の要素へのポインタへ返還されることを示している。
+ * @param ty 読み込む値の型
+ */
+void CodeGen::load(const std::shared_ptr<Type> &ty)
+{
+	if (TypeKind::TY_ARRAY == ty->_kind)
+	{
+		return;
+	}
+	std::cout << " mov rax, [rax]\n";
+}
+
+/**
+ * @brief raxの値をスタックのトップのアドレスが示すメモリにストアする。
+ *
+ */
+void CodeGen::store()
+{
+	pop("rdi");
+	std::cout << " mov [rdi], rax\n";
+}
+
+/**
  * @brief 新しいラベルの通し番号を返す。
  *
  * @return これまでに用意したラベルの数+1
@@ -120,15 +149,15 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	case NodeKind::ND_VAR:
 		/* 変数のアドレスを計算 */
 		generate_address(std::move(node));
-		/* 変数のアドレスから値を'rax'に読み込む */
-		cout << " mov rax, [rax]\n";
+		/* 変数のアドレスから値をロードする */
+		load(node->_ty);
 		return;
 	/* 参照外し */
 	case NodeKind::ND_DEREF:
 		/* 参照先のアドレスを計算 */
 		generate_expression(std::move(node->_lhs));
-		/* 参照先のアドレスの数値をセット */
-		cout << " mov rax, [rax]\n";
+		/* 参照先のアドレスの値をロード */
+		load(node->_ty);
 		return;
 	/* 参照 */
 	case NodeKind::ND_ADDR:
@@ -143,10 +172,8 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		push();
 		/* 右辺を評価する。評価結果は'rax' */
 		generate_expression(std::move(node->_rhs));
-		/* 変数のアドレスを'rdi にpop*/
-		pop("rdi");
-		/* 'rax'の値を'rdi'のアドレスのメモリに格納 */
-		cout << " mov [rdi], rax\n";
+		/* raxの値をストアする */
+		store();
 		return;
 		/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:

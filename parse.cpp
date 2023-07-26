@@ -32,6 +32,15 @@ static Function *current_func = nullptr;
 /* Object Class */
 /****************/
 
+/* コンストラクタ */
+
+Object::Object() = default;
+
+Object::Object(std::string &&name) : _name(std::move(name)) {}
+
+Object::Object(std::string &&name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty)
+	: _name(std::move(name)), _next(std::move(next)), _ty(std::move(ty)) {}
+
 /**
  * @brief 新しい変数を生成してlocalsの先頭に追加する。
  *
@@ -75,6 +84,24 @@ const Object *Object::find_var(const unique_ptr<Token> &token)
 /* Function Class */
 /******************/
 
+/* コンストラクタ */
+
+Function::Function() = default;
+Function::Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)) {}
+
+/**
+ * @brief 'n'を切り上げて最も近い'align'の倍数にする。
+ *
+ * @param n 切り上げ対象
+ * @param align 基数
+ * @return 切り上げた結果
+ * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
+ */
+int Function::align_to(const int &n, const int &align)
+{
+	return (n + align - 1) / align * align;
+}
+
 /** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。
  *
  * @param prog スタックサイズをセットする関数
@@ -87,13 +114,13 @@ void Function::assign_lvar_offsets(const std::unique_ptr<Function> &prog)
 		/* 引数 */
 		for (Object *var = fn->_params.get(); var; var = var->_next.get())
 		{
-			offset += 8;
+			offset += var->_ty->_size;
 			var->_offset = offset;
 		}
 		/* ローカル変数 */
 		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
 		{
-			offset += 8;
+			offset += var->_ty->_size;
 			var->_offset = offset;
 		}
 		fn->_stack_size = align_to(std::move(offset), 16);
@@ -117,6 +144,22 @@ void Function::create_params_lvars(shared_ptr<Type> &&param)
 /**************/
 /* Node Class */
 /**************/
+
+/* コンストラクタ */
+
+Node::Node() = default;
+
+Node::Node(NodeKind &&kind, const int &location) : _kind(std::move(kind)), _location(location) {}
+
+Node::Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location)
+	: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _location(location) {}
+
+Node::Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location)
+	: _kind(std::move(kind)), _lhs(std::move(lhs)), _location(location) {}
+
+Node::Node(const int &val, const int &location) : _kind(NodeKind::ND_NUM), _val(val), _location(location) {}
+
+Node::Node(const Object *var, const int &location) : _kind(NodeKind::ND_VAR), _var(var), _location(location) {}
 
 /**
  * @brief プログラム を読み取る。
@@ -353,45 +396,68 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 }
 
 /**
+ * @brief 関数の引数を読み込む
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 宣言されている型
+ * @return 引数の情報を含む関数の型
+ * @details 以下のEBNF規則に従う。 @n
+ * function-parameters = (parameters ("," parameters)*)? ")" @n
+ * parameters = declspec declarator
+ */
+shared_ptr<Type> Node::function_parameters(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
+{
+	auto head = std::make_unique_for_overwrite<Type>();
+	auto cur = head.get();
+
+	/* ")"が出てくるまで読み取りを続ける */
+	while (!current_token->is_equal(")"))
+	{
+		if (head.get() != cur)
+		{
+			/* 2個目以降の引数では","区切りが必要 */
+			current_token = Token::skip(std::move(current_token), ",");
+		}
+		auto base = declspec(current_token, std::move(current_token));
+		cur->_next = std::make_shared<Type>(*(declarator(current_token, std::move(current_token), base)));
+		cur = cur->_next.get();
+	}
+	ty = Type::func_type(ty);
+	ty->_params = std::move(head->_next);
+	next_token = std::move(current_token->_next);
+	return ty;
+}
+
+/**
  * @brief 宣言を変数 or 関数か判断し結果の型を返す
  *
- * @details
- * 例：int a; int型の変数 int fn(); 戻り値がint型の関数。次のEBNF規則に従う。 @n
- * type-suffix = ("(" function-parameters? ")")? @n
- * function-parameters = parameter ("," parameter)* @n
- * parameter = declspec declarator
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param ty 宣言されている型
  * @return 変数 or 関数の型
+ * @details
+ * 次のEBNF規則に従う。 @n
+ * type-suffix = "(" function-parameters | "[" number"]" | ε @n
+ * function-parameters = parameter ("," parameter)* @n
+ * parameter = declspec declarator
  */
 shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, shared_ptr<Type> &&ty)
 {
 	/* 識別子名の後に"("があれば関数 */
 	if (current_token->is_equal("("))
 	{
-		current_token = std::move(current_token->_next);
-
-		auto head = std::make_unique_for_overwrite<Type>();
-		auto cur = head.get();
-
-		/* ")"が出てくるまで読み取りを続ける */
-		while (!current_token->is_equal(")"))
-		{
-			if (head.get() != cur)
-			{
-				/* 2個目以降の引数では","区切りが必要 */
-				current_token = Token::skip(std::move(current_token), ",");
-			}
-			auto base = declspec(current_token, std::move(current_token));
-			cur->_next = std::make_shared<Type>(*(declarator(current_token, std::move(current_token), base)));
-			cur = cur->_next.get();
-		}
-		ty = Type::func_type(ty);
-		ty->_params = std::move(head->_next);
-		next_token = std::move(current_token->_next);
-		return ty;
+		return function_parameters(next_token, std::move(current_token->_next), std::move(ty));
 	}
+
+	/* 識別子名の後に"["があれば配列 */
+	if (current_token->is_equal("["))
+	{
+		int sz = current_token->_next->get_number();
+		next_token = Token::skip(std::move(current_token->_next->_next), "]");
+		return Type::array_of(ty, sz);
+	}
+
 	/* そうでなければ普通の変数 */
 	next_token = std::move(current_token);
 	return ty;
@@ -820,7 +886,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, c
 	}
 
 	/* ptr + 数 */
-	rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(8, location), location);
+	rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(lhs->_ty->_base->_size, location), location);
 	return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), location);
 }
 
@@ -850,7 +916,7 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	/* ptr - 数 */
 	if (lhs->_ty->_base && !rhs->_ty->_base)
 	{
-		rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(8, location), location);
+		rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(lhs->_ty->_base->_size, location), location);
 		Type::add_type(rhs.get());
 		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
 		return node;
@@ -861,7 +927,7 @@ std::unique_ptr<Node> Node::new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr
 	{
 		unique_ptr<Node> node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), location);
 		node->_ty = Type::INT_BASE;
-		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(8, location), location);
+		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(lhs->_ty->_base->_size, location), location);
 	}
 
 	/* 数 - ptr はエラー */

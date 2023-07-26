@@ -16,7 +16,10 @@
 #include "tokenize.hpp"
 #include "type.hpp"
 
-/** @brief 変数を表すオブジェクトリスト、各変数は名前によって区別する */
+/**
+ * @brief 変数を表すオブジェクトリスト、各変数は名前によって区別する
+ *
+ */
 struct Object
 {
 	/* メンバ変数 (public) */
@@ -28,9 +31,9 @@ struct Object
 
 	/* コンストラクタ */
 
-	Object() = default;
-	Object(std::string &&name) : _name(std::move(name)){};
-	Object(std::string &&name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty) : _name(std::move(name)), _next(std::move(next)), _ty(std::move(ty)){};
+	Object();
+	Object(std::string &&name);
+	Object(std::string &&name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty);
 
 	/* メンバ関数 (public) */
 
@@ -41,7 +44,10 @@ struct Object
 /* Functionクラスの中でNodeクラスを使いたいので先に宣言 */
 class Node;
 
-/** @brief 関数を表す */
+/**
+ * @brief 関数を表す
+ *
+ */
 struct Function
 {
 
@@ -57,8 +63,8 @@ struct Function
 
 	/* コンストラクタ */
 
-	Function() = default;
-	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)){};
+	Function();
+	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals);
 
 	/* 静的メンバ関数 (public) */
 
@@ -67,7 +73,10 @@ struct Function
 	static void create_params_lvars(std::shared_ptr<Type> &&param);
 };
 
-/** @brief ノードの種類 */
+/**
+ * @brief ノードの種類
+ *
+ */
 enum class NodeKind
 {
 	ND_ADD,		  /*!< + */
@@ -92,7 +101,10 @@ enum class NodeKind
 	ND_VAR,		  /*!< 変数 */
 };
 
-/** @brief 抽象構文木を構成するノード */
+/**
+ * @brief 抽象構文木(AST)を構成するノード
+ *
+ */
 class Node
 {
 public:
@@ -126,22 +138,12 @@ public:
 
 	/* コンストラクタ */
 
-	Node() = default;
-
-	Node(NodeKind &&kind, const int &location)
-		: _kind(std::move(kind)), _location(location){};
-
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location)
-		: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _location(location){};
-
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location)
-		: _kind(std::move(kind)), _lhs(std::move(lhs)), _location(location){};
-
-	Node(const int &val, const int &location)
-		: _kind(NodeKind::ND_NUM), _val(val), _location(location){};
-
-	Node(const Object *var, const int &location)
-		: _kind(NodeKind::ND_VAR), _var(var), _location(location){};
+	Node();
+	Node(NodeKind &&kind, const int &location);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location);
+	Node(const int &val, const int &location);
+	Node(const Object *var, const int &location);
 
 	/**************************/
 	/* 静的メンバ関数 (public) */
@@ -160,6 +162,7 @@ private:
 	static std::shared_ptr<Type> declspec(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::shared_ptr<Type> declarator(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> ty);
 	static std::unique_ptr<Node> declaration(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+	static std::shared_ptr<Type> function_parameters(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> &&ty);
 	static std::shared_ptr<Type> type_suffix(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> &&ty);
 	static std::unique_ptr<Node> expression(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> expression_statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
@@ -175,16 +178,3 @@ private:
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 };
-
-/**
- * @brief 'n'を切り上げて最も近い'align'の倍数にする。
- *
- * @param n 切り上げ対象
- * @param align 基数
- * @return 切り上げた結果
- * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
- */
-inline int Function::align_to(const int &n, const int &align)
-{
-	return (n + align - 1) / align * align;
-}
