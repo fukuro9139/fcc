@@ -438,7 +438,7 @@ shared_ptr<Type> Node::function_parameters(unique_ptr<Token> &next_token, unique
  * @return 変数 or 関数の型
  * @details
  * 次のEBNF規則に従う。 @n
- * type-suffix = "(" function-parameters | "[" number"]" | ε @n
+ * type-suffix = "(" function-parameters | "[" number"]" type-suffix | ε @n
  * function-parameters = parameter ("," parameter)* @n
  * parameter = declspec declarator
  */
@@ -454,7 +454,8 @@ shared_ptr<Type> Node::type_suffix(unique_ptr<Token> &next_token, unique_ptr<Tok
 	if (current_token->is_equal("["))
 	{
 		int sz = current_token->_next->get_number();
-		next_token = Token::skip(std::move(current_token->_next->_next), "]");
+		current_token = Token::skip(std::move(current_token->_next->_next), "]");
+		ty = type_suffix(next_token, std::move(current_token), std::move(ty));
 		return Type::array_of(ty, sz);
 	}
 
