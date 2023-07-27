@@ -30,7 +30,7 @@ void Input::parse_args(const std::vector<std::string> &args)
 
 		if (args[i][0] == '-')
 		{
-			if (rgs[i].size() >= 2)
+			if (args[i].size() >= 2)
 			{
 				std::cerr << "不明なオプションです: " << args[i] << "\n";
 				std::cerr << "fccでは下記のオプションが使えます\n";
