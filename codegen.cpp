@@ -112,8 +112,17 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	switch (node->_kind)
 	{
 	case NodeKind::ND_VAR:
-		cout << "  mov rax, rbp\n";
-		cout << "  sub rax, " << node->_var->_offset << "\n";
+		/* ローカル変数 */
+		if(node->_var->is_local){
+			cout << "  lea rax, [rbp - " << node->_var->_offset << "]"
+		}
+		/* グローバル変数 */
+		else{
+
+		}
+
+		// cout << "  mov rax, rbp\n";
+		// cout << "  sub rax, " << node->_var->_offset << "\n";
 		return;
 	case NodeKind::ND_DEREF:
 		generate_expression(std::move(node->_lhs));
