@@ -207,6 +207,9 @@ unique_ptr<Token> Node::function_definition(unique_ptr<Token> &&token, shared_pt
 	/* グローバル変数として関数のオブジェクトを作成 */
 	auto fn = Object::new_func(std::move(ty));
 
+	/* 現在処理中の関数として設定 */
+	Object::current_function = fn;
+
 	/* 関数名の次は"{"がくる */
 	token = Token::skip(std::move(token), "{");
 
@@ -214,6 +217,9 @@ unique_ptr<Token> Node::function_definition(unique_ptr<Token> &&token, shared_pt
 	fn->_body = compound_statement(token, std::move(token));
 	/* ローカル変数をセット */
 	fn->_locals = std::move(Object::locals);
+
+	/* 念のためクリアしておく */
+	Object::current_function = nullptr;
 
 	return token;
 }
