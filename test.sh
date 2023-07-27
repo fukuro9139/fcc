@@ -13,7 +13,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./fcc "$input" > tmp.s || exit
+  ./fcc "$input" -o tmp.s - || exit
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"

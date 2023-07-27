@@ -10,9 +10,13 @@
  */
 
 #pragma once
-#include "parse.hpp"
+
+#include <iostream>
+#include <fstream>
 #include <cassert>
 #include <memory>
+#include <vector>
+#include "parse.hpp"
 
 /** @brief　アセンブリを生成 */
 class CodeGen
@@ -22,10 +26,9 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static void generate_code(std::unique_ptr<Object> &&program);
+	static void generate_code(std::unique_ptr<Object> &&program, const std::string &path);
 
 private:
-
 	/* このクラスのインスタンス化は禁止 */
 	CodeGen();
 

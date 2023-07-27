@@ -11,10 +11,8 @@
  *
  */
 
-#include <vector>
 #include "codegen.hpp"
 
-using std::cout;
 using std::endl;
 using std::string;
 using std::unique_ptr;
@@ -27,6 +25,9 @@ static const std::vector<string> arg_regs = {"rdi", "rsi", "rdx", "rcx", "r8", "
 
 /** 現在処理中の関数*/
 static Object *current_func = nullptr;
+
+/* 入出力 */
+static std::ostream *os = &std::cout;
 
 /*****************/
 /* CodeGen Class */
@@ -48,7 +49,7 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 	{
 		return;
 	}
-	std::cout << "  mov rax, [rax]\n";
+	*os << "  mov rax, [rax]\n";
 }
 
 /**
@@ -58,7 +59,7 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 void CodeGen::store()
 {
 	pop("rdi");
-	std::cout << "  mov [rdi], rax\n";
+	*os << "  mov [rdi], rax\n";
 }
 
 /**
@@ -75,7 +76,7 @@ int CodeGen::label_count()
 /** @brief 'rax'の数値をスタックにpushする */
 void CodeGen::push()
 {
-	cout << "  push rax\n";
+	*os << "  push rax\n";
 	++depth;
 }
 
@@ -86,7 +87,7 @@ void CodeGen::push()
  */
 void CodeGen::pop(string &&reg)
 {
-	cout << "  pop " << reg << "\n";
+	*os << "  pop " << reg << "\n";
 	--depth;
 }
 
@@ -97,7 +98,7 @@ void CodeGen::pop(string &&reg)
  */
 void CodeGen::pop(const std::string &reg)
 {
-	cout << "  pop " << reg << "\n";
+	*os << "  pop " << reg << "\n";
 	--depth;
 }
 
@@ -115,12 +116,12 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 		/* ローカル変数 */
 		if (node->_var->is_local)
 		{
-			cout << "  lea rax, [rbp - " << node->_var->_offset << "]\n";
+			*os << "  lea rax, [rbp - " << node->_var->_offset << "]\n";
 		}
 		/* グローバル変数。RIP相対アドレッシングを使う */
 		else
 		{
-			cout << "  lea rax, [rip + " << node->_var->_name << "]\n";
+			*os << "  lea rax, [rip + " << node->_var->_name << "]\n";
 		}
 
 		return;
@@ -145,14 +146,14 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	/* 数値 */
 	case NodeKind::ND_NUM:
 		/* 数値を'rax'に格納 */
-		cout << "  mov rax, " << node->_val << "\n";
+		*os << "  mov rax, " << node->_val << "\n";
 		return;
 	/* 単項演算子の'-' */
 	case NodeKind::ND_NEG:
 		/* '-'がかかる式を評価 */
 		generate_expression(std::move(node->_lhs));
 		/* 符号を反転させる */
-		cout << "  neg rax\n";
+		*os << "  neg rax\n";
 		return;
 	/* 変数 */
 	case NodeKind::ND_VAR:
@@ -207,8 +208,8 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		{
 			pop(arg_regs[i]);
 		}
-		cout << "  mov rax, 0\n";
-		cout << "  call " << node->_func_name << "\n";
+		*os << "  mov rax, 0\n";
+		*os << "  call " << node->_func_name << "\n";
 		return;
 	}
 
@@ -230,41 +231,41 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	{
 	case NodeKind::ND_ADD:
 		/* 'rax' = 'rax' + 'rdi' */
-		std::cout << "  add rax, rdi\n";
+		*os << "  add rax, rdi\n";
 		return;
 	case NodeKind::ND_SUB:
 		/* 'rax' = 'rax' - 'rdi' */
-		std::cout << "  sub rax, rdi\n";
+		*os << "  sub rax, rdi\n";
 		return;
 	case NodeKind::ND_MUL:
 		/* 'rax' = 'rax' * 'rdi' */
-		std::cout << "  imul rax, rdi\n";
+		*os << "  imul rax, rdi\n";
 		return;
 	case NodeKind::ND_DIV:
 		/* 'rax'(64ビット)を128ビットに拡張して'rdx'と'rax'にセット */
-		std::cout << "  cqo\n";
+		*os << "  cqo\n";
 		/* 'rdx'と'rax'を合わせた128ビットの値を'rdi'で割って商を'rax', 余りを'rdx'にセット */
-		std::cout << "  idiv rdi\n";
+		*os << "  idiv rdi\n";
 		return;
 	case NodeKind::ND_EQ:
-		std::cout << "  cmp rax, rdi\n";
-		std::cout << "  sete al\n";
-		std::cout << "  movzb rax, al\n";
+		*os << "  cmp rax, rdi\n";
+		*os << "  sete al\n";
+		*os << "  movzb rax, al\n";
 		return;
 	case NodeKind::ND_NE:
-		std::cout << "  cmp rax, rdi\n";
-		std::cout << "  setne al\n";
-		std::cout << "  movzb rax, al\n";
+		*os << "  cmp rax, rdi\n";
+		*os << "  setne al\n";
+		*os << "  movzb rax, al\n";
 		return;
 	case NodeKind::ND_LT:
-		std::cout << "  cmp rax, rdi\n";
-		std::cout << "  setl al\n";
-		std::cout << "  movzb rax, al\n";
+		*os << "  cmp rax, rdi\n";
+		*os << "  setl al\n";
+		*os << "  movzb rax, al\n";
 		return;
 	case NodeKind::ND_LE:
-		std::cout << "  cmp rax, rdi\n";
-		std::cout << "  setle al\n";
-		std::cout << "  movzb rax, al\n";
+		*os << "  cmp rax, rdi\n";
+		*os << "  setle al\n";
+		*os << "  movzb rax, al\n";
 		return;
 	default:
 		break;
@@ -288,7 +289,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		/* return の後の式を評価 */
 		generate_expression(std::move(node->_lhs));
 		/* エピローグまでjmpする */
-		cout << "  jmp .L.return." << current_func->_name << "\n";
+		*os << "  jmp .L.return." << current_func->_name << "\n";
 		return;
 	case NodeKind::ND_EXPR_STMT:
 		generate_expression(std::move(node->_lhs));
@@ -301,21 +302,21 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		/* 条件を評価 */
 		generate_expression(std::move(node->_condition));
 		/* 条件を比較 */
-		cout << "  cmp rax, 0\n";
+		*os << "  cmp rax, 0\n";
 		/* 条件がfalseなら.L.else.cラベルに飛ぶ */
-		cout << "  je .L.else." << c << "\n";
+		*os << "  je .L.else." << c << "\n";
 		/* trueのときに実行 */
 		generate_statement(std::move(node->_then));
 		/* elseは実行しない */
-		cout << "  jmp .L.end." << c << "\n";
+		*os << "  jmp .L.end." << c << "\n";
 
 		/* falseのとき実行 */
-		cout << ".L.else." << c << ":\n";
+		*os << ".L.else." << c << ":\n";
 		if (node->_else)
 		{
 			generate_statement(std::move(node->_else));
 		}
-		cout << ".L.end." << c << ":\n";
+		*os << ".L.end." << c << ":\n";
 		return;
 	}
 
@@ -331,13 +332,13 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 			generate_statement(std::move(node->_init));
 		}
 
-		cout << ".L.begin." << c << ":\n";
+		*os << ".L.begin." << c << ":\n";
 		/* 終了条件判定 */
 		if (node->_condition)
 		{
 			generate_expression(std::move(node->_condition));
-			cout << "  cmp rax, 0\n";
-			cout << "  je .L.end." << c << "\n";
+			*os << "  cmp rax, 0\n";
+			*os << "  je .L.end." << c << "\n";
 		}
 		generate_statement(std::move(node->_then));
 		/* 加算処理 */
@@ -345,8 +346,8 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		{
 			generate_expression(std::move(node->_inc));
 		}
-		cout << "  jmp .L.begin." << c << "\n";
-		cout << ".L.end." << c << ":\n";
+		*os << "  jmp .L.begin." << c << "\n";
+		*os << ".L.end." << c << ":\n";
 		return;
 	}
 
@@ -392,10 +393,10 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 		}
 
 		/* グローバル変数のサイズだけ領域を確保する */
-		cout << "  .data\n";
-		cout << "  .globl " << var->_name << "\n";
-		cout << var->_name << ":\n";
-		cout << "  .zero " << var->_ty->_size << "\n";
+		*os << "  .data\n";
+		*os << "  .globl " << var->_name << "\n";
+		*os << var->_name << ":\n";
+		*os << "  .zero " << var->_ty->_size << "\n";
 	}
 }
 
@@ -415,24 +416,24 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 		}
 
 		/* 関数のラベル部分を出力 */
-		cout << "  .globl " << fn->_name << "\n";
-		cout << "  .text\n";
-		cout << fn->_name << ":\n";
+		*os << "  .globl " << fn->_name << "\n";
+		*os << "  .text\n";
+		*os << fn->_name << ":\n";
 
 		/* 現在の関数をセット */
 		current_func = fn;
 
 		/* プロローグ */
 		/* スタックサイズの領域を確保する */
-		cout << "  push rbp\n";
-		cout << "  mov rbp, rsp\n";
-		cout << "  sub rsp, " << fn->_stack_size << "\n";
+		*os << "  push rbp\n";
+		*os << "  mov rbp, rsp\n";
+		*os << "  sub rsp, " << fn->_stack_size << "\n";
 
 		/* 関数の場合、レジスタから引数を受け取って確保してあるスタック領域にローカル変数と同様にストアする */
 		int cnt = 0;
 		for (auto var = fn->_params.get(); var; var = var->_next.get())
 		{
-			cout << "  mov [rbp - " << var->_offset << "], " << arg_regs[cnt++] << "\n";
+			*os << "  mov [rbp - " << var->_offset << "], " << arg_regs[cnt++] << "\n";
 		}
 
 		/* コードを出力 */
@@ -443,10 +444,10 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 
 		/* エピローグ */
 		/* 最後の結果がraxに残っているのでそれが返り値になる */
-		cout << ".L.return." << fn->_name << ":\n";
-		cout << "  mov rsp, rbp\n";
-		cout << "  pop rbp\n";
-		cout << "  ret\n";
+		*os << ".L.return." << fn->_name << ":\n";
+		*os << "  mov rsp, rbp\n";
+		*os << "  pop rbp\n";
+		*os << "  ret\n";
 	}
 }
 
@@ -455,14 +456,21 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(unique_ptr<Object> &&program)
+void CodeGen::generate_code(unique_ptr<Object> &&program, const std::string &path)
 {
+	/* ファイルを開くのに成功したら出力先をファイルに変更する */
+	/* ファイルを開くのに失敗したら出力先は標準出力のまま */
+	unique_ptr<std::ostream> ofs(new std::ofstream(path));
+	if (!ofs->fail())
+	{
+		os = ofs.get();
+	}
 
 	/* スタックサイズを計算してセット */
 	Object::assign_lvar_offsets(program);
 
 	/* intel記法であることを宣言 */
-	cout << ".intel_syntax noprefix\n";
+	*os << ".intel_syntax noprefix\n";
 
 	/* .data部を出力 */
 	emit_data(program);

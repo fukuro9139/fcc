@@ -62,10 +62,10 @@ Token::Token(const TokenKind &kind, const int &location, std::string &&str) : _k
  * @param input 入力文字列
  * @return トークナイズ結果のトークン・リスト
  */
-unique_ptr<Token> Token::tokenize(string &&input)
+unique_ptr<Token> Token::tokenize(const string &input)
 {
 	/* 入力文字列の保存 */
-	current_input = std::move(input);
+	current_input = input;
 
 	/* スタート地点としてダミーのトークンを作る */
 	unique_ptr<Token> head = std::make_unique_for_overwrite<Token>();

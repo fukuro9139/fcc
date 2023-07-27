@@ -18,22 +18,22 @@
 #include "codegen.hpp"
 #include "parse.hpp"
 #include "tokenize.hpp"
+#include "input.hpp"
 
 int main(int argc, char **argv)
 {
-	if (argc != 2)
-	{
-		error(std::string(argv[0]) + ": 引数の個数が正しくありません");
-	}
+	/* 入力をvectorに変換 */
+	std::vector<std::string> args(argv, argv + argc);
+	Input::parse_args(args);
 
 	/* 入力文字列をトークナイズする */
-	auto token = Token::tokenize(std::string(argv[1]));
+	auto token = Token::tokenize(Input::opt.input);
 
 	/* トークン列をパースし抽象構文木を構築する */
 	auto program = Node::parse(std::move(token));
 
 	/* 抽象構文木を巡回しながらコード生成 */
-	CodeGen::generate_code(std::move(program));
+	CodeGen::generate_code(std::move(program), Input::opt.opt_o);
 
 	return 0;
 }
