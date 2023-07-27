@@ -41,11 +41,11 @@ class Token
 public:
 	/* メンバ変数 (public) */
 
-	std::unique_ptr<Token> _next; /*!< 次のトークン */
-	TokenKind _kind;			  /*!< トークンの型 */
-	int _value;					  /*!< kindがTK_NUMの場合、その数値 */
-	int _location;				  /*!< トークン文字列の開始位置 */
-	std::string _str;			  /*!< トークンが表す文字列 */
+	std::unique_ptr<Token> _next;		 /*!< 次のトークン */
+	TokenKind _kind = TokenKind::TK_EOF; /*!< トークンの型 */
+	int _value = 0;						 /*!< kindがTK_NUMの場合、その数値 */
+	int _location = 0;					 /*!< トークン文字列の開始位置 */
+	std::string _str;					 /*!< トークンが表す文字列 */
 
 	/* コンストラクタ */
 	Token();

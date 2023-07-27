@@ -17,7 +17,7 @@ class Node;
 
 /**
  * @brief 型を表すクラス
- * 
+ *
  */
 class Type
 {
@@ -25,7 +25,7 @@ public:
 	/* メンバ変数 (public) */
 
 	const TypeKind _kind; /*!< 型の種類 */
-	int _size;			  /* 型のサイズ */
+	int _size = 0;		  /* 型のサイズ */
 
 	/**
 	 * @brief kindがTY_PTRまたはTY_ARRAYのとき、参照先の型
@@ -35,11 +35,11 @@ public:
 	 */
 	std::shared_ptr<Type> _base;
 
-	std::string _name; /*!< 変数の名前 */
-	int _location;	   /*!< 変数に対応する入力文字列の位置 */
+	std::string _name = ""; /*!< 変数の名前 */
+	int _location = 0;		/*!< 変数に対応する入力文字列の位置 */
 
 	/* 配列 */
-	int _array_length; /*!< 配列の長さ */
+	int _array_length = 0; /*!< 配列の長さ */
 
 	/* 関数 */
 	std::shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */

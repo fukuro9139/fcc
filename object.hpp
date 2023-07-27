@@ -16,23 +16,23 @@ public:
 	/* 共通 */
 
 	std::unique_ptr<Object> _next; /*!< 次のオブジェクト */
-	std::string _name;			   /*!< 名前 */
+	std::string _name = "";		   /*!< 名前 */
 	std::shared_ptr<Type> _ty;	   /* 型 */
-	bool is_local;				   /*!< ローカル変数であるか */
+	bool is_local = false;		   /*!< ローカル変数であるか */
 
 	/* ローカル変数用 */
 
-	int _offset; /*!< RBPからのオフセット */
+	int _offset = 0; /*!< RBPからのオフセット */
 
 	/* グローバル変数用 */
-	bool is_function; /*!< 関数であるか */
+	bool is_function = false; /*!< 関数であるか */
 
 	/* 関数用 */
 
 	std::unique_ptr<Object> _params; /*!< 引数 */
 	std::unique_ptr<Node> _body;	 /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
 	std::unique_ptr<Object> _locals; /*!< 関数内で使うローカル変数 */
-	int _stack_size;				 /*!< 使用するスタックの深さ */
+	int _stack_size = 0;			 /*!< 使用するスタックの深さ */
 
 	/* コンストラクタ */
 

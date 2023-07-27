@@ -197,7 +197,7 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 読み取った関数のオブジェクト
- * @details 下記のEBNF規則に従う。 @n function-definition = declspec declarator "{" compound-statement
+ * @details 下記のEBNF規則に従う。 @n function-definition = declarator "{" compound-statement
  */
 unique_ptr<Token> Node::function_definition(unique_ptr<Token> &&token, shared_ptr<Type> &&base)
 {
@@ -240,17 +240,20 @@ unique_ptr<Node> Node::declaration(unique_ptr<Token> &next_token, unique_ptr<Tok
 	auto head = std::make_unique_for_overwrite<Node>();
 	auto cur = head.get();
 
-	/* この文で宣言している変数の個数 */
-	int cnt = 0;
+	/* 初回かどうか */
+	bool first = true;
 
 	/* ";"が出てくるまで読み取りを続ける */
 	while (!current_token->is_equal(";"))
 	{
 		/* 2個目以降の宣言には",""区切りが必要 */
-		if (cnt++ > 0)
+		if (!first)
 		{
 			current_token = Token::skip(std::move(current_token), ",");
 		}
+		/* 初回フラグを下げる */
+		first = false;
+
 		/* 変数の最終的な型を決定 */
 		auto ty = declarator(current_token, std::move(current_token), base);
 		const auto var = Object::new_lvar(std::move(ty));
@@ -370,7 +373,7 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	/* トークンの種類が識別子でないときエラー */
 	if (TokenKind::TK_IDENT != current_token->_kind)
 	{
-		error_at("識別子の名前ではありません", current_token->_location);
+		error_at("識別子ではありません", current_token->_location);
 	}
 
 	/* 名前と位置を一時保存 */
@@ -384,7 +387,7 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 	ty->_name = name;
 	ty->_location = location;
 
-	return std::move(ty);
+	return ty;
 }
 
 /**
@@ -875,8 +878,79 @@ unique_ptr<Object> Node::parse(unique_ptr<Token> &&token)
 	while (TokenKind::TK_EOF != token->_kind)
 	{
 		auto base = declspec(token, std::move(token));
-		token = function_definition(std::move(token), std::move(base));
+
+		/* 関数 */
+		if (is_function(token.get()))
+		{
+			token = function_definition(std::move(token), std::move(base));
+			continue;
+		}
+
+		/* グローバル変数 */
+		token = global_variable(std::move(token), std::move(base));
 	}
 
 	return std::move(Object::globals);
+}
+
+/**
+ * @brief トップレベルに出てくる定義が関数かどうか判定する
+ *
+ * @param tok declarator部分のトークン
+ * @return true 関数である
+ * @return false 関数ではない
+ */
+bool Node::is_function(const Token *tok)
+{
+	/* 識別子にたどり着くまで辿り続ける */
+	while (tok->is_equal("*"))
+	{
+		tok = tok->_next.get();
+	}
+
+	/* 識別子が来なければエラー */
+	if (TokenKind::TK_IDENT != tok->_kind)
+	{
+		error_at("識別子ではありません", tok->_location);
+	}
+
+	/* 識別子の次に来るのが"("なら関数 */
+	if (tok->_next->is_equal("("))
+	{
+		return true;
+	}
+
+	/* そうでないなら変数 */
+	return false;
+}
+
+/**
+ * @brief グローバル変数を読み取る
+ *
+ * @param token 読み込むトークン
+ * @param base 型宣言の前半部分から読み取れた型
+ * @return 次のトークン
+ */
+unique_ptr<Token> Node::global_variable(unique_ptr<Token> &&token, shared_ptr<Type> &&base)
+{
+	/* 1個めの変数であるか */
+	bool first = true;
+
+	/* ;が現れるまで読み込みを続ける */
+	while (!Token::consume(token, std::move(token), ";"))
+	{
+		if (!first)
+		{
+			/* 2個目以降の変数定義には","区切りが必要 */
+			token = Token::skip(std::move(token), ",");
+		}
+		/* 初回フラグを下す */
+		first = false;
+
+		/* 最終的な型を決定する */
+		auto ty = declarator(token, std::move(token), base);
+		Object::new_gvar(std::move(ty));
+	}
+
+	return token;
 }

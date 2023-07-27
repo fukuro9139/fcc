@@ -54,9 +54,9 @@ class Node
 public:
 	/* メンバ変数 (public) */
 
-	NodeKind _kind;				 /*!< ノードの種類*/
-	std::unique_ptr<Node> _next; /*!< ノードが木のrootである場合、次の木のrootノード */
-	std::shared_ptr<Type> _ty;	 /*!< 型情報 e.g. int or pointer to int */
+	NodeKind _kind = NodeKind::ND_EXPR_STMT; /*!< ノードの種類*/
+	std::unique_ptr<Node> _next;			 /*!< ノードが木のrootである場合、次の木のrootノード */
+	std::shared_ptr<Type> _ty;				 /*!< 型情報 e.g. int or pointer to int */
 
 	std::unique_ptr<Node> _lhs; /*!< 左辺 */
 	std::unique_ptr<Node> _rhs; /*!< 右辺 */
@@ -72,13 +72,13 @@ public:
 	std::unique_ptr<Node> _body; /*!< ブロック内{...}には複数の式を入れられる */
 
 	/* 関数呼び出し */
-	std::string _func_name;		 /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
+	std::string _func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	std::unique_ptr<Node> _args; /*!< 引数  */
 
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
-	int _location; /* ノードと対応する入力文字列の位置 */
+	int _location = 0; /* ノードと対応する入力文字列の位置 */
 
 	/* コンストラクタ */
 
@@ -121,4 +121,7 @@ private:
 	static std::unique_ptr<Node> function_call(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
+	static std::unique_ptr<Token> global_variable(std::unique_ptr<Token> &&token, std::shared_ptr<Type> &&base);
+
+	static bool is_function(const Token *tok);
 };

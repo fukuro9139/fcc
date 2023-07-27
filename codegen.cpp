@@ -113,16 +113,16 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	{
 	case NodeKind::ND_VAR:
 		/* ローカル変数 */
-		if(node->_var->is_local){
+		if (node->_var->is_local)
+		{
 			cout << "  lea rax, [rbp - " << node->_var->_offset << "]\n";
 		}
-		/* グローバル変数 */
-		else{
-
+		/* グローバル変数。RIP相対アドレッシングを使う */
+		else
+		{
+			cout << "  lea rax, [rip + " << node->_var->_name << "]\n";
 		}
 
-		// cout << "  mov rax, rbp\n";
-		// cout << "  sub rax, " << node->_var->_offset << "\n";
 		return;
 	case NodeKind::ND_DEREF:
 		generate_expression(std::move(node->_lhs));
@@ -377,28 +377,38 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 }
 
 /**
- * @brief 関数ごとにASTを意味解析し、Intel記法でアセンブリを出力する
+ * @brief プログラムの.data部を出力する
  *
- * @param program アセンブリを出力する対象関数
+ * @param program 入力プログラム
  */
-void CodeGen::generate_code(unique_ptr<Object> &&program)
+void CodeGen::emit_data(const unique_ptr<Object> &program)
 {
-
-	/* スタックサイズを計算してセット */
-	Object::assign_lvar_offsets(program);
-
-	/* intel記法であることを宣言 */
-	cout << ".intel_syntax noprefix\n\n";
-
-	auto fn = std::move(program);
-	std::unique_ptr<Object> next_fn;
-
-	/* 各関数ごとにアセンブリを出力 */
-	for (; fn; fn = std::move(next_fn))
+	for (auto var = program.get(); var; var = var->_next.get())
 	{
+		/* 関数の場合は何もしない */
+		if (var->is_function)
+		{
+			continue;
+		}
 
-		next_fn = std::move(fn->_next);
+		/* グローバル変数のサイズだけ領域を確保する */
+		cout << "  .data\n";
+		cout << "  .globl " << var->_name << "\n";
+		cout << var->_name << ":\n";
+		cout << "  .zero " << var->_ty->_size << "\n";
+	}
+}
 
+/**
+ * @brief プログラムの.text部を出力する
+ *
+ * @param program 入力プログラム
+ */
+void CodeGen::emit_text(const std::unique_ptr<Object> &program)
+{
+	for (auto fn = program.get(); fn; fn = fn->_next.get())
+	{
+		/* 関数でなければ何もしない */
 		if (!fn->is_function)
 		{
 			continue;
@@ -410,11 +420,10 @@ void CodeGen::generate_code(unique_ptr<Object> &&program)
 		cout << fn->_name << ":\n";
 
 		/* 現在の関数をセット */
-		current_func = fn.get();
+		current_func = fn;
 
 		/* プロローグ */
 		/* スタックサイズの領域を確保する */
-		/* 1変数につき8バイト */
 		cout << "  push rbp\n";
 		cout << "  mov rbp, rsp\n";
 		cout << "  sub rsp, " << fn->_stack_size << "\n";
@@ -430,7 +439,7 @@ void CodeGen::generate_code(unique_ptr<Object> &&program)
 		generate_statement(std::move(fn->_body));
 
 		/* 関数終了時にスタックの深さが0 (popし残し、popし過ぎがない) */
-		assert(0 == depth);
+		assert(depth == 0);
 
 		/* エピローグ */
 		/* 最後の結果がraxに残っているのでそれが返り値になる */
@@ -439,4 +448,25 @@ void CodeGen::generate_code(unique_ptr<Object> &&program)
 		cout << "  pop rbp\n";
 		cout << "  ret\n";
 	}
+}
+
+/**
+ * @brief 関数ごとにASTを意味解析し、Intel記法でアセンブリを出力する
+ *
+ * @param program アセンブリを出力する対象関数
+ */
+void CodeGen::generate_code(unique_ptr<Object> &&program)
+{
+
+	/* スタックサイズを計算してセット */
+	Object::assign_lvar_offsets(program);
+
+	/* intel記法であることを宣言 */
+	cout << ".intel_syntax noprefix\n";
+
+	/* .data部を出力 */
+	emit_data(program);
+
+	/* text部を出力 */
+	emit_text(program);
 }

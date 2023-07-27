@@ -41,5 +41,7 @@ private:
 	static void generate_address(std::unique_ptr<Node> &&node);
 	static void generate_expression(std::unique_ptr<Node> &&node);
 	static void generate_statement(std::unique_ptr<Node> &&node);
+	static void emit_data(const std::unique_ptr<Object> &program);
+	static void emit_text(const std::unique_ptr<Object> &program);
 	static int label_count();
 };
