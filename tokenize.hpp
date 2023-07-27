@@ -57,6 +57,7 @@ public:
 
 	bool is_equal(std::string &&op) const;
 	int get_number() const;
+	bool is_typename() const;
 
 	/* 静的メンバ関数 (public) */
 

@@ -8,6 +8,7 @@ using std::shared_ptr;
 /**************/
 
 const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 8);
+const std::shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
 
@@ -115,14 +116,14 @@ void Type::add_type(Node *node)
 }
 
 /**
- * @brief 入力された型がint型かどうか判定
+ * @brief 入力された型が整数型かどうか判定
  *
  * @param ty 対象の型
- * @return int型である:true, int型でない:false
+ * @return 整数型である:true, 整数型でない:false
  */
 bool Type::is_integer() const
 {
-	return TypeKind::TY_INT == this->_kind;
+	return TypeKind::TY_INT == this->_kind || TypeKind::TY_CHAR == this->_kind;
 }
 
 /**

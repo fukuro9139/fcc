@@ -1,5 +1,5 @@
 #!/bin/sh
-tmp=`mktemp -d /tmp/chibicc-test-XXXXXX`
+tmp=`mktemp -d /tmp/fcc-test-XXXXXX`
 trap 'rm -rf $tmp' INT TERM HUP EXIT
 echo > $tmp/empty.c
 

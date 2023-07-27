@@ -20,8 +20,11 @@ using std::unique_ptr;
 /** スタックの深さ */
 static int depth = 0;
 
-/** 関数の引数を格納するレジスタ */
-static const std::vector<string> arg_regs = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+/** 64ビット整数レジスタ、前から順に関数の引数を格納される */
+static const std::vector<string> arg_regs64 = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+/** 整数レジスタの下位8ビットのエイリアス、前から順に関数の引数を格納される */
+static const std::vector<string> arg_regs8 = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
 /** 現在処理中の関数*/
 static Object *current_func = nullptr;
@@ -36,30 +39,47 @@ static std::ostream *os = &std::cout;
 /**
  * @brief raxがさすアドレスの値をロードする。
  *
- * @details
- * 変数の型が配列型の場合、レジスタへ値をロードをしようとしてはいけない。
- * これは一般的に配列全体をレジスタに読み込むことはできないからである。
- * そのため配列型の変数の評価は配列そのものではなく配列のアドレスとなる。
- * これは配列型が暗黙に配列の最初の要素へのポインタへ返還されることを示している。
  * @param ty 読み込む値の型
  */
 void CodeGen::load(const std::shared_ptr<Type> &ty)
 {
+	/* 変数の型が配列型の場合、レジスタへ値をロードをしようとしてはいけない。*/
+	/* これは一般的に配列全体をレジスタに読み込むことはできないからである。*/
+	/* そのため配列型の変数の評価は配列そのものではなく配列のアドレスとなる。*/
+	/* これは配列型が暗黙に配列の最初の要素へのポインタへ返還されることを示している。 */
 	if (TypeKind::TY_ARRAY == ty->_kind)
 	{
 		return;
 	}
-	*os << "  mov rax, [rax]\n";
+
+	/* x86-64では、下位8ビットのエイリアスのレジスタに読み込むときには */
+	/* 上位56ビットは0クリアされない。そのため符号拡張してraxにロードする。 */
+	if (1 == ty->_size)
+	{
+		*os << "  movzx rax, BYTE PTR [rax]\n";
+	}
+	else
+	{
+		*os << "  mov rax, [rax]\n";
+	}
 }
 
 /**
  * @brief raxの値をスタックのトップのアドレスが示すメモリにストアする。
  *
  */
-void CodeGen::store()
+void CodeGen::store(const Type *ty)
 {
 	pop("rdi");
-	*os << "  mov [rdi], rax\n";
+
+	if (1 == ty->_size)
+	{
+		*os << "  mov [rdi], al\n";
+	}
+	else
+	{
+		*os << "  mov [rdi], rax\n";
+	}
 }
 
 /**
@@ -183,7 +203,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		/* 右辺を評価する。評価結果は'rax' */
 		generate_expression(std::move(node->_rhs));
 		/* raxの値をストアする */
-		store();
+		store(node->_ty.get());
 		return;
 		/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
@@ -206,7 +226,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		/* 引数の値を対応するレジスタにセット */
 		for (int i = nargs - 1; i >= 0; --i)
 		{
-			pop(arg_regs[i]);
+			pop(arg_regs64[i]);
 		}
 		*os << "  mov rax, 0\n";
 		*os << "  call " << node->_func_name << "\n";
@@ -433,7 +453,14 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 		int cnt = 0;
 		for (auto var = fn->_params.get(); var; var = var->_next.get())
 		{
-			*os << "  mov [rbp - " << var->_offset << "], " << arg_regs[cnt++] << "\n";
+			if (1 == var->_ty->_size)
+			{
+				*os << "  mov [rbp - " << var->_offset << "], " << arg_regs8[cnt++] << "\n";
+			}
+			else
+			{
+				*os << "  mov [rbp - " << var->_offset << "], " << arg_regs64[cnt++] << "\n";
+			}
 		}
 
 		/* コードを出力 */

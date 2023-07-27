@@ -160,7 +160,16 @@ void Token::convert_keywords(unique_ptr<Token> &token)
  */
 bool Token::is_keyword(Token *&token)
 {
-	static const std::vector<string> keywords = {"return", "if", "else", "for", "while", "int", "sizeof"};
+	static const std::vector<string> keywords = {
+		"return",
+		"if",
+		"else",
+		"for",
+		"while",
+		"int",
+		"sizeof",
+		"char",
+	};
 
 	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
 	{
@@ -182,6 +191,18 @@ bool Token::is_equal(std::string &&op) const
 {
 	return this->_str.size() == op.size() && std::equal(op.begin(), op.end(), this->_str.begin());
 }
+
+/**
+ * @brief トークンが型を表す識別子であるか
+ * 
+ * @return true 型を表す識別子である
+ * @return false 型を表す識別子ではない
+ */
+bool Token::is_typename() const
+{
+return is_equal("char") || is_equal("int");
+}
+
 
 /**
  * @brief トークンが期待している文字列と一致する場合は次のトークンのポインタを返す。不一致ならエラー報告。

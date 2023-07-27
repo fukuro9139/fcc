@@ -170,7 +170,7 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 	while (!current_token->is_equal("}"))
 	{
 		/* 変数宣言 */
-		if (current_token->is_equal("int"))
+		if (current_token->is_typename())
 		{
 			cur->_next = declaration(current_token, std::move(current_token));
 		}
@@ -393,13 +393,20 @@ shared_ptr<Type> Node::declarator(unique_ptr<Token> &next_token, unique_ptr<Toke
 /**
  * @brief 変数宣言の型宣言部分を読み取る
  *
- * @details 下記のEBNF規則に従う。 @n declspec = "int"
+ * @details 下記のEBNF規則に従う。 @n declspec = "int" | "char"
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 変数の型
  */
 shared_ptr<Type> Node::declspec(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
+	/* char型 */
+	if (current_token->is_equal("char"))
+	{
+		next_token = std::move(current_token->_next);
+		return Type::CHAR_BASE;
+	}
+	/* そうでなければint型のはず */
 	next_token = Token::skip(std::move(current_token), "int");
 	return Type::INT_BASE;
 }
