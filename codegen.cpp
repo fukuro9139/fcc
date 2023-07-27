@@ -48,7 +48,7 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 	{
 		return;
 	}
-	std::cout << " mov rax, [rax]\n";
+	std::cout << "  mov rax, [rax]\n";
 }
 
 /**
@@ -58,7 +58,7 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 void CodeGen::store()
 {
 	pop("rdi");
-	std::cout << " mov [rdi], rax\n";
+	std::cout << "  mov [rdi], rax\n";
 }
 
 /**
@@ -75,7 +75,7 @@ int CodeGen::label_count()
 /** @brief 'rax'の数値をスタックにpushする */
 void CodeGen::push()
 {
-	cout << " push rax\n";
+	cout << "  push rax\n";
 	++depth;
 }
 
@@ -86,7 +86,7 @@ void CodeGen::push()
  */
 void CodeGen::pop(string &&reg)
 {
-	cout << " pop " << reg << "\n";
+	cout << "  pop " << reg << "\n";
 	--depth;
 }
 
@@ -97,7 +97,7 @@ void CodeGen::pop(string &&reg)
  */
 void CodeGen::pop(const std::string &reg)
 {
-	cout << " pop " << reg << "\n";
+	cout << "  pop " << reg << "\n";
 	--depth;
 }
 
@@ -112,8 +112,8 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	switch (node->_kind)
 	{
 	case NodeKind::ND_VAR:
-		cout << " mov rax, rbp\n";
-		cout << " sub rax, " << node->_var->_offset << "\n";
+		cout << "  mov rax, rbp\n";
+		cout << "  sub rax, " << node->_var->_offset << "\n";
 		return;
 	case NodeKind::ND_DEREF:
 		generate_expression(std::move(node->_lhs));
@@ -136,14 +136,14 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	/* 数値 */
 	case NodeKind::ND_NUM:
 		/* 数値を'rax'に格納 */
-		cout << " mov rax, " << node->_val << "\n";
+		cout << "  mov rax, " << node->_val << "\n";
 		return;
 	/* 単項演算子の'-' */
 	case NodeKind::ND_NEG:
 		/* '-'がかかる式を評価 */
 		generate_expression(std::move(node->_lhs));
 		/* 符号を反転させる */
-		cout << " neg rax\n";
+		cout << "  neg rax\n";
 		return;
 	/* 変数 */
 	case NodeKind::ND_VAR:
@@ -198,8 +198,8 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		{
 			pop(arg_regs[i]);
 		}
-		cout << " mov rax, 0\n";
-		cout << " call " << node->_func_name << "\n";
+		cout << "  mov rax, 0\n";
+		cout << "  call " << node->_func_name << "\n";
 		return;
 	}
 
@@ -221,41 +221,41 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	{
 	case NodeKind::ND_ADD:
 		/* 'rax' = 'rax' + 'rdi' */
-		std::cout << " add rax, rdi\n";
+		std::cout << "  add rax, rdi\n";
 		return;
 	case NodeKind::ND_SUB:
 		/* 'rax' = 'rax' - 'rdi' */
-		std::cout << " sub rax, rdi\n";
+		std::cout << "  sub rax, rdi\n";
 		return;
 	case NodeKind::ND_MUL:
 		/* 'rax' = 'rax' * 'rdi' */
-		std::cout << " imul rax, rdi\n";
+		std::cout << "  imul rax, rdi\n";
 		return;
 	case NodeKind::ND_DIV:
 		/* 'rax'(64ビット)を128ビットに拡張して'rdx'と'rax'にセット */
-		std::cout << " cqo\n";
+		std::cout << "  cqo\n";
 		/* 'rdx'と'rax'を合わせた128ビットの値を'rdi'で割って商を'rax', 余りを'rdx'にセット */
-		std::cout << " idiv rdi\n";
+		std::cout << "  idiv rdi\n";
 		return;
 	case NodeKind::ND_EQ:
-		std::cout << " cmp rax, rdi\n";
-		std::cout << " sete al\n";
-		std::cout << " movzb rax, al\n";
+		std::cout << "  cmp rax, rdi\n";
+		std::cout << "  sete al\n";
+		std::cout << "  movzb rax, al\n";
 		return;
 	case NodeKind::ND_NE:
-		std::cout << " cmp rax, rdi\n";
-		std::cout << " setne al\n";
-		std::cout << " movzb rax, al\n";
+		std::cout << "  cmp rax, rdi\n";
+		std::cout << "  setne al\n";
+		std::cout << "  movzb rax, al\n";
 		return;
 	case NodeKind::ND_LT:
-		std::cout << " cmp rax, rdi\n";
-		std::cout << " setl al\n";
-		std::cout << " movzb rax, al\n";
+		std::cout << "  cmp rax, rdi\n";
+		std::cout << "  setl al\n";
+		std::cout << "  movzb rax, al\n";
 		return;
 	case NodeKind::ND_LE:
-		std::cout << " cmp rax, rdi\n";
-		std::cout << " setle al\n";
-		std::cout << " movzb rax, al\n";
+		std::cout << "  cmp rax, rdi\n";
+		std::cout << "  setle al\n";
+		std::cout << "  movzb rax, al\n";
 		return;
 	default:
 		break;
@@ -279,7 +279,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		/* return の後の式を評価 */
 		generate_expression(std::move(node->_lhs));
 		/* エピローグまでjmpする */
-		cout << " jmp .L.return." << current_func->_name << "\n";
+		cout << "  jmp .L.return." << current_func->_name << "\n";
 		return;
 	case NodeKind::ND_EXPR_STMT:
 		generate_expression(std::move(node->_lhs));
@@ -292,13 +292,13 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		/* 条件を評価 */
 		generate_expression(std::move(node->_condition));
 		/* 条件を比較 */
-		cout << " cmp rax, 0\n";
+		cout << "  cmp rax, 0\n";
 		/* 条件がfalseなら.L.else.cラベルに飛ぶ */
-		cout << " je .L.else." << c << "\n";
+		cout << "  je .L.else." << c << "\n";
 		/* trueのときに実行 */
 		generate_statement(std::move(node->_then));
 		/* elseは実行しない */
-		cout << " jmp .L.end." << c << "\n";
+		cout << "  jmp .L.end." << c << "\n";
 
 		/* falseのとき実行 */
 		cout << ".L.else." << c << ":\n";
@@ -327,8 +327,8 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		if (node->_condition)
 		{
 			generate_expression(std::move(node->_condition));
-			cout << " cmp rax, 0\n";
-			cout << " je .L.end." << c << "\n";
+			cout << "  cmp rax, 0\n";
+			cout << "  je .L.end." << c << "\n";
 		}
 		generate_statement(std::move(node->_then));
 		/* 加算処理 */
@@ -336,7 +336,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		{
 			generate_expression(std::move(node->_inc));
 		}
-		cout << " jmp .L.begin." << c << "\n";
+		cout << "  jmp .L.begin." << c << "\n";
 		cout << ".L.end." << c << ":\n";
 		return;
 	}
@@ -379,7 +379,7 @@ void CodeGen::generate_code(unique_ptr<Object> &&program)
 	Object::assign_lvar_offsets(program);
 
 	/* intel記法であることを宣言 */
-	cout << ".intel_syntax noprefix\n";
+	cout << ".intel_syntax noprefix\n\n";
 
 	auto fn = std::move(program);
 	std::unique_ptr<Object> next_fn;
@@ -396,8 +396,8 @@ void CodeGen::generate_code(unique_ptr<Object> &&program)
 		}
 
 		/* 関数のラベル部分を出力 */
-		cout << ".globl " << fn->_name << "\n";
-		cout << ".text\n";
+		cout << "  .globl " << fn->_name << "\n";
+		cout << "  .text\n";
 		cout << fn->_name << ":\n";
 
 		/* 現在の関数をセット */
@@ -406,15 +406,15 @@ void CodeGen::generate_code(unique_ptr<Object> &&program)
 		/* プロローグ */
 		/* スタックサイズの領域を確保する */
 		/* 1変数につき8バイト */
-		cout << " push rbp\n";
-		cout << " mov rbp, rsp\n";
-		cout << " sub rsp, " << fn->_stack_size << "\n";
+		cout << "  push rbp\n";
+		cout << "  mov rbp, rsp\n";
+		cout << "  sub rsp, " << fn->_stack_size << "\n";
 
 		/* 関数の場合、レジスタから引数を受け取って確保してあるスタック領域にローカル変数と同様にストアする */
 		int cnt = 0;
 		for (auto var = fn->_params.get(); var; var = var->_next.get())
 		{
-			cout << " mov [rbp - " << var->_offset << "], " << arg_regs[cnt++] << "\n";
+			cout << "  mov [rbp - " << var->_offset << "], " << arg_regs[cnt++] << "\n";
 		}
 
 		/* コードを出力 */
@@ -426,8 +426,8 @@ void CodeGen::generate_code(unique_ptr<Object> &&program)
 		/* エピローグ */
 		/* 最後の結果がraxに残っているのでそれが返り値になる */
 		cout << ".L.return." << fn->_name << ":\n";
-		cout << " mov rsp, rbp\n";
-		cout << " pop rbp\n";
-		cout << " ret\n";
+		cout << "  mov rsp, rbp\n";
+		cout << "  pop rbp\n";
+		cout << "  ret\n";
 	}
 }
