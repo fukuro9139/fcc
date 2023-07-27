@@ -22,125 +22,6 @@
 using std::shared_ptr;
 using std::unique_ptr;
 
-/** 変数や関数オブジェクトのリスト。パース中に生成される全てのローカル変数はこのリストに連結される。 */
-static unique_ptr<Object> locals = nullptr;
-
-/** 現在処理中の関数*/
-static Function *current_func = nullptr;
-
-/****************/
-/* Object Class */
-/****************/
-
-/* コンストラクタ */
-
-Object::Object() = default;
-
-Object::Object(std::string &&name) : _name(std::move(name)) {}
-
-Object::Object(std::string &&name, unique_ptr<Object> &&next, shared_ptr<Type> &&ty)
-	: _name(std::move(name)), _next(std::move(next)), _ty(std::move(ty)) {}
-
-/**
- * @brief 新しい変数を生成してlocalsの先頭に追加する。
- *
- * @param  オブジェクトの型
- * @return 生成した変数へのポインタ
- */
-const Object *Object::new_lvar(std::shared_ptr<Type> &&ty)
-{
-	locals = std::make_unique<Object>(std::move(ty->_name), std::move(locals), std::move(ty));
-	return locals.get();
-}
-
-/**
- * @brief 変数を名前で検索する。見つからなかった場合はNULLを返す。
- *
- * @param token 検索対象のトークン
- * @return 既出の変数であればその変数オブジェクトへのポインタ
- */
-const Object *Object::find_var(const unique_ptr<Token> &token)
-{
-	/* 引数 */
-	for (const Object *var = current_func->_params.get(); var; var = var->_next.get())
-	{
-		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
-		{
-			return var;
-		}
-	}
-	/* ローカル変数 */
-	for (const Object *var = locals.get(); var; var = var->_next.get())
-	{
-		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
-		{
-			return var;
-		}
-	}
-	return nullptr;
-}
-
-/******************/
-/* Function Class */
-/******************/
-
-/* コンストラクタ */
-
-Function::Function() = default;
-Function::Function(unique_ptr<Node> &&body, unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)) {}
-
-/**
- * @brief 'n'を切り上げて最も近い'align'の倍数にする。
- *
- * @param n 切り上げ対象
- * @param align 基数
- * @return 切り上げた結果
- * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
- */
-int Function::align_to(const int &n, const int &align)
-{
-	return (n + align - 1) / align * align;
-}
-
-/** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。
- *
- * @param prog スタックサイズをセットする関数
- */
-void Function::assign_lvar_offsets(const unique_ptr<Function> &prog)
-{
-	for (Function *fn = prog.get(); fn; fn = fn->_next.get())
-	{
-		int offset = 0;
-		/* 引数 */
-		for (Object *var = fn->_params.get(); var; var = var->_next.get())
-		{
-			offset += var->_ty->_size;
-			var->_offset = offset;
-		}
-		/* ローカル変数 */
-		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
-		{
-			offset += var->_ty->_size;
-			var->_offset = offset;
-		}
-		fn->_stack_size = align_to(std::move(offset), 16);
-	}
-}
-
-/**
- * @brief 引数をローカル変数としてローカル変数のリストに繋ぐ
- *
- * @param param 引数のリスト
- */
-void Function::create_params_lvars(shared_ptr<Type> &&param)
-{
-	if (param)
-	{
-		create_params_lvars(std::move(param->_next));
-		Object::new_lvar(std::move(param));
-	}
-}
-
 /**************/
 /* Node Class */
 /**************/
@@ -318,26 +199,23 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
  * @return 読み取った関数のオブジェクト
  * @details 下記のEBNF規則に従う。 @n function-definition = declspec declarator "{" compound-statement
  */
-unique_ptr<Function> Node::function_definition(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+unique_ptr<Token> Node::function_definition(unique_ptr<Token> &&token, shared_ptr<Type> &&base)
 {
-	/* 念のため再初期化 */
-	locals = nullptr;
+	/* 型を判定 */
+	auto ty = declarator(token, std::move(token), std::move(base));
 
-	auto fn = std::make_unique_for_overwrite<Function>();
-	current_func = fn.get();
+	/* グローバル変数として関数のオブジェクトを作成 */
+	auto fn = Object::new_func(std::move(ty));
 
-	auto ty = declspec(current_token, std::move(current_token));
-	ty = declarator(current_token, std::move(current_token), ty);
-	fn->_name = ty->_name;
+	/* 関数名の次は"{"がくる */
+	token = Token::skip(std::move(token), "{");
 
-	Function::create_params_lvars(std::move(ty->_params));
+	/* 関数の中身を読み取る */
+	fn->_body = compound_statement(token, std::move(token));
+	/* ローカル変数をセット */
+	fn->_locals = std::move(Object::locals);
 
-	fn->_params = std::move(locals);
-
-	current_token = Token::skip(std::move(current_token), "{");
-	fn->_body = compound_statement(next_token, std::move(current_token));
-	fn->_locals = std::move(locals);
-	return fn;
+	return token;
 }
 
 /**
@@ -799,7 +677,8 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 	}
 
 	/* トークンがsizeof演算子の場合 */
-	if(current_token->is_equal("sizeof")){
+	if (current_token->is_equal("sizeof"))
+	{
 		int location = current_token->_location;
 		/* sizeofの対象を評価 */
 		auto node = unary(next_token, std::move(current_token->_next));
@@ -982,20 +861,16 @@ unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, c
  *
  * @param token トークン・リストの先頭
  * @return 構文解析結果
- * @details program = function-definition*
+ * @details program = (function-definition | global-variable)*
  */
-unique_ptr<Function> Node::parse(unique_ptr<Token> &&token)
+unique_ptr<Object> Node::parse(unique_ptr<Token> &&token)
 {
-	/* リストの先頭としてダミーのheadを生成 */
-	auto head = std::make_unique_for_overwrite<Function>();
-	auto cur = head.get();
-
 	/* トークンリストを最後まで辿る*/
 	while (TokenKind::TK_EOF != token->_kind)
 	{
-		cur->_next = function_definition(token, std::move(token));
-		cur = cur->_next.get();
+		auto base = declspec(token, std::move(token));
+		token = function_definition(std::move(token), std::move(base));
 	}
 
-	return std::move(head->_next);
+	return std::move(Object::globals);
 }

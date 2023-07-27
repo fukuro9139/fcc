@@ -22,9 +22,13 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static void generate_code(std::unique_ptr<Function> &&program);
+	static void generate_code(std::unique_ptr<Object> &&program);
 
 private:
+
+	/* このクラスのインスタンス化は禁止 */
+	CodeGen();
+
 	/**************************/
 	/* 静的メンバ関数 (private) */
 	/**************************/

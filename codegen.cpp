@@ -26,7 +26,7 @@ static int depth = 0;
 static const std::vector<string> arg_regs = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 /** 現在処理中の関数*/
-static Function *current_func = nullptr;
+static Object *current_func = nullptr;
 
 /*****************/
 /* CodeGen Class */
@@ -372,25 +372,32 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(unique_ptr<Function> &&program)
+void CodeGen::generate_code(unique_ptr<Object> &&program)
 {
 
 	/* スタックサイズを計算してセット */
-	Function::assign_lvar_offsets(program);
+	Object::assign_lvar_offsets(program);
 
 	/* intel記法であることを宣言 */
 	cout << ".intel_syntax noprefix\n";
 
 	auto fn = std::move(program);
-	std::unique_ptr<Function> next_fn;
+	std::unique_ptr<Object> next_fn;
 
 	/* 各関数ごとにアセンブリを出力 */
 	for (; fn; fn = std::move(next_fn))
 	{
+
 		next_fn = std::move(fn->_next);
+
+		if (!fn->is_function)
+		{
+			continue;
+		}
 
 		/* 関数のラベル部分を出力 */
 		cout << ".globl " << fn->_name << "\n";
+		cout << ".text\n";
 		cout << fn->_name << ":\n";
 
 		/* 現在の関数をセット */

@@ -14,64 +14,8 @@
 #include <memory>
 #include <string>
 #include "tokenize.hpp"
+#include "object.hpp"
 #include "type.hpp"
-
-/**
- * @brief 変数を表すオブジェクトリスト、各変数は名前によって区別する
- *
- */
-struct Object
-{
-	/* メンバ変数 (public) */
-
-	std::unique_ptr<Object> _next; /*!< 次のオブジェクト */
-	std::string _name;			   /*!< 名前 */
-	std::shared_ptr<Type> _ty;	   /* 型 */
-	int _offset;				   /*!< RBPからのオフセット */
-
-	/* コンストラクタ */
-
-	Object();
-	Object(std::string &&name);
-	Object(std::string &&name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty);
-
-	/* メンバ関数 (public) */
-
-	static const Object *new_lvar(std::shared_ptr<Type> &&ty);
-	static const Object *find_var(const std::unique_ptr<Token> &token);
-};
-
-/* Functionクラスの中でNodeクラスを使いたいので先に宣言 */
-class Node;
-
-/**
- * @brief 関数を表す
- *
- */
-struct Function
-{
-
-	/* メンバ変数 (public) */
-
-	std::unique_ptr<Node> _body;	 /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
-	std::unique_ptr<Object> _locals; /*!< オブジェクトとしての情報 */
-	int _stack_size;				 /*!< 使用するスタックの深さ */
-
-	std::unique_ptr<Function> _next; /*!< 関数リストの次の関数 */
-	std::string _name;				 /*!< 関数名 */
-	std::unique_ptr<Object> _params; /*!< 引数 */
-
-	/* コンストラクタ */
-
-	Function();
-	Function(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locals);
-
-	/* 静的メンバ関数 (public) */
-
-	static int align_to(const int &n, const int &align);
-	static void assign_lvar_offsets(const std::unique_ptr<Function> &prog);
-	static void create_params_lvars(std::shared_ptr<Type> &&param);
-};
 
 /**
  * @brief ノードの種類
@@ -149,7 +93,7 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static std::unique_ptr<Function> parse(std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Object> parse(std::unique_ptr<Token> &&token);
 
 private:
 	/***************************/
@@ -158,7 +102,7 @@ private:
 
 	static std::unique_ptr<Node> statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::unique_ptr<Node> compound_statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Function> function_definition(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+	static std::unique_ptr<Token> function_definition(std::unique_ptr<Token> &&token, std::shared_ptr<Type> &&base);
 	static std::shared_ptr<Type> declspec(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
 	static std::shared_ptr<Type> declarator(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> ty);
 	static std::unique_ptr<Node> declaration(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
