@@ -114,7 +114,7 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	case NodeKind::ND_VAR:
 		/* ローカル変数 */
 		if(node->_var->is_local){
-			cout << "  lea rax, [rbp - " << node->_var->_offset << "]";
+			cout << "  lea rax, [rbp - " << node->_var->_offset << "]\n";
 		}
 		/* グローバル変数 */
 		else{
