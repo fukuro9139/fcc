@@ -83,15 +83,6 @@ const Object *Object::find_var(const unique_ptr<Token> &token)
 {
 	auto current_function = Object::current_function;
 
-	/* グローバル変数 */
-	for (const Object *var = globals.get(); var; var = var->_next.get())
-	{
-		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
-		{
-			return var;
-		}
-	}
-
 	/* 引数 */
 	for (const Object *var = current_function->_params.get(); var; var = var->_next.get())
 	{
@@ -102,6 +93,15 @@ const Object *Object::find_var(const unique_ptr<Token> &token)
 	}
 	/* ローカル変数 */
 	for (const Object *var = locals.get(); var; var = var->_next.get())
+	{
+		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
+		{
+			return var;
+		}
+	}
+
+	/* グローバル変数 */
+	for (const Object *var = globals.get(); var; var = var->_next.get())
 	{
 		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
 		{
