@@ -30,6 +30,7 @@ all: clean $(OBJS) $(TARGET)
 #テスト
 test: fcc
 	./test.sh
+	./test-driver.sh
 
 #不要ファイル削除
 clean:
