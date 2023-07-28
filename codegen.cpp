@@ -416,7 +416,18 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 		*os << "  .data\n";
 		*os << "  .globl " << var->_name << "\n";
 		*os << var->_name << ":\n";
-		*os << "  .zero " << var->_ty->_size << "\n";
+
+		if (var->is_str_literal)
+		{
+			for (int i = 0; i < var->_init_data.size(); ++i)
+			{
+				*os << "  .byte " << static_cast<int>(var->_init_data[i]) << "\n";
+			}
+		}
+		else
+		{
+			*os << "  .zero " << var->_ty->_size << "\n";
+		}
 	}
 }
 

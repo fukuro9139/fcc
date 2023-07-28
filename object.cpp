@@ -39,7 +39,7 @@ Object *Object::new_lvar(shared_ptr<Type> &&ty)
 /**
  * @brief 新しいグローバル変数を生成してObject::globalsの先頭に追加する。
  *
- * @param  オブジェクトの型
+ * @param  ty オブジェクトの型
  * @return 生成した変数へのポインタ
  */
 Object *Object::new_gvar(shared_ptr<Type> &&ty)

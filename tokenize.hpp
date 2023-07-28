@@ -28,6 +28,7 @@ enum class TokenKind
 	TK_PUNCT,	/*!< パンクチュエータ:構文的に意味を持つ記号 */
 	TK_IDENT,	/*!< 識別子 */
 	TK_KEYWORD, /*!< キーワード */
+	TK_STR,		/*!< 文字列リテラル */
 	TK_NUM,		/*!< 整数 */
 	TK_EOF,		/*!< 入力の終わりを表すトークン */
 };
@@ -45,7 +46,7 @@ public:
 	TokenKind _kind = TokenKind::TK_EOF; /*!< トークンの型 */
 	int _value = 0;						 /*!< kindがTK_NUMの場合、その数値 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
-	std::string _str;					 /*!< トークンが表す文字列 */
+	std::string _str = "";				 /*!< トークンが表す文字列 */
 
 	/* コンストラクタ */
 	Token();
@@ -74,4 +75,5 @@ private:
 	static bool is_char_of_ident(const char &c);
 	static void convert_keywords(std::unique_ptr<Token> &token);
 	static bool is_keyword(Token *&token);
+	static std::unique_ptr<Token> read_string_literal(const std::string::const_iterator &start);
 };

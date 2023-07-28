@@ -95,6 +95,18 @@ unique_ptr<Token> Token::tokenize(const string &input)
 			continue;
 		}
 
+		/* 文字列リテラル */
+		if ('"' == *itr)
+		{
+			/* 文字列リテラルを読み込む。読み取った文字列をもつトークンを生成し */
+			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
+			current_token->_next = read_string_literal(itr);
+			current_token = current_token->_next.get();
+			/* 文字列リテラルの文字数 + '"'2文字分進める */
+			itr += current_token->_str.size() + 2;
+			continue;
+		}
+
 		/* 変数 */
 		if (is_first_char_of_ident(*itr))
 		{
@@ -182,6 +194,29 @@ bool Token::is_keyword(Token *&token)
 }
 
 /**
+ * @brief 文字列リテラルを読み込む
+ *
+ * @param itr 文字列リテラルの開始位置。(1個目の'"'の位置)
+ * @return 文字列リテラルを表すトークン
+ */
+unique_ptr<Token> Token::read_string_literal(const string::const_iterator &start)
+{
+	/* '"'の次が文字列リテラルの開始位置 */
+	auto itr = start + 1;
+	/* '"'が出てくるまで読み込み続ける */
+	for (; '"' != *itr; ++itr)
+	{
+		/* 途中に改行を挟む、または入力文字列の終端まで来たらエラー */
+		if ('\n' == *itr || current_input.end() == itr)
+		{
+			error_at("文字列が閉じられていません", start - current_input.begin());
+		}
+	}
+
+	return std::make_unique<Token>(TokenKind::TK_STR, start - current_input.begin(), string(start + 1, itr));
+}
+
+/**
  * @brief トークンが期待している演算子または識別子と一致するかどうか
  *
  * @param op 比較する文字列
@@ -194,15 +229,14 @@ bool Token::is_equal(std::string &&op) const
 
 /**
  * @brief トークンが型を表す識別子であるか
- * 
+ *
  * @return true 型を表す識別子である
  * @return false 型を表す識別子ではない
  */
 bool Token::is_typename() const
 {
-return is_equal("char") || is_equal("int");
+	return is_equal("char") || is_equal("int");
 }
-
 
 /**
  * @brief トークンが期待している文字列と一致する場合は次のトークンのポインタを返す。不一致ならエラー報告。

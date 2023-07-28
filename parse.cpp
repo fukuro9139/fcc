@@ -4,11 +4,11 @@
  * @brief
  * C言語の再帰下降構文解析を行うパーサーの定義
  *
- * このファイルのほとんどの関数の名前は、入力トークン・リストから読み取る対象に対応している。 @n
- * 例えば、statement() ははトークン・リストからステートメントを読み取ってステートメントに対応する @n
- * 抽象構文木（abstract syntax tree、AST）ノードを返す。 @n
- * 各関数はASTノードと入力トークンの残りの部分を返すように設計してある。 @n
- * C言語は複数の戻り値をサポートしていないので、残りのトークンはポインタ引数を通じて呼び出し元に返される。 @n
+ * このファイルのほとんどの関数の名前は、入力トークン・リストから読み取る対象に対応している。
+ * 例えば、statement() ははトークン・リストからステートメントを読み取ってステートメントに対応する
+ * 抽象構文木（abstract syntax tree、AST）ノードを返す。
+ * 各関数はASTノードと入力トークンの残りの部分を返すように設計してある。
+ * C言語は複数の戻り値をサポートしていないので、残りのトークンはポインタ引数を通じて呼び出し元に返される。
  *
  * @version 0.1
  * @date 2023-07-22
@@ -679,7 +679,7 @@ unique_ptr<Node> Node::postfix(unique_ptr<Token> &next_token, unique_ptr<Token> 
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * primary = "(" expression ")" | "sizeof" unary | identifier args? | num @n
+ * primary = "(" expression ")" | "sizeof" unary | identifier args? | str | num @n
  * args = "(" ")"
  */
 unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
@@ -690,6 +690,15 @@ unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> 
 		auto node = expression(current_token, std::move(current_token->_next));
 		next_token = Token::skip(std::move(current_token), ")");
 		return node;
+	}
+
+	/* 文字列リテラル */
+	if (TokenKind::TK_STR == current_token->_kind)
+	{
+		auto var = new_string_literal(current_token->_str);
+		auto location = current_token->_location;
+		next_token = std::move(current_token->_next);
+		return std::make_unique<Node>(var, location);
 	}
 
 	/* トークンがsizeof演算子の場合 */
@@ -960,4 +969,48 @@ unique_ptr<Token> Node::global_variable(unique_ptr<Token> &&token, shared_ptr<Ty
 	}
 
 	return token;
+}
+
+/**
+ * @brief グローバル変数の仮名としてユニークな名前を生成する
+ *
+ * @return 生成した名前。".L..id"となる。(idは生成順)
+ */
+std::string Node::new_unique_name()
+{
+	static int id = 0;
+	return ".L.." + std::to_string(id++);
+}
+
+/**
+ * @brief 仮名を付けてグローバル変数を生成する
+ *
+ * @param ty 生成するグローバル変数の型
+ * @return unique_ptr<Object>
+ */
+Object *Node::new_anonymous_gvar(std::shared_ptr<Type> &&ty)
+{
+	ty->_name = new_unique_name();
+	return Object::new_gvar(std::move(ty));
+}
+
+/**
+ * @brief 文字列リテラルとしてstrをもつグローバル変数を生成する。
+ *
+ * @param str 文字列リテラル
+ * @return 生成したグローバル変数オブジェクトへのポインタ
+ */
+Object *Node::new_string_literal(const std::string &str)
+{
+	/* 文字列リテラルの型はchar型配列で長さは文字数+'\0'終端 */
+	auto ty = Type::array_of(Type::CHAR_BASE, str.size() + 1);
+	
+	/* 仮名を使ってオブジェクトを生成 */
+	auto obj = new_anonymous_gvar(std::move(ty));
+	
+	/* init_dataに文字列を入れて'\0'終端を追加 */
+	obj->_init_data = str;
+	obj->_init_data.push_back('\0');
+	obj->is_str_literal = true;
+	return obj;
 }

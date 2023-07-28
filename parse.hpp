@@ -122,6 +122,9 @@ private:
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Token> global_variable(std::unique_ptr<Token> &&token, std::shared_ptr<Type> &&base);
+	static Object* new_string_literal(const std::string &str);
+	static Object* new_anonymous_gvar(std::shared_ptr<Type> &&ty);
+	static std::string new_unique_name();
 
 	static bool is_function(const Token *tok);
 };
