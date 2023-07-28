@@ -194,26 +194,94 @@ bool Token::is_keyword(Token *&token)
 }
 
 /**
+ * @brief '"'で閉じられた文字列リテラルの終わりを探す
+ *
+ * @param itr 文字列リテラルの始まりの'"'の次の位置
+ * @return 文字列リテラルの終わりの'"'の位置
+ */
+string::const_iterator Token::string_literal_end(string::const_iterator itr)
+{
+	auto start = itr;
+
+	/* '"'が出てくるか末尾まで到達するまで読み込み続ける */
+	for (; itr != current_input.end() && *itr != '"'; ++itr)
+	{
+		/* 途中で改行や'\0'が出てきたらエラーとする */
+		if (*itr == '\n' || *itr == '\0')
+		{
+			error_at("文字列が閉じられていません", start - current_input.begin());
+		}
+		/* エスケープシーケンスは無視する */
+		if (*itr == '\\')
+		{
+			++itr;
+		}
+	}
+	/* 末尾まで'"'が見つからなければエラーとする */
+	if (itr == current_input.end())
+	{
+		error_at("文字列が閉じられていません", start - current_input.begin());
+	}
+	return itr;
+}
+
+/**
  * @brief 文字列リテラルを読み込む
  *
- * @param itr 文字列リテラルの開始位置。(1個目の'"'の位置)
+ * @param start 文字列リテラルの開始位置。(1個目の'"'の位置)
  * @return 文字列リテラルを表すトークン
  */
 unique_ptr<Token> Token::read_string_literal(const string::const_iterator &start)
 {
-	/* '"'の次が文字列リテラルの開始位置 */
-	auto itr = start + 1;
-	/* '"'が出てくるまで読み込み続ける */
-	for (; '"' != *itr; ++itr)
+	auto end = string_literal_end(start + 1);
+	string buf = "";
+
+	for (auto itr = start + 1; itr != end; )
 	{
-		/* 途中に改行を挟む、または入力文字列の終端まで来たらエラー */
-		if ('\n' == *itr || current_input.end() == itr)
+		/* エスケープシーケンス */
+		if (*itr == '\\')
 		{
-			error_at("文字列が閉じられていません", start - current_input.begin());
+			buf += read_escaped_char(*(itr + 1));
+			itr += 2;
+		}else{
+			buf += *itr;
+			++itr;
 		}
 	}
 
-	return std::make_unique<Token>(TokenKind::TK_STR, start - current_input.begin(), string(start + 1, itr));
+	return std::make_unique<Token>(TokenKind::TK_STR, start - current_input.begin(), std::move(buf));
+}
+
+/**
+ * @brief エスケープシーケンスに対応する文字を返す
+ *
+ * @param c '\'の次の文字
+ * @return 対応する文字
+ * @details \a, \b, \t, \n \v, \f, \r, \e
+ */
+char Token::read_escaped_char(const char &c)
+{
+	switch (c)
+	{
+	case 'a':
+		return '\a';
+	case 'b':
+		return '\b';
+	case 't':
+		return '\t';
+	case 'n':
+		return '\n';
+	case 'v':
+		return '\v';
+	case 'f':
+		return '\f';
+	case 'r':
+		return '\r';
+	case 'e':
+		return 27;
+	default:
+		return c;
+	}
 }
 
 /**
