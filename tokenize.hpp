@@ -78,4 +78,5 @@ private:
 	static std::unique_ptr<Token> read_string_literal(std::string::const_iterator &itr);
 	static char read_escaped_char(std::string::const_iterator &new_pos, std::string::const_iterator &&pos);
 	static std::string::const_iterator string_literal_end(std::string::const_iterator itr);
+	static int from_hex(const char &c);
 };

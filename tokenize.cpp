@@ -241,7 +241,7 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 		if (*p == '\\')
 		{
 			/* エスケープされた部分を読む */
-			buf += read_escaped_char(p, p+1);
+			buf += read_escaped_char(p, p + 1);
 		}
 		else
 		{
@@ -264,6 +264,22 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
  */
 char Token::read_escaped_char(string::const_iterator &new_pos, string::const_iterator &&pos)
 {
+	/* 16進数エスケープ */
+	if(*pos == 'x'){
+		++pos;
+		if(!std::isxdigit(*pos)){
+			error_at("無効な16進数エスケープシーケンスです", pos - current_input.begin());
+		}
+
+		int c=0;
+		/* 16進数と解釈できる文字が続く限り読み続ける */
+		for(; std::isxdigit(*pos);++pos){
+			c = (c<<4) + from_hex(*pos);
+		}
+		new_pos = pos;
+		return c;
+	}
+
 	/* 8進数エスケープ */
 	/* 最大で3桁まで読む */
 	if ('0' <= *pos && *pos <= '7')
@@ -429,4 +445,23 @@ int Token::get_number() const
 		error_at("数値ではありません", this->_location);
 	}
 	return this->_value;
+}
+
+/**
+ * @brief 16進数のchar型文字を対応する10進数に変換する
+ *
+ * @param c 16進数を表す文字
+ * @return 変換した文字
+ */
+int Token::from_hex(const char &c)
+{
+	if ('0' <= c && c <= '9')
+	{
+		return c - '0';
+	}
+	if ('a' <= c && c <= 'f')
+	{
+		return c - 'a' + 10;
+	}
+	return c - 'A' + 10;
 }
