@@ -129,11 +129,11 @@ void Type::add_type(Node *node)
 			node->_ty = stmt->_lhs->_ty;
 			return;
 		}
+		error_at("ステートメント式はvoid型の戻り値をサポートしていません", node->_location);
 	}
 	default:
 		break;
 	}
-	error_at("ステートメント式はvoid型の戻り値をサポートしていません", node->_location);
 }
 
 /**
