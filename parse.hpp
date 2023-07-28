@@ -42,6 +42,7 @@ enum class NodeKind
 	ND_LE,		  /*!< <= */
 	ND_NUM,		  /*!< 整数 */
 	ND_EXPR_STMT, /*!< 文 */
+	ND_STMT_EXPR, /*!< ステートメント式  */
 	ND_VAR,		  /*!< 変数 */
 };
 
@@ -69,7 +70,7 @@ public:
 	std::unique_ptr<Node> _inc;		  /*!< 加算処理 */
 
 	/* ブロック */
-	std::unique_ptr<Node> _body; /*!< ブロック内{...}には複数の式を入れられる */
+	std::unique_ptr<Node> _body; /*!< ブロック内{...}またはステートメント式({...})には複数の式を入れられる */
 
 	/* 関数呼び出し */
 	std::string _func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
@@ -122,8 +123,8 @@ private:
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Token> global_variable(std::unique_ptr<Token> &&token, std::shared_ptr<Type> &&base);
-	static Object* new_string_literal(const std::string &str);
-	static Object* new_anonymous_gvar(std::shared_ptr<Type> &&ty);
+	static Object *new_string_literal(const std::string &str);
+	static Object *new_anonymous_gvar(std::shared_ptr<Type> &&ty);
 	static std::string new_unique_name();
 
 	static bool is_function(const Token *tok);

@@ -205,7 +205,19 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		/* raxの値をストアする */
 		store(node->_ty.get());
 		return;
-		/* 関数呼び出し */
+	/* 重複文 */
+	case NodeKind::ND_STMT_EXPR:
+	{
+		auto cur = std::move(node->_body);
+		unique_ptr<Node> next;
+		for (; cur; cur = std::move(next))
+		{
+			next = std::move(cur->_next);
+			generate_statement(std::move(cur));
+		}
+		return;
+	}
+	/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
 	{
 		/* 引数の数 */

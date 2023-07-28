@@ -110,9 +110,30 @@ void Type::add_type(Node *node)
 
 		return;
 
+	/* ステートメント式 */
+	case NodeKind::ND_STMT_EXPR:
+	{
+		/* 中身がなければ何もしない */
+		if (!node->_body)
+		{
+			return;
+		}
+		auto stmt = node->_body.get();
+		/* 複文の中を最後まで辿っていく */
+		while (stmt->_next)
+		{
+			stmt = stmt->_next.get();
+		}
+		if (NodeKind::ND_EXPR_STMT == stmt->_kind)
+		{
+			node->_ty = stmt->_lhs->_ty;
+			return;
+		}
+	}
 	default:
 		break;
 	}
+	error_at("ステートメント式はvoid型の戻り値をサポートしていません", node->_location);
 }
 
 /**

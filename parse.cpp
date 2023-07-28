@@ -679,11 +679,22 @@ unique_ptr<Node> Node::postfix(unique_ptr<Token> &next_token, unique_ptr<Token> 
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * primary = "(" expression ")" | "sizeof" unary | identifier args? | str | num @n
+ * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | identifier args? | str | num @n
  * args = "(" ")"
  */
 unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
+	/* トークンが"(" "{"ならステートメント式 */
+	if(current_token->is_equal("(") && current_token->_next->is_equal("{")){
+		auto node = std::make_unique<Node>(NodeKind::ND_STMT_EXPR, current_token->_location);
+		/* ブロックを読み取って、ブロック内の処理を新しいnodeのbodyに付け替える */
+		auto stmt = compound_statement(current_token, std::move(current_token->_next->_next));
+		node->_body = std::move(stmt->_body);
+		/* ブロックの後は') */
+		next_token = Token::skip(std::move(current_token), ")");
+		return node;
+	}
+
 	/* トークンが"("なら、"(" expression ")"のはず */
 	if (current_token->is_equal("("))
 	{
