@@ -241,7 +241,7 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 		if (*p == '\\')
 		{
 			/* エスケープされた部分を読む */
-			buf += read_escaped_char(itr, std::move(++itr));
+			buf += read_escaped_char(itr, ++itr);
 			p += 2;
 		}
 		else
@@ -262,7 +262,7 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
  * @return 対応する文字
  * @details \a, \b, \t, \n \v, \f, \r, \e
  */
-char Token::read_escaped_char(string::const_iterator &new_pos, string::const_iterator &&pos)
+char Token::read_escaped_char(string::const_iterator &new_pos, string::const_iterator pos)
 {
 	/* 8進数エスケープ */
 	/* 最大で3桁まで読む */
