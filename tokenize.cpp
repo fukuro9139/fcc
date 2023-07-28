@@ -241,8 +241,7 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 		if (*p == '\\')
 		{
 			/* エスケープされた部分を読む */
-			buf += read_escaped_char(itr, ++itr);
-			p += 2;
+			buf += read_escaped_char(p, p+1);
 		}
 		else
 		{
@@ -258,11 +257,12 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 /**
  * @brief エスケープシーケンスに対応する文字を返す
  *
- * @param c '\'の次の文字
+ * @param pos '\'の次の文字
+ * @param new_pos エスケープシーケンスの次の文字を返す
  * @return 対応する文字
  * @details \a, \b, \t, \n \v, \f, \r, \e
  */
-char Token::read_escaped_char(string::const_iterator &new_pos, string::const_iterator pos)
+char Token::read_escaped_char(string::const_iterator &new_pos, string::const_iterator &&pos)
 {
 	/* 8進数エスケープ */
 	/* 最大で3桁まで読む */
