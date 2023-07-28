@@ -75,7 +75,7 @@ private:
 	static bool is_char_of_ident(const char &c);
 	static void convert_keywords(std::unique_ptr<Token> &token);
 	static bool is_keyword(Token *&token);
-	static std::unique_ptr<Token> read_string_literal(const std::string::const_iterator &start);
+	static std::unique_ptr<Token> read_string_literal(std::string::const_iterator &itr);
 	static char read_escaped_char(const char &c);
 	static std::string::const_iterator string_literal_end(std::string::const_iterator itr);
 };

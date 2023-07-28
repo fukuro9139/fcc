@@ -102,8 +102,6 @@ unique_ptr<Token> Token::tokenize(const string &input)
 			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
 			current_token->_next = read_string_literal(itr);
 			current_token = current_token->_next.get();
-			/* 文字列リテラルの文字数 + '"'2文字分進める */
-			itr += current_token->_str.size() + 2;
 			continue;
 		}
 
@@ -231,23 +229,27 @@ string::const_iterator Token::string_literal_end(string::const_iterator itr)
  * @param start 文字列リテラルの開始位置。(1個目の'"'の位置)
  * @return 文字列リテラルを表すトークン
  */
-unique_ptr<Token> Token::read_string_literal(const string::const_iterator &start)
+unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 {
-	auto end = string_literal_end(start + 1);
+	auto start = itr + 1;
+	auto end = string_literal_end(itr + 1);
 	string buf = "";
 
-	for (auto itr = start + 1; itr != end; )
+	for (auto p = start; p != end;)
 	{
 		/* エスケープシーケンス */
-		if (*itr == '\\')
+		if (*p == '\\')
 		{
-			buf += read_escaped_char(*(itr + 1));
-			itr += 2;
-		}else{
-			buf += *itr;
-			++itr;
+			buf += read_escaped_char(*(p + 1));
+			p += 2;
+		}
+		else
+		{
+			buf += *p;
+			++p;
 		}
 	}
+	itr = end + 1;
 
 	return std::make_unique<Token>(TokenKind::TK_STR, start - current_input.begin(), std::move(buf));
 }
