@@ -137,6 +137,35 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 			continue;
 		}
 
+		/* 行コメント */
+		/* 入力文字列の末尾は'\n'であることが保証されているため */
+		/* itr+1 != lastのチェックは不要 */
+		if ('/' == *itr && '/' == *(itr + 1))
+		{
+			itr += 2;
+			while ('\n' != *itr)
+			{
+				++itr;
+			}
+			continue;
+		}
+
+		/* ブロックコメント */
+		if ('/' == *itr && '*' == *(itr + 1))
+		{
+			itr += 2;
+			while (itr != last && !('*' == *itr && '/' == *(itr + 1)))
+			{
+				++itr;
+			}
+			if (itr == last)
+			{
+				error_at("ブロックコメントが閉じられていません", itr - first);
+			}
+			itr += 2;
+			continue;
+		}
+
 		/* 数値 */
 		if (std::isdigit(*itr))
 		{

@@ -14,7 +14,7 @@ check() {
 
 # -o
 rm -f $tmp/out
-./fcc -o $tmp/out ""
+./fcc -o $tmp/out $tmp/empty.c
 [ -f $tmp/out ]
 check -o
 

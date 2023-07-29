@@ -42,16 +42,15 @@ void Input::parse_args(const std::vector<std::string> &args)
 				std::cerr << "fccでは下記のオプションが使えます\n";
 				usage(1);
 			}
-			// continue;
 		}
 
 		opt.input_path = args[i];
 	}
 
-	// if(!input_path){
-	// 	std::cerr << "入力ファイルが存在しません\n";
-	// 	exit(1);
-	// }
+	if(opt.input_path.size() == 0){
+		std::cerr << "入力ファイルが存在しません\n";
+		exit(1);
+	}
 }
 
 /**
