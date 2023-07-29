@@ -42,10 +42,10 @@ void Input::parse_args(const std::vector<std::string> &args)
 				std::cerr << "fccでは下記のオプションが使えます\n";
 				usage(1);
 			}
-			continue;
+			// continue;
 		}
 
-		opt.input = args[i];
+		opt.input_path = args[i];
 	}
 
 	// if(!input_path){
@@ -73,15 +73,23 @@ void Input::usage(int status)
  */
 std::string Input::read_file(const std::string &path)
 {
-	std::ifstream ifs(path);
-	if (!ifs)
+	std::string input_data;
+	if (path == "-")
 	{
-		std::cerr << "ファイルが開けませんでした： " << path << std::endl;
-		exit(1);
+		std::cin >> input_data;
 	}
+	else
+	{
+		std::ifstream ifs(path);
+		if (!ifs)
+		{
+			std::cerr << "ファイルが開けませんでした： " << path << std::endl;
+			exit(1);
+		}
 
-	/* ファイルから読み込む */
-	std::string input_data(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+		/* ファイルから読み込む */
+		input_data = std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+	}
 
 	/* ファイルが空または改行で終わっていない場合、'\n'を付け加える */
 	if (input_data.size() == 0 || input_data.back() != '\n')
@@ -89,5 +97,5 @@ std::string Input::read_file(const std::string &path)
 		input_data.push_back('\n');
 	}
 
-	return input_file;
+	return input_data;
 }

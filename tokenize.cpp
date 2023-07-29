@@ -10,12 +10,16 @@
  */
 
 #include "tokenize.hpp"
+#include "input.hpp"
 
 using std::string;
 using std::unique_ptr;
 
 /** 入力文字列 */
 static string current_input = "";
+
+/* 入力ファイル */
+static string current_filename = "";
 
 /***********/
 /* 汎用関数 */
@@ -33,14 +37,49 @@ void error(string &&msg)
 }
 
 /**
- * @brief エラー箇所を報告して終了する
+ * @brief 下記のフォーマットでエラー箇所を報告して終了する
+ * foo.c:10: x = y + 1;
+ *               ^ <error message here>
  * @param msg エラーメッセージ
  * @param location エラー箇所
  */
 void error_at(string &&msg, const int &location)
 {
-	std::cerr << current_input << "\n";
-	std::cerr << string(location, ' ') << "^ ";
+	int line_start = location;
+	/* エラー箇所が含まれる行の先頭位置を探す */
+	while (line_start > 0 && current_input[line_start - 1] != '\n')
+	{
+		--line_start;
+	}
+
+	int line_end = location;
+	int max = current_input.end() - current_input.begin();
+	/* エラー箇所が含まれる行の末尾の位置を探す */
+	while (line_end < max - 1 && current_input[line_end + 1] != '\n')
+	{
+		++line_end;
+	}
+
+	/* エラー箇所が含まれる行の行数を取得 */
+	int line_no = 1;
+	for (int l = 0; l < line_start; ++l)
+	{
+		if (current_input[l] == '\n')
+		{
+			++line_no;
+		}
+	}
+
+	/* ファイル名 */
+	std::string filename = current_filename + ":" + std::to_string(line_no) + ": ";
+	int indet = filename.size();
+	std::cerr << filename;
+
+	/* エラー箇所が含まれる行を出力 */
+	std::cerr << current_input.substr(line_start, line_end - line_start + 1) << "\n";
+
+	/* エラーメッセージを出力 */
+	std::cerr << string(indet + location - line_start, ' ') << "^ ";
 	std::cerr << msg << std::endl;
 	exit(1);
 }
@@ -57,15 +96,30 @@ Token::Token(const int &location, const int &value) : _kind(TokenKind::TK_NUM), 
 Token::Token(const TokenKind &kind, const int &location, std::string &&str) : _kind(kind), _location(location), _str(std::move(str)) {}
 
 /**
+ * @brief 入力されたパスにあるファイルを開いてトークナイズする
+ *
+ * @param path ファイルパス
+ * @return トークナイズした結果のトークンリスト
+ */
+unique_ptr<Token> Token::tokenize_file(const string &path)
+{
+	return tokenize(path, Input::read_file(path));
+}
+
+/**
  * @brief 入力文字列をトークナイズする
  *
+ * @param filename 入力ファイル
  * @param input 入力文字列
- * @return トークナイズ結果のトークン・リスト
+ * @return トークナイズした結果のトークン・リスト
  */
-unique_ptr<Token> Token::tokenize(const string &input)
+unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 {
 	/* 入力文字列の保存 */
 	current_input = input;
+
+	/* 入力ファイル名を保存 */
+	current_filename = filename;
 
 	/* スタート地点としてダミーのトークンを作る */
 	unique_ptr<Token> head = std::make_unique_for_overwrite<Token>();
@@ -265,16 +319,19 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 char Token::read_escaped_char(string::const_iterator &new_pos, string::const_iterator &&pos)
 {
 	/* 16進数エスケープ */
-	if(*pos == 'x'){
+	if (*pos == 'x')
+	{
 		++pos;
-		if(!std::isxdigit(*pos)){
+		if (!std::isxdigit(*pos))
+		{
 			error_at("無効な16進数エスケープシーケンスです", pos - current_input.begin());
 		}
 
-		int c=0;
+		int c = 0;
 		/* 16進数と解釈できる文字が続く限り読み続ける */
-		for(; std::isxdigit(*pos);++pos){
-			c = (c<<4) + from_hex(*pos);
+		for (; std::isxdigit(*pos); ++pos)
+		{
+			c = (c << 4) + from_hex(*pos);
 		}
 		new_pos = pos;
 		return c;

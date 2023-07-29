@@ -24,10 +24,11 @@ int main(int argc, char **argv)
 {
 	/* 入力をvectorに変換 */
 	std::vector<std::string> args(argv, argv + argc);
+	/* 引数を解析してオプションを判断 */
 	Input::parse_args(args);
 
-	/* 入力文字列をトークナイズする */
-	auto token = Token::tokenize(Input::opt.input_path);
+	/* 入力ファイルをトークナイズする */
+	auto token = Token::tokenize_file(Input::opt.input_path);
 
 	/* トークン列をパースし抽象構文木を構築する */
 	auto program = Node::parse(std::move(token));
