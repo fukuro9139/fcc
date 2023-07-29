@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 	Input::parse_args(args);
 
 	/* 入力文字列をトークナイズする */
-	auto token = Token::tokenize(Input::opt.input);
+	auto token = Token::tokenize(Input::opt.input_path);
 
 	/* トークン列をパースし抽象構文木を構築する */
 	auto program = Node::parse(std::move(token));

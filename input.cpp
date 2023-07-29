@@ -2,8 +2,14 @@
 
 Options Input::opt;
 
+/**
+ * @brief コマンドライン引数を解析する。読み取ったオプションはOptions構造体に格納。
+ *
+ * @param args コマンドライン引数を格納したvector<string>
+ */
 void Input::parse_args(const std::vector<std::string> &args)
 {
+	/* args[0]は実行ファイルのパス */
 	for (size_t i = 1, sz = args.size(); i < sz; ++i)
 	{
 		if ("--help" == args[i])
@@ -48,8 +54,40 @@ void Input::parse_args(const std::vector<std::string> &args)
 	// }
 }
 
+/**
+ * @brief helpを表示して終了する
+ *
+ * @param status 終了ステータス
+ */
 void Input::usage(int status)
 {
-	std::cerr << "fcc [ -o <path> ] <file>\n";
+	std::cerr << "fcc [ -o <path> ] <file>" << std::endl;
 	exit(status);
+}
+
+/**
+ * @brief
+ *
+ * @param path 入力ファイルのパス
+ * @return 入力ファイルの内容をまとめた文字列
+ */
+std::string Input::read_file(const std::string &path)
+{
+	std::ifstream ifs(path);
+	if (!ifs)
+	{
+		std::cerr << "ファイルが開けませんでした： " << path << std::endl;
+		exit(1);
+	}
+
+	/* ファイルから読み込む */
+	std::string input_data(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+
+	/* ファイルが空または改行で終わっていない場合、'\n'を付け加える */
+	if (input_data.size() == 0 || input_data.back() != '\n')
+	{
+		input_data.push_back('\n');
+	}
+
+	return input_file;
 }
