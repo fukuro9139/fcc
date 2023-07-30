@@ -33,7 +33,8 @@ all: clean $(OBJS) $(TARGET)
 
 #テスト
 test/%.exe: fcc test/%.c
-	$(CC) -o- -E -P -C test/$*.c | ./fcc -o test/$*.s -
+	$(CC) -o tmp.c -E -P -C test/$*.c
+	./fcc -o test/$*.s tmp.c
 	$(CC) -o $@ test/$*.s -xc test/common
 
 test: $(TESTS)
@@ -43,7 +44,7 @@ test: $(TESTS)
 #不要ファイル削除
 clean:
 #For Linux
-	$(RM) $(TARGET) $(OBJS) $(TESTS) test/*.s test/*.exe tmp*
+	$(RM) $(TARGET) $(OBJS) $(TESTS) test/*.s test/*.exe test/tmp*
 
 #For Windows
 #	del fcc.exe $(OBJS)
