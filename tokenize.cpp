@@ -419,6 +419,17 @@ bool Token::is_equal(std::string &&op) const
 }
 
 /**
+ * @brief トークンが期待している演算子または識別子と一致するかどうか
+ *
+ * @param op 比較する文字列
+ * @return 一致:true, 不一致:false
+ */
+bool Token::is_equal(const std::string &op) const
+{
+	return this->_str.size() == op.size() && std::equal(op.begin(), op.end(), this->_str.begin());
+}
+
+/**
  * @brief トークンが型を表す識別子であるか
  *
  * @return true 型を表す識別子である

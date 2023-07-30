@@ -57,6 +57,7 @@ public:
 	/* メンバ関数 */
 
 	bool is_equal(std::string &&op) const;
+	bool is_equal(const std::string &op) const;
 	int get_number() const;
 	bool is_typename() const;
 

@@ -4,11 +4,12 @@
 using std::shared_ptr;
 using std::unique_ptr;
 
+
 /* 静的メンバ変数 */
 
 std::unique_ptr<Object> Object::locals = nullptr;
 std::unique_ptr<Object> Object::globals = nullptr;
-Object *Object::current_function = nullptr;
+std::unique_ptr<Scope> Object::scope = std::make_unique<Scope>();
 
 /* コンストラクタ */
 
@@ -19,7 +20,7 @@ Object::Object(std::string &&name) : _name(std::move(name)) {}
 Object::Object(std::string &&name, unique_ptr<Object> &&next, shared_ptr<Type> &&ty)
 	: _name(std::move(name)), _next(std::move(next)), _ty(std::move(ty)) {}
 
-Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locals) : _body(std::move(body)), _locals(std::move(locals)) {}
+Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(std::move(body)), _locals(std::move(locs)) {}
 
 /* メンバ関数 */
 
@@ -33,6 +34,7 @@ Object *Object::new_lvar(shared_ptr<Type> &&ty)
 {
 	locals = std::make_unique<Object>(std::move(ty->_name), std::move(locals), std::move(ty));
 	locals->is_local = true;
+	push_scope(locals.get());
 	return locals.get();
 }
 
@@ -45,31 +47,7 @@ Object *Object::new_lvar(shared_ptr<Type> &&ty)
 Object *Object::new_gvar(shared_ptr<Type> &&ty)
 {
 	globals = std::make_unique<Object>(std::move(ty->_name), std::move(globals), std::move(ty));
-	return globals.get();
-}
-
-/**
- * @brief 新しい関数を生成してObject::globalsの先頭に追加する。
- *
- * @param  オブジェクトの型
- * @return 生成した関数へのポインタ
- */
-Object *Object::new_func(std::shared_ptr<Type> &&ty)
-{
-	auto parameters = ty->_params;
-
-	auto fn = std::make_unique<Object>(std::move(ty->_name), std::move(globals), std::move(ty));
-
-	/* 関数であるフラグをセット */
-	fn->is_function = true;
-
-	/* 引数をローカル変数として作成 */
-	create_params_lvars(std::move(parameters));
-	fn->_params = std::move(locals);
-
-	/* 作成した関数オブジェクトをObject::globalにセット */
-	globals = std::move(fn);
-
+	push_scope(globals.get());
 	return globals.get();
 }
 
@@ -81,33 +59,15 @@ Object *Object::new_func(std::shared_ptr<Type> &&ty)
  */
 const Object *Object::find_var(const unique_ptr<Token> &token)
 {
-	auto current_function = Object::current_function;
-
-	/* 引数 */
-	for (const Object *var = current_function->_params.get(); var; var = var->_next.get())
-	{
-		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
-		{
-			return var;
-		}
-	}
-	/* ローカル変数 */
-	for (const Object *var = locals.get(); var; var = var->_next.get())
-	{
-		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
-		{
-			return var;
+	/* スコープを内側から探していく */
+	for(auto sc = scope.get(); sc; sc = sc->_next.get()){
+		for(auto sc2 = sc->_vars.get(); sc2; sc2 = sc2->_next.get()){
+			if(token->is_equal(sc2->_name)){
+				return sc2->_obj;
+			}
 		}
 	}
 
-	/* グローバル変数 */
-	for (const Object *var = globals.get(); var; var = var->_next.get())
-	{
-		if (var->_name.size() == token->_str.size() && std::equal(var->_name.begin(), var->_name.end(), token->_str.begin()))
-		{
-			return var;
-		}
-	}
 	return nullptr;
 }
 
@@ -168,4 +128,33 @@ void Object::create_params_lvars(shared_ptr<Type> &&param)
 		create_params_lvars(std::move(param->_next));
 		Object::new_lvar(std::move(param));
 	}
+}
+
+/**
+ * @brief 新しいスコープに入る
+ * 
+ */
+void Object::enter_scope()
+{
+	scope = std::make_unique<Scope>(std::move(scope));
+}
+
+/**
+ * @brief 現在のスコープから抜ける
+ * 
+ */
+void Object::leave_scope()
+{
+	scope = std::move(scope->_next);
+}
+
+/**
+ * @brief 現在のスコープに変数を追加する
+ * 
+ * @param name 追加する変数の名前
+ * @param obj 追加する変数のオブジェクト
+ */
+void Object::push_scope(const Object *obj)
+{
+	scope->_vars = std::make_unique<VarScope>(std::move(scope->_vars), obj->_name, obj);
 }

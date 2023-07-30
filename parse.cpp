@@ -166,6 +166,9 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 	auto head = std::make_unique_for_overwrite<Node>();
 	auto cur = head.get();
 
+	/* ブロックスコープに入る */
+	Object::enter_scope();
+
 	/* '}'が出てくるまでstatementをパースする */
 	while (!current_token->is_equal("}"))
 	{
@@ -183,6 +186,9 @@ unique_ptr<Node> Node::compound_statement(unique_ptr<Token> &next_token, unique_
 		cur = cur->_next.get();
 		Type::add_type(cur);
 	}
+
+	/* ブロックスコープから抜け出す */
+	Object::leave_scope();
 
 	/* ダミーのheadからの次のトークン以降を切り離し、新しいノードのbodyに繋ぐ*/
 	node->_body = std::move(head->_next);
@@ -205,12 +211,29 @@ unique_ptr<Token> Node::function_definition(unique_ptr<Token> &&token, shared_pt
 	auto ty = declarator(token, std::move(token), std::move(base));
 
 	/* グローバル変数として関数のオブジェクトを作成 */
-	auto fn = Object::new_func(std::move(ty));
+	// auto fn = Object::new_func(std::move(ty));
 
+	auto parameters = ty->_params;
+	/* 新しい関数を生成してObject::globalsの先頭に追加する。 */
+	auto fn = std::make_unique<Object>(std::move(ty->_name), std::move(Object::globals), std::move(ty));
+	/* グローバル変数としてscopeに追加 */
+	Object::push_scope(fn.get());
+
+	/* 関数であるフラグをセット */
+	fn->is_function = true;
+
+	/* 関数のブロックスコープに入る */
+	Object::enter_scope();
+
+	/* 引数をローカル変数として作成 */
+	Object::create_params_lvars(std::move(parameters));
+	fn->_params = std::move(Object::locals);
+
+	/* ToDo:後で消す */
 	/* 現在処理中の関数として設定 */
-	Object::current_function = fn;
+	// Object::current_function = fn;
 
-	/* 関数名の次は"{"がくる */
+	/* 引数の次は"{"がくる */
 	token = Token::skip(std::move(token), "{");
 
 	/* 関数の中身を読み取る */
@@ -218,8 +241,15 @@ unique_ptr<Token> Node::function_definition(unique_ptr<Token> &&token, shared_pt
 	/* ローカル変数をセット */
 	fn->_locals = std::move(Object::locals);
 
+	/* 作成した関数オブジェクトをObject::globalにセット */
+	Object::globals = std::move(fn);
+
+	/* 関数のブロックスコープを抜ける */
+	Object::leave_scope();
+
+	/* ToDo:後で消す */
 	/* 念のためクリアしておく */
-	Object::current_function = nullptr;
+	// Object::current_function = nullptr;
 
 	return token;
 }
@@ -685,7 +715,8 @@ unique_ptr<Node> Node::postfix(unique_ptr<Token> &next_token, unique_ptr<Token> 
 unique_ptr<Node> Node::primary(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	/* トークンが"(" "{"ならステートメント式 */
-	if(current_token->is_equal("(") && current_token->_next->is_equal("{")){
+	if (current_token->is_equal("(") && current_token->_next->is_equal("{"))
+	{
 		auto node = std::make_unique<Node>(NodeKind::ND_STMT_EXPR, current_token->_location);
 		/* ブロックを読み取って、ブロック内の処理を新しいnodeのbodyに付け替える */
 		auto stmt = compound_statement(current_token, std::move(current_token->_next->_next));
@@ -1015,10 +1046,10 @@ Object *Node::new_string_literal(const std::string &str)
 {
 	/* 文字列リテラルの型はchar型配列で長さは文字数+'\0'終端 */
 	auto ty = Type::array_of(Type::CHAR_BASE, str.size() + 1);
-	
+
 	/* 仮名を使ってオブジェクトを生成 */
 	auto obj = new_anonymous_gvar(std::move(ty));
-	
+
 	/* init_dataに文字列を入れて'\0'終端を追加 */
 	obj->_init_data = str;
 	obj->_init_data.push_back('\0');
