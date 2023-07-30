@@ -75,7 +75,7 @@ std::string Input::read_file(const std::string &path)
 	std::string input_data;
 	if (path == "-")
 	{
-		std::cin >> input_data;
+		std::getline(std::cin, input_data);
 	}
 	else
 	{
