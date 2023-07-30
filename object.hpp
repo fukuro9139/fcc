@@ -81,10 +81,10 @@ private:
 struct VarScope
 {
 	std::unique_ptr<VarScope> _next; /*!< 次の変数  */
-	std::string _name = "";			 /*!< 変数名 */
-	Object *_obj = nullptr;			 /*!< 対応する変数のオブジェクト */
+	const std::string _name = "";			 /*!< 変数名 */
+	const Object *_obj = nullptr;			 /*!< 対応する変数のオブジェクト */
 
-	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name, Object *obj) : _next(std::move(next)), _name(name), _obj(obj) {}
+	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name, const Object *obj) : _next(std::move(next)), _name(name), _obj(obj) {}
 };
 
 /**
