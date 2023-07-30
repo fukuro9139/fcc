@@ -220,6 +220,8 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 		error_at("不正なトークンです", itr - first);
 	}
 
+	/* 行数をセットする */
+	add_line_number(head->_next.get());
 	/* 最後に終端トークンを作成して繋ぐ */
 	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF);
 	/* キーワードトークンを識別子トークンから分離する */
@@ -561,4 +563,30 @@ int Token::from_hex(const char &c)
 		return c - 'a' + 10;
 	}
 	return c - 'A' + 10;
+}
+
+/**
+ * @brief トークンリストを辿って行数をセットする
+ *
+ * @param tok トークンリストの先頭
+ */
+void Token::add_line_number(Token *tok)
+{
+	int pos = 0;
+	const int total = current_input.end() - current_input.begin();
+	int n = 0;
+
+	while (pos != total)
+	{
+		if (pos == tok->_location)
+		{
+			tok->_line_no = n;
+			tok = tok->_next.get();
+		}
+		if (current_input[pos] == '\n')
+		{
+			++n;
+		}
+		++pos;
+	}
 }

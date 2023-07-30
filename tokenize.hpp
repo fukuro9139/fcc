@@ -47,6 +47,7 @@ public:
 	int _value = 0;						 /*!< kindがTK_NUMの場合、その数値 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	std::string _str = "";				 /*!< トークンが表す文字列 */
+	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 
 	/* コンストラクタ */
 	Token();
@@ -81,4 +82,5 @@ private:
 	static char read_escaped_char(std::string::const_iterator &new_pos, std::string::const_iterator &&pos);
 	static std::string::const_iterator string_literal_end(std::string::const_iterator itr);
 	static int from_hex(const char &c);
+	static void add_line_number(Token *tok);
 };
