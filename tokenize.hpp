@@ -17,11 +17,6 @@
 #include <locale>
 #include <vector>
 
-/* 汎用関数 */
-
-void error(std::string &&msg);
-void error_at(std::string &&msg, const int &location);
-
 /** @brief トークンの種類 */
 enum class TokenKind
 {
@@ -76,11 +71,17 @@ private:
 	static size_t read_punct(std::string &&str);
 	static bool is_first_char_of_ident(const char &c);
 	static bool is_char_of_ident(const char &c);
-	static void convert_keywords(std::unique_ptr<Token> &token);
+	static void convert_keywords(Token *token);
 	static bool is_keyword(Token *&token);
 	static std::unique_ptr<Token> read_string_literal(std::string::const_iterator &itr);
 	static char read_escaped_char(std::string::const_iterator &new_pos, std::string::const_iterator &&pos);
 	static std::string::const_iterator string_literal_end(std::string::const_iterator itr);
 	static int from_hex(const char &c);
-	static void add_line_number(Token *tok);
+	static void add_line_number(Token *token);
 };
+
+/* 汎用関数 */
+
+void error(std::string &&msg);
+void error_at(std::string &&msg, const int &location);
+void error_token(std::string &&msg, Token *token);

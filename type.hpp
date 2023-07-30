@@ -13,8 +13,9 @@ enum class TypeKind
 	TY_ARRAY, /*!< 関数  */
 };
 
-/* Nodeクラスを使いたいので先に宣言 */
+/* Node, Tokenクラスを使いたいので先に宣言 */
 class Node;
+class Token;
 
 /**
  * @brief 型を表すクラス
@@ -36,8 +37,8 @@ public:
 	 */
 	std::shared_ptr<Type> _base;
 
-	std::string _name = ""; /*!< 変数の名前 */
-	int _location = 0;		/*!< 変数に対応する入力文字列の位置 */
+	std::string _name = "";	 /*!< 変数の名前 */
+	Token *_token = nullptr; /*!< 変数に対応するトークン */
 
 	/* 配列 */
 	int _array_length = 0; /*!< 配列の長さ */
@@ -52,7 +53,7 @@ public:
 	Type(const TypeKind &kind, const int &size);
 	Type(const TypeKind &kind);
 	Type(const std::shared_ptr<Type> &base, const int &size);
-	Type(const std::string &name, const int &location, const std::shared_ptr<Type> &return_ty);
+	Type(Token *token, const std::shared_ptr<Type> &return_ty);
 
 	/* メンバ関数 (public) */
 

@@ -18,8 +18,8 @@ Type::Type(const TypeKind &kind) : _kind(kind) {}
 
 Type::Type(const shared_ptr<Type> &base, const int &size) : _kind(TypeKind::TY_PTR), _base(base), _size(size) {}
 
-Type::Type(const std::string &name, const int &location, const shared_ptr<Type> &return_ty)
-	: _kind(TypeKind::TY_FUNC), _name(name), _location(location), _return_ty(return_ty) {}
+Type::Type(Token *token, const shared_ptr<Type> &return_ty)
+	: _kind(TypeKind::TY_FUNC), _name(token->_str), _token(token), _return_ty(return_ty) {}
 
 /**
  * @brief 抽象構文木(AST)を巡回しながら型情報を設定する。
@@ -65,7 +65,7 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_ASSIGN:
 		if (TypeKind::TY_ARRAY == node->_lhs->_ty->_kind)
 		{
-			error_at("左辺値ではありません", node->_lhs->_location);
+			error_token("左辺値ではありません", node->_lhs->_token);
 		}
 		node->_ty = node->_lhs->_ty;
 		return;
@@ -103,7 +103,7 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_DEREF:
 		/* デリファレンスできるのはポインタ型のみ */
 		if (!node->_lhs->_ty->_base)
-			error_at("デリファレンスできるのはポインタ型のみです", node->_location);
+			error_token("デリファレンスできるのはポインタ型のみです", node->_token);
 		else
 			/* ポインタのベース型 */
 			node->_ty = node->_lhs->_ty->_base;
@@ -129,7 +129,7 @@ void Type::add_type(Node *node)
 			node->_ty = stmt->_lhs->_ty;
 			return;
 		}
-		error_at("ステートメント式はvoid型の戻り値をサポートしていません", node->_location);
+		error_token("ステートメント式はvoid型の戻り値をサポートしていません", node->_token);
 	}
 	default:
 		break;
@@ -166,7 +166,7 @@ shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
  */
 shared_ptr<Type> Type::func_type(const shared_ptr<Type> &return_ty)
 {
-	return std::make_shared<Type>(return_ty->_name, return_ty->_location, return_ty);
+	return std::make_shared<Type>(return_ty->_token, return_ty);
 }
 
 /**

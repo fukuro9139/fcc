@@ -151,7 +151,7 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	default:
 		break;
 	}
-	error_at("左辺値ではありません", node->_location);
+	error_token("左辺値ではありません", node->_token);
 }
 
 /**
@@ -304,7 +304,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	}
 
 	/* エラー */
-	error_at("不正な式です", node->_location);
+	error_token("不正な式です", node->_token);
 }
 
 /**
@@ -406,7 +406,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 	default:
 		break;
 	}
-	error_at("不正な構文です", node->_location);
+	error_token("不正な構文です", node->_token);
 }
 
 /**

@@ -72,16 +72,27 @@ void error_at(string &&msg, const int &location)
 
 	/* ファイル名 */
 	std::string filename = current_filename + ":" + std::to_string(line_no) + ": ";
-	int indet = filename.size();
+	int indent = filename.size();
 	std::cerr << filename;
 
 	/* エラー箇所が含まれる行を出力 */
 	std::cerr << current_input.substr(line_start, line_end - line_start + 1) << "\n";
 
 	/* エラーメッセージを出力 */
-	std::cerr << string(indet + location - line_start, ' ') << "^ ";
+	std::cerr << string(indent + location - line_start, ' ') << "^ ";
 	std::cerr << msg << std::endl;
 	exit(1);
+}
+
+/**
+ * @brief トークンを受け取ってエラーメッセージを出力
+ * 
+ * @param msg エラーメッセージ
+ * @param token エラー箇所を含むトークン
+ */
+void error_token(std::string && msg, Token * token)
+{
+	error_at(std::move(msg), token->_location);
 }
 
 /***************/
@@ -225,7 +236,7 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 	/* 行数をセットする */
 	add_line_number(head->_next.get());
 	/* キーワードトークンを識別子トークンから分離する */
-	Token::convert_keywords(head->_next);
+	Token::convert_keywords(head->_next.get());
 	/* ダミーの次のトークン以降を切り離して返す */
 	return std::move(head->_next);
 }
@@ -235,9 +246,9 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
  *
  * @param token トークン列
  */
-void Token::convert_keywords(unique_ptr<Token> &token)
+void Token::convert_keywords(Token* token)
 {
-	for (Token *t = token.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+	for (Token *t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 	{
 		if (TokenKind::TK_IDENT == t->_kind && is_keyword(t))
 		{
@@ -568,20 +579,20 @@ int Token::from_hex(const char &c)
 /**
  * @brief トークンリストを辿って行数をセットする
  *
- * @param tok トークンリストの先頭
+ * @param token トークンリストの先頭
  */
-void Token::add_line_number(Token *tok)
+void Token::add_line_number(Token *token)
 {
 	int pos = 0;
 	const int total = current_input.end() - current_input.begin();
 	int n = 0;
 
-	while (tok->_kind != TokenKind::TK_EOF && pos != total)
+	while (token->_kind != TokenKind::TK_EOF && pos != total)
 	{
-		if (pos == tok->_location)
+		if (pos == token->_location)
 		{
-			tok->_line_no = n;
-			tok = tok->_next.get();
+			token->_line_no = n;
+			token = token->_next.get();
 		}
 		if (current_input[pos] == '\n')
 		{

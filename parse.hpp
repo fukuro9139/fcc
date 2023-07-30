@@ -79,16 +79,16 @@ public:
 	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
-	int _location = 0; /* ノードと対応する入力文字列の位置 */
+	Token *_token = nullptr; /* ノードと対応するトークン */
 
 	/* コンストラクタ */
 
 	Node();
-	Node(NodeKind &&kind, const int &location);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, const int &location);
-	Node(const int &val, const int &location);
-	Node(const Object *var, const int &location);
+	Node(NodeKind &&kind, Token *token);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
+	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, Token *token);
+	Node(const int &val, Token *token);
+	Node(const Object *var, Token *token);
 
 	/**************************/
 	/* 静的メンバ関数 (public) */
@@ -120,12 +120,12 @@ private:
 	static std::unique_ptr<Node> postfix(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> primary(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> function_call(Token **next_token, Token *current_token);
-	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
-	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
-	static Token* global_variable(Token *token, std::shared_ptr<Type> &&base);
+	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
+	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
+	static Token *global_variable(Token *token, std::shared_ptr<Type> &&base);
 	static Object *new_string_literal(const std::string &str);
 	static Object *new_anonymous_gvar(std::shared_ptr<Type> &&ty);
 	static std::string new_unique_name();
 
-	static bool is_function(const Token *tok);
+	static bool is_function(Token *token);
 };

@@ -20,8 +20,6 @@
 #include "tokenize.hpp"
 #include "input.hpp"
 
-
-
 int main(int argc, char **argv)
 {
 	/* 入力をvectorに変換 */
