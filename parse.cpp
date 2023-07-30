@@ -236,13 +236,16 @@ unique_ptr<Token> Node::function_definition(unique_ptr<Token> &&token, shared_pt
 	/* 引数の次は"{"がくる */
 	token = Token::skip(std::move(token), "{");
 
-	/* 関数の中身を読み取る */
-	fn->_body = compound_statement(token, std::move(token));
-	/* ローカル変数をセット */
-	fn->_locals = std::move(Object::locals);
+	/* 後で中身を入れられるようにポインタをメモ */
+	auto current_function = fn.get();
 
 	/* 作成した関数オブジェクトをObject::globalにセット */
 	Object::globals = std::move(fn);
+
+	/* 関数の中身を読み取る */
+	current_function->_body = compound_statement(token, std::move(token));
+	/* ローカル変数をセット */
+	current_function->_locals = std::move(Object::locals);
 
 	/* 関数のブロックスコープを抜ける */
 	Object::leave_scope();

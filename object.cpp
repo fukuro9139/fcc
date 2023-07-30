@@ -126,7 +126,7 @@ void Object::create_params_lvars(shared_ptr<Type> &&param)
 	if (param)
 	{
 		create_params_lvars(std::move(param->_next));
-		Object::new_lvar(std::move(param));
+		new_lvar(std::move(param));
 	}
 }
 
