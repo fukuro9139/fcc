@@ -47,7 +47,8 @@ void Input::parse_args(const std::vector<std::string> &args)
 		opt.input_path = args[i];
 	}
 
-	if(opt.input_path.size() == 0){
+	if (opt.input_path.size() == 0)
+	{
 		std::cerr << "入力ファイルが存在しません\n";
 		exit(1);
 	}
@@ -75,7 +76,19 @@ std::string Input::read_file(const std::string &path)
 	std::string input_data;
 	if (path == "-")
 	{
-		std::getline(std::cin, input_data);
+		std::string buf;
+		/* 標準入力から読み取れなくなるまで読み込みを続ける */
+		while (std::getline(std::cin, buf))
+		{
+			if (buf.empty())
+			{
+				break;
+			}
+			else
+			{
+				input_data += buf;
+			}
+		}
 	}
 	else
 	{
