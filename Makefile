@@ -13,6 +13,10 @@ OBJS = $(SRCS:.cpp=.o)
 #サフィックスルール適用対象
 .SUFFIXES: .cpp .o
 
+#テスト用ファイル
+TEST_SRCS=$(wildcard test/*.c)
+TESTS=$(TEST_SRCS:.c=.exe)
+
 #プライマリターゲット
 $(TARGET): $(OBJS)
 	$(CXX) -o $@ $^
@@ -28,14 +32,18 @@ all: clean $(OBJS) $(TARGET)
 .PHONY: test clean
 
 #テスト
-test: fcc
-	./test.sh
-	./test-driver.sh
+test/%.exe: fcc test/%.c
+	$(CC) -o- -E -P -C test/$*.c | ./fcc -o test/$*.s -
+	$(CC) -o $@ test/$*.s -xc test/common
+
+test: $(TESTS)
+	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
+	test/driver.sh
 
 #不要ファイル削除
 clean:
 #For Linux
-	$(RM) $(TARGET) $(OBJS) *~ tmp*
+	$(RM) $(TARGET) $(OBJS) $(TESTS) test/*.s test/*.exe tmp*
 
 #For Windows
 #	del fcc.exe $(OBJS)

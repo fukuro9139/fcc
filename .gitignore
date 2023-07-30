@@ -6,3 +6,4 @@ fcc
 *.json
 *.d
 *.exe
+/test/*.exe
