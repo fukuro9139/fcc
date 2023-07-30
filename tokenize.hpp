@@ -66,8 +66,8 @@ public:
 
 	static std::unique_ptr<Token> tokenize(const std::string &filename, std::string &&input);
 	static std::unique_ptr<Token> tokenize_file(const std::string &filepath);
-	static std::unique_ptr<Token> skip(std::unique_ptr<Token> &&token, std::string &&op);
-	static bool consume(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::string &&str);
+	static Token* skip(Token *token, std::string &&op);
+	static bool consume(Token **next_token, Token *current_token, std::string &&str);
 
 private:
 	/* 静的メンバ関数 (private) */

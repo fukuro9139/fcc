@@ -57,7 +57,7 @@ Object *Object::new_gvar(shared_ptr<Type> &&ty)
  * @param token 検索対象のトークン
  * @return 既出の変数であればその変数オブジェクトへのポインタ
  */
-const Object *Object::find_var(const unique_ptr<Token> &token)
+const Object *Object::find_var(const Token *token)
 {
 	/* スコープを内側から探していく */
 	for(auto sc = scope.get(); sc; sc = sc->_next.get()){

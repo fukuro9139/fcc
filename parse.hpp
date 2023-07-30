@@ -94,35 +94,35 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static std::unique_ptr<Object> parse(std::unique_ptr<Token> &&token);
+	static std::unique_ptr<Object> parse(Token *token);
 
 private:
 	/***************************/
 	/* 静的メンバ関数 (private) */
 	/***************************/
 
-	static std::unique_ptr<Node> statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> compound_statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Token> function_definition(std::unique_ptr<Token> &&token, std::shared_ptr<Type> &&base);
-	static std::shared_ptr<Type> declspec(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::shared_ptr<Type> declarator(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> ty);
-	static std::unique_ptr<Node> declaration(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::shared_ptr<Type> function_parameters(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> &&ty);
-	static std::shared_ptr<Type> type_suffix(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::shared_ptr<Type> &&ty);
-	static std::unique_ptr<Node> expression(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> expression_statement(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> assign(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> equality(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> relational(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> add(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> mul(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> unary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> postfix(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> primary(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
-	static std::unique_ptr<Node> function_call(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token);
+	static std::unique_ptr<Node> statement(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
+	static Token *function_definition(Token *token, std::shared_ptr<Type> &&base);
+	static std::shared_ptr<Type> declspec(Token **next_token, Token *current_token);
+	static std::shared_ptr<Type> declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> ty);
+	static std::unique_ptr<Node> declaration(Token **next_token, Token *current_token);
+	static std::shared_ptr<Type> function_parameters(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
+	static std::shared_ptr<Type> type_suffix(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
+	static std::unique_ptr<Node> expression(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> expression_statement(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> assign(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> equality(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> relational(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> add(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> mul(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> unary(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> postfix(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> primary(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> function_call(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, const int &location);
-	static std::unique_ptr<Token> global_variable(std::unique_ptr<Token> &&token, std::shared_ptr<Type> &&base);
+	static Token* global_variable(Token *token, std::shared_ptr<Type> &&base);
 	static Object *new_string_literal(const std::string &str);
 	static Object *new_anonymous_gvar(std::shared_ptr<Type> &&ty);
 	static std::string new_unique_name();

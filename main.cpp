@@ -20,6 +20,8 @@
 #include "tokenize.hpp"
 #include "input.hpp"
 
+
+
 int main(int argc, char **argv)
 {
 	/* 入力をvectorに変換 */
@@ -31,7 +33,7 @@ int main(int argc, char **argv)
 	auto token = Token::tokenize_file(Input::opt.input_path);
 
 	/* トークン列をパースし抽象構文木を構築する */
-	auto program = Node::parse(std::move(token));
+	auto program = Node::parse(token.get());
 
 	/* 抽象構文木を巡回しながらコード生成 */
 	CodeGen::generate_code(std::move(program), Input::opt.opt_o);

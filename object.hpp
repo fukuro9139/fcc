@@ -55,7 +55,7 @@ public:
 
 	static Object *new_lvar(std::shared_ptr<Type> &&ty);
 	static Object *new_gvar(std::shared_ptr<Type> &&ty);
-	static const Object *find_var(const std::unique_ptr<Token> &token);
+	static const Object *find_var(const Token *token);
 	static int align_to(const int &n, const int &align);
 	static void assign_lvar_offsets(const std::unique_ptr<Object> &prog);
 	static void create_params_lvars(std::shared_ptr<Type> &&param);

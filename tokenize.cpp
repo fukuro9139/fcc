@@ -449,13 +449,13 @@ bool Token::is_typename() const
  * @param op 比較する文字列
  * @return 次のトークン
  */
-std::unique_ptr<Token> Token::skip(std::unique_ptr<Token> &&token, std::string &&op)
+Token* Token::skip(Token *token, std::string &&op)
 {
 	if (!token->is_equal(std::move(op)))
 	{
 		error_at("不正な構文です", token->_location);
 	}
-	return std::move(token->_next);
+	return token->_next.get();
 }
 
 /**
@@ -466,14 +466,14 @@ std::unique_ptr<Token> Token::skip(std::unique_ptr<Token> &&token, std::string &
  * @param op 比較する文字列
  * @return 一致：true, 不一致：false
  */
-bool Token::consume(std::unique_ptr<Token> &next_token, std::unique_ptr<Token> &&current_token, std::string &&str)
+bool Token::consume(Token **next_token, Token *current_token, std::string &&str)
 {
 	if (current_token->is_equal(std::move(str)))
 	{
-		next_token = std::move(current_token->_next);
+		*next_token = current_token->_next.get();
 		return true;
 	}
-	next_token = std::move(current_token);
+	*next_token = current_token;
 	return false;
 }
 
