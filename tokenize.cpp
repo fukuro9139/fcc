@@ -91,7 +91,7 @@ void error_at(string &&msg, const int &location)
 /* コンストラクタ */
 
 Token::Token() = default;
-Token::Token(const TokenKind &kind) : _kind(kind) {}
+Token::Token(const TokenKind &kind, const int &location) : _kind(kind), _location(location) {}
 Token::Token(const int &location, const int &value) : _kind(TokenKind::TK_NUM), _location(location), _value(std::move(value)) {}
 Token::Token(const TokenKind &kind, const int &location, std::string &&str) : _kind(kind), _location(location), _str(std::move(str)) {}
 
@@ -220,10 +220,10 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 		error_at("不正なトークンです", itr - first);
 	}
 
+	/* 最後に終端トークンを作成して繋ぐ */
+	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, last - first);
 	/* 行数をセットする */
 	add_line_number(head->_next.get());
-	/* 最後に終端トークンを作成して繋ぐ */
-	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF);
 	/* キーワードトークンを識別子トークンから分離する */
 	Token::convert_keywords(head->_next);
 	/* ダミーの次のトークン以降を切り離して返す */
@@ -449,7 +449,7 @@ bool Token::is_typename() const
  * @param op 比較する文字列
  * @return 次のトークン
  */
-Token* Token::skip(Token *token, std::string &&op)
+Token *Token::skip(Token *token, std::string &&op)
 {
 	if (!token->is_equal(std::move(op)))
 	{
@@ -576,7 +576,7 @@ void Token::add_line_number(Token *tok)
 	const int total = current_input.end() - current_input.begin();
 	int n = 0;
 
-	while (pos != total)
+	while (tok->_kind != TokenKind::TK_EOF && pos != total)
 	{
 		if (pos == tok->_location)
 		{

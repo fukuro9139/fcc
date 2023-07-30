@@ -51,7 +51,7 @@ public:
 
 	/* コンストラクタ */
 	Token();
-	Token(const TokenKind &kind);
+	Token(const TokenKind &kind, const int &location);
 	Token(const int &location, const int &value);
 	Token(const TokenKind &kind, const int &location, std::string &&str);
 
