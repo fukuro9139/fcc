@@ -56,22 +56,38 @@ public:
 	static Object *new_lvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static Object *new_gvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static const Object *find_var(const Token *token);
+	static std::shared_ptr<Type> find_tag(const Token *token);
 	static int align_to(const int &n, const int &align);
 	static void assign_lvar_offsets(const std::unique_ptr<Object> &prog);
 	static void create_params_lvars(std::shared_ptr<Type> &&param);
 	static void enter_scope();
 	static void leave_scope();
 	static void push_scope(const Object *obj);
+	static void push_tag_scope(Token *token, const std::shared_ptr<Type> &ty);
 
 	/* 静的メンバ変数 */
 
-	/** 変数や関数オブジェクトのリスト。パース中に生成される全ての変数はこのリストに連結される。 */
+	/** ローカル変数オブジェクトのリスト。パース中に生成される全てのローカル変数はこのリストに連結される。 */
 	static std::unique_ptr<Object> locals;
+	/** グローバル変数オブジェクトのリスト。パース中に生成される全てのグローバル変数はこのリストに連結される。 */
 	static std::unique_ptr<Object> globals;
 
 private:
 	/** 変数のスコープ */
 	static std::unique_ptr<Scope> scope;
+};
+
+/**
+ * @brief 構造体の名前のスコープ
+ *
+ */
+struct TagScope
+{
+	std::unique_ptr<TagScope> _next; /*!< スコープ内の次のタグ */
+	std::string _name = "";			 /*!< 構造体の名前 */
+	std::shared_ptr<Type> _ty;		 /*!< 構造体の型 */
+
+	TagScope(const std::string &name, const std::shared_ptr<Type> &ty, std::unique_ptr<TagScope> &&next) : _name(name), _ty(ty), _next(std::move(next)) {}
 };
 
 /**
@@ -88,13 +104,14 @@ struct VarScope
 };
 
 /**
- * @brief ローカル変数のスコープを表す
+ * @brief ローカル変数、構造体のスコープを表す
  *
  */
 struct Scope
 {
 	std::unique_ptr<Scope> _next;	 /*!< 次のスコープ  */
 	std::unique_ptr<VarScope> _vars; /*!< スコープ内の変数 */
+	std::unique_ptr<TagScope> _tags; /*!< 構造体のタグ */
 
 	Scope() {}
 	Scope(std::unique_ptr<Scope> &&next) : _next(std::move(next)) {}

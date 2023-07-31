@@ -4,7 +4,6 @@
 using std::shared_ptr;
 using std::unique_ptr;
 
-
 /* 静的メンバ変数 */
 
 std::unique_ptr<Object> Object::locals = nullptr;
@@ -60,14 +59,39 @@ Object *Object::new_gvar(const std::string &name, shared_ptr<Type> &&ty)
 const Object *Object::find_var(const Token *token)
 {
 	/* スコープを内側から探していく */
-	for(auto sc = scope.get(); sc; sc = sc->_next.get()){
-		for(auto sc2 = sc->_vars.get(); sc2; sc2 = sc2->_next.get()){
-			if(token->is_equal(sc2->_name)){
+	for (auto sc = scope.get(); sc; sc = sc->_next.get())
+	{
+		for (auto sc2 = sc->_vars.get(); sc2; sc2 = sc2->_next.get())
+		{
+			if (token->is_equal(sc2->_name))
+			{
 				return sc2->_obj;
 			}
 		}
 	}
 
+	return nullptr;
+}
+
+/**
+ * @brief 構造体のタグを名前で検索する。見つからなかった場合はNULLを返す。
+ *
+ * @param token 検索対象のトークン
+ * @return 既出の構造体であればその型へのポインタ
+ */
+shared_ptr<Type> Object::find_tag(const Token *token)
+{
+	/* スコープを内側から探していく */
+	for (auto sc = scope.get(); sc; sc = sc->_next.get())
+	{
+		for (auto sc2 = sc->_tags.get(); sc2; sc2 = sc2->_next.get())
+		{
+			if (token->is_equal(sc2->_name))
+			{
+				return sc2->_ty;
+			}
+		}
+	}
 	return nullptr;
 }
 
@@ -134,7 +158,7 @@ void Object::create_params_lvars(shared_ptr<Type> &&param)
 
 /**
  * @brief 新しいスコープに入る
- * 
+ *
  */
 void Object::enter_scope()
 {
@@ -143,7 +167,7 @@ void Object::enter_scope()
 
 /**
  * @brief 現在のスコープから抜ける
- * 
+ *
  */
 void Object::leave_scope()
 {
@@ -152,11 +176,22 @@ void Object::leave_scope()
 
 /**
  * @brief 現在のスコープに変数を追加する
- * 
+ *
  * @param name 追加する変数の名前
  * @param obj 追加する変数のオブジェクト
  */
 void Object::push_scope(const Object *obj)
 {
 	scope->_vars = std::make_unique<VarScope>(std::move(scope->_vars), obj->_name, obj);
+}
+
+/**
+ * @brief 現在のスコープに構造体のタグを追加する
+ *
+ * @param token 追加する構造体のトークン
+ * @param ty 追加する構造体の型
+ */
+void Object::push_tag_scope(Token *token, const std::shared_ptr<Type> &ty)
+{
+	scope->_tags = std::make_unique<TagScope>(token->_str, ty, std::move(scope->_tags));
 }

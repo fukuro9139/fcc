@@ -413,16 +413,32 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 構造体の型
- * @details 下記のEBNF規則に従う。 @n struct-decl = "{" struct-members
+ * @details 下記のEBNF規則に従う。 @n struct-decl = identifier? "{" struct-members
  */
 shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 {
-	/* '{'から始まる */
-	current_token = Token::skip(current_token, "{");
+	/* 存在するならば構造体のタグを読む */
+	Token *tag = nullptr;
+	if(current_token->_kind == TokenKind::TK_IDENT){
+		tag = current_token;
+		current_token = current_token->_next.get();
+	}
+
+	/* 構造体のタグが存在し、かつ定義ではない場合 */
+	/* 例 struct foo hoge; */
+	if(tag && !current_token->is_equal("{")){
+		auto ty = Object::find_tag(current_token);
+		/* タグが見つからなかったらエラー */
+		if(!ty){
+			error_token("未定義の構造体です", tag);
+		}
+		*next_token = current_token;
+		return ty;
+	}
 
 	/* 構造体の情報を読み込む */
 	auto ty = std::make_shared<Type>(TypeKind::TY_STRUCT);
-	struct_members(next_token, current_token, ty.get());
+	struct_members(next_token, current_token->_next.get(), ty.get());
 	ty->_align = 1;
 
 	/* 構造体のメンバのオフセットを計算する */
@@ -438,6 +454,11 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 		}
 	}
 	ty->_size = Object::align_to(offset, ty->_align);
+
+	/* タグが存在するならば現在のスコープに登録する */
+	if(tag){
+		Object::push_tag_scope(tag, ty);
+	}
 
 	return ty;
 }
