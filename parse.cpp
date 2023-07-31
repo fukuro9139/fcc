@@ -447,7 +447,7 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 {
 	/* ダミーの先頭 */
-	auto head = std::make_shared_for_overwrite<Member>();
+	auto head = std::make_shared<Member>();
 	auto cur = head.get();
 
 	/* '}'が出てくるまで読み込み続ける */
