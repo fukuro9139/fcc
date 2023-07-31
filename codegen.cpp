@@ -152,6 +152,10 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 		generate_expression(std::move(node->_lhs));
 		generate_address(std::move(node->_rhs));
 		return;
+	case NodeKind::ND_MEMBER:
+		generate_address(std::move(node->_lhs));
+		*os << "  sub rax, " << node->_member->_offset << "\n";
+		return;
 	default:
 		break;
 	}
@@ -180,13 +184,17 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		/* 符号を反転させる */
 		*os << "  neg rax\n";
 		return;
-	/* 変数 */
+	/* 変数, 構造体のメンバ */
 	case NodeKind::ND_VAR:
+	case NodeKind::ND_MEMBER:
+	{
+		auto ty = node->_ty;
 		/* 変数のアドレスを計算 */
 		generate_address(std::move(node));
 		/* 変数のアドレスから値をロードする */
-		load(node->_ty);
+		load(ty);
 		return;
+	}
 	/* 参照外し */
 	case NodeKind::ND_DEREF:
 		/* 参照先のアドレスを計算 */

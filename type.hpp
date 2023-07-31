@@ -6,16 +6,18 @@
 /* 型の種類 */
 enum class TypeKind
 {
-	TY_CHAR,  /*!< char型  */
-	TY_INT,	  /*!< int型 */
-	TY_PTR,	  /*!< ポインター型 */
-	TY_FUNC,  /*!< 関数 */
-	TY_ARRAY, /*!< 関数  */
+	TY_CHAR,   /*!< char型  */
+	TY_INT,	   /*!< int型 */
+	TY_PTR,	   /*!< ポインター型 */
+	TY_FUNC,   /*!< 関数 */
+	TY_ARRAY,  /*!< 関数  */
+	TY_STRUCT, /*!< 構造体  */
 };
 
 /* Node, Tokenクラスを使いたいので先に宣言 */
 class Node;
 class Token;
+class Member;
 
 /**
  * @brief 型を表すクラス
@@ -42,6 +44,9 @@ public:
 
 	/* 配列 */
 	int _array_length = 0; /*!< 配列の長さ */
+
+	/* 構造体 */
+	std::shared_ptr<Member> _members; /*!< 構造体のメンバ */
 
 	/* 関数 */
 	std::shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */

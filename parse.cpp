@@ -408,9 +408,129 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 }
 
 /**
+ * @brief 構造体の宣言を読み込む
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 構造体の型
+ * @details 下記のEBNF規則に従う。 @n struct-decl = "{" struct-members
+ */
+shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
+{
+	/* '{'から始まる */
+	current_token = Token::skip(current_token, "{");
+
+	/* 構造体の情報を読み込む */
+	auto ty = std::make_shared<Type>(TypeKind::TY_STRUCT);
+	struct_members(next_token, current_token, ty.get());
+
+	/* 構造体のメンバのオフセットを計算する */
+	int offset = 0;
+	for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
+	{
+		mem->_offset = offset;
+		offset += mem->_ty->_size;
+	}
+	ty->_size = offset;
+
+	return ty;
+}
+
+/**
+ * @brief 構造体定義のメンバの定義を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 構造体の型
+ * @details 下記のEBNF規則に従う。 @n struct-members = (declspec declarator ("," declarator)* ";")* "}"
+ */
+void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
+{
+	/* ダミーの先頭 */
+	auto head = std::make_shared_for_overwrite<Member>();
+	auto cur = head.get();
+
+	/* '}'が出てくるまで読み込み続ける */
+	while (!current_token->is_equal("}"))
+	{
+		auto base = declspec(&current_token, current_token);
+		bool first = true;
+
+		/* ';'が出てくるまで読み込み続ける */
+		while (!Token::consume(&current_token, current_token, ";"))
+		{
+			if (!first)
+			{
+				/* 2個目以降はカンマ区切りが必要 */
+				current_token = Token::skip(current_token, ",");
+			}
+			first = false;
+			auto mem = std::make_shared<Member>();
+			/* メンバ名部分を読み込む */
+			mem->_ty = declarator(&current_token, current_token, base);
+			mem->_token = mem->_ty->_token;
+			/* リストの先頭に繋ぐ */
+			cur->_next = std::move(mem);
+			cur = cur->_next.get();
+		}
+	}
+	*next_token = current_token->_next.get();
+	ty->_members = std::move(head->_next);
+}
+
+/**
+ * @brief 入力トークンと対応する構造体のメンバーを取得する。
+ * 見つからなければエラーとする。
+ *
+ * @param ty 構造体の型情報
+ * @param token 取得するメンバのトークン
+ * @return 構造体のメンバのポインタ
+ */
+shared_ptr<Member> Node::get_struct_member(Type *ty, Token *token)
+{
+	for (auto mem = ty->_members; mem; mem = mem->_next)
+	{
+		if (mem->_token->_str.size() == token->_str.size() &&
+			std::equal(token->_str.begin(), token->_str.end(), mem->_token->_str.begin()))
+		{
+			return mem;
+		}
+	}
+	/* 見つからなければエラー */
+	error_token("存在しないメンバです", token);
+
+	/* コンパイルエラー対策 */
+	return nullptr;
+}
+
+/**
+ * @brief 構造体のメンバにアクセスするノードを生成する
+ *
+ * @param lhs 参照される構造体
+ * @param token 構造体のメンバの呼び出し
+ * @return 構造体のメンバに対応するノード
+ */
+unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
+{
+	/* 型を確定させる */
+	Type::add_type(lhs.get());
+
+	/* 構造体でなければエラー */
+	if (lhs->_ty->_kind != TypeKind::TY_STRUCT)
+	{
+		error_token("構造体ではありません", token);
+	}
+
+	auto mem = get_struct_member(lhs->_ty.get(), token);
+	auto node = std::make_unique<Node>(NodeKind::ND_MEMBER, std::move(lhs), token);
+	node->_member = std::move(mem);
+	return node;
+}
+
+/**
  * @brief 変数宣言の型宣言部分を読み取る
  *
- * @details 下記のEBNF規則に従う。 @n declspec = "int" | "char"
+ * @details 下記のEBNF規則に従う。 @n declspec = "int" | "char" | struct-decl
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 変数の型
@@ -423,9 +543,23 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 		*next_token = current_token->_next.get();
 		return Type::CHAR_BASE;
 	}
-	/* そうでなければint型のはず */
-	*next_token = Token::skip(current_token, "int");
-	return Type::INT_BASE;
+	/* int型 */
+	if (current_token->is_equal("int"))
+	{
+		*next_token = current_token->_next.get();
+		return Type::INT_BASE;
+	}
+	/* 構造体 */
+	if (current_token->is_equal("struct"))
+	{
+		return struct_decl(next_token, current_token->_next.get());
+	}
+
+	/* どれでもなければエラー */
+	error_token("型名ではありません", current_token);
+
+	/* コンパイルエラー対策 */
+	return nullptr;
 }
 
 /**
@@ -465,13 +599,13 @@ unique_ptr<Node> Node::expression(Token **next_token, Token *current_token)
 	auto node = assign(&current_token, current_token);
 
 	/* 後ろにカンマがあるときは式が続く */
-	if(current_token->is_equal(",")){
+	if (current_token->is_equal(","))
+	{
 		return std::make_unique<Node>(NodeKind::ND_COMMA, std::move(node), expression(next_token, current_token->_next.get()), current_token);
 	}
 	*next_token = current_token;
 	return node;
-}	
-
+}
 
 /**
  * @brief 代入式を読み取る。
@@ -673,26 +807,37 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 }
 
 /**
- * @brief 配列の添え字[]を読み取る
+ * @brief 配列の添え字[]または構造体のメンバを読み取る
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]")*
+ * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]" | "." ident)*
  */
 unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 {
 	/* 単項を読む */
 	auto node = primary(&current_token, current_token);
 
-	/* 単項に続く[]がある限り読み進める */
-	while (current_token->is_equal("["))
+	for (;;)
 	{
-		/* x[y] を *(x+y) に置き換える */
-		auto start = current_token;
-		auto idx = expression(&current_token, current_token->_next.get());
-		current_token = Token::skip(current_token, "]");
-		node = std::make_unique<Node>(NodeKind::ND_DEREF, new_add(std::move(node), std::move(idx), start), start);
+		/* 配列 */
+		if (current_token->is_equal("["))
+		{
+			/* x[y] を *(x+y) に置き換える */
+			auto start = current_token;
+			auto idx = expression(&current_token, current_token->_next.get());
+			current_token = Token::skip(current_token, "]");
+			node = std::make_unique<Node>(NodeKind::ND_DEREF, new_add(std::move(node), std::move(idx), start), start);
+			continue;
+		}
+		/* 構造体 */
+		if (current_token->is_equal("."))
+		{
+			node = struct_ref(std::move(node), current_token->_next.get());
+			current_token = current_token->_next->_next.get();
+			continue;
+		}
 	}
 
 	*next_token = current_token;

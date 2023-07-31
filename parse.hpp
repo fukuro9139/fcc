@@ -18,6 +18,18 @@
 #include "type.hpp"
 
 /**
+ * @brief 構造体のメンバーを表すクラス
+ *
+ */
+struct Member
+{
+	std::shared_ptr<Member> _next; /*!< 次のメンバ */
+	std::shared_ptr<Type> _ty;	   /*!< 型情報 e.g. int or pointer to int */
+	Token *_token = nullptr;	   /*!< 対応するトークン */
+	int _offset = 0;			   /*!< RBPからのオフセット  */
+};
+
+/**
  * @brief ノードの種類
  *
  */
@@ -30,6 +42,7 @@ enum class NodeKind
 	ND_NEG,		  /*!< 負の単項 */
 	ND_ASSIGN,	  /*!< = */
 	ND_COMMA,	  /*!< , */
+	ND_MEMBER,	  /*!< 構造体のメンバ  */
 	ND_ADDR,	  /* 単項 & */
 	ND_DEREF,	  /* 単項* */
 	ND_RETURN,	  /*!< return */
@@ -73,6 +86,9 @@ public:
 	/* ブロック */
 	std::unique_ptr<Node> _body; /*!< ブロック内{...}またはステートメント式({...})には複数の式を入れられる */
 
+	/* 構造体 */
+	std::shared_ptr<Member> _member; /*!< 構造体メンバー */
+
 	/* 関数呼び出し */
 	std::string _func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	std::unique_ptr<Node> _args; /*!< 引数  */
@@ -105,6 +121,10 @@ private:
 	static std::unique_ptr<Node> statement(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
 	static Token *function_definition(Token *token, std::shared_ptr<Type> &&base);
+	static std::shared_ptr<Type> struct_decl(Token **next_token, Token *current_token);
+	static void struct_members(Token **next_token, Token *current_token, Type *ty);
+	static std::shared_ptr<Member> get_struct_member(Type *ty, Token *token);
+	static std::unique_ptr<Node> struct_ref(std::unique_ptr<Node> &&lhs, Token *token);
 	static std::shared_ptr<Type> declspec(Token **next_token, Token *current_token);
 	static std::shared_ptr<Type> declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> ty);
 	static std::unique_ptr<Node> declaration(Token **next_token, Token *current_token);

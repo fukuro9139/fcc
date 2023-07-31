@@ -38,7 +38,7 @@ void error(string &&msg)
 
 /**
  * @brief エラー箇所の位置を受け取ってエラー出力
- * 
+ *
  * @param msg エラーメッセージ
  * @param location エラー箇所の位置
  */
@@ -56,7 +56,6 @@ void error_at(string &&msg, const int &location)
 	}
 
 	verror_at(std::move(msg), location, line_no);
-
 }
 
 /**
@@ -67,7 +66,7 @@ void error_at(string &&msg, const int &location)
  * @param location エラー箇所
  * @param line_no エラー箇所の行数
  */
-void verror_at(std::string && msg, const int & location, const int & line_no)
+void verror_at(std::string &&msg, const int &location, const int &line_no)
 {
 	int line_start = location;
 	/* エラー箇所が含まれる行の先頭位置を探す */
@@ -85,7 +84,8 @@ void verror_at(std::string && msg, const int & location, const int & line_no)
 	}
 
 	/* 行頭の空白をスキップ */
-	while(std::isspace(current_input[line_start]) && line_start < line_end){
+	while (std::isspace(current_input[line_start]) && line_start < line_end)
+	{
 		++line_start;
 	}
 
@@ -103,14 +103,13 @@ void verror_at(std::string && msg, const int & location, const int & line_no)
 	exit(1);
 }
 
-
 /**
  * @brief トークンを受け取ってエラーメッセージを出力
- * 
+ *
  * @param msg エラーメッセージ
  * @param token エラー箇所を含むトークン
  */
-void error_token(std::string && msg, Token * token)
+void error_token(std::string &&msg, Token *token)
 {
 	verror_at(std::move(msg), token->_location, token->_line_no);
 }
@@ -266,7 +265,7 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
  *
  * @param token トークン列
  */
-void Token::convert_keywords(Token* token)
+void Token::convert_keywords(Token *token)
 {
 	for (Token *t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 	{
@@ -295,6 +294,7 @@ bool Token::is_keyword(Token *&token)
 		"int",
 		"sizeof",
 		"char",
+		"struct",
 	};
 
 	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
@@ -470,7 +470,7 @@ bool Token::is_equal(const std::string &op) const
  */
 bool Token::is_typename() const
 {
-	return is_equal("char") || is_equal("int");
+	return is_equal("char") || is_equal("int") || is_equal("struct");
 }
 
 /**
@@ -484,7 +484,7 @@ Token *Token::skip(Token *token, std::string &&op)
 {
 	if (!token->is_equal(std::move(op)))
 	{
-		error_token("不正な構文です", token);
+		error_token(op + "が必要です", token);
 	}
 	return token->_next.get();
 }
