@@ -30,6 +30,7 @@ public:
 
 	const TypeKind _kind; /*!< 型の種類 */
 	int _size = 0;		  /* 型のサイズ */
+	int _align = 0;		  /*!< アライメントの基数  */
 
 	/**
 	 * @brief kindがTY_PTRまたはTY_ARRAYのとき、参照先の型
@@ -55,9 +56,9 @@ public:
 
 	/* コンストラクタ */
 	Type();
-	Type(const TypeKind &kind, const int &size);
+	Type(const TypeKind &kind, const int &size, const int &align);
 	Type(const TypeKind &kind);
-	Type(const std::shared_ptr<Type> &base, const int &size);
+	Type(const std::shared_ptr<Type> &base, const int &size, const int &align);
 	Type(Token *token, const std::shared_ptr<Type> &return_ty);
 
 	/* メンバ関数 (public) */

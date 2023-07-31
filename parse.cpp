@@ -423,6 +423,7 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 	/* 構造体の情報を読み込む */
 	auto ty = std::make_shared<Type>(TypeKind::TY_STRUCT);
 	struct_members(next_token, current_token, ty.get());
+	ty->_align = 1;
 
 	/* 構造体のメンバのオフセットを計算する */
 	int offset = 0;
@@ -430,8 +431,13 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 	{
 		mem->_offset = offset;
 		offset += mem->_ty->_size;
+		/* アライメントの基数はメンバの基数のうち最大値に合わせる */
+		if (ty->_align < mem->_ty->_align)
+		{
+			ty->_align = mem->_ty->_align;
+		}
 	}
-	ty->_size = offset;
+	ty->_size = Object::align_to(offset, ty->_align);
 
 	return ty;
 }

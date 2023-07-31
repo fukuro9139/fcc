@@ -7,16 +7,16 @@ using std::shared_ptr;
 /* Type Class */
 /**************/
 
-const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 8);
-const std::shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1);
+const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 8, 8);
+const std::shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
 
-Type::Type(const TypeKind &kind, const int &size) : _kind(kind), _size(size) {}
+Type::Type(const TypeKind &kind, const int &size, const int &align) : _kind(kind), _size(size), _align(align) {}
 
 Type::Type(const TypeKind &kind) : _kind(kind) {}
 
-Type::Type(const shared_ptr<Type> &base, const int &size) : _kind(TypeKind::TY_PTR), _base(base), _size(size) {}
+Type::Type(const shared_ptr<Type> &base, const int &size, const int &align) : _kind(TypeKind::TY_PTR), _base(base), _size(size), _align(align) {}
 
 Type::Type(Token *token, const shared_ptr<Type> &return_ty)
 	: _kind(TypeKind::TY_FUNC), _token(token), _return_ty(return_ty) {}
@@ -165,7 +165,7 @@ bool Type::is_integer() const
  */
 shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
 {
-	return std::make_shared<Type>(base, 8);
+	return std::make_shared<Type>(base, 8, 8);
 }
 
 /**
@@ -188,8 +188,7 @@ shared_ptr<Type> Type::func_type(const shared_ptr<Type> &return_ty)
  */
 shared_ptr<Type> Type::array_of(shared_ptr<Type> base, int length)
 {
-	auto ret = std::make_shared<Type>(TypeKind::TY_ARRAY);
-	ret->_size = base->_size * length;
+	auto ret = std::make_shared<Type>(TypeKind::TY_ARRAY, base->_size * length, base->_align);
 	ret->_base = base;
 	ret->_array_length = length;
 	return ret;
