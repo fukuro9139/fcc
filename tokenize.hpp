@@ -84,4 +84,5 @@ private:
 
 void error(std::string &&msg);
 void error_at(std::string &&msg, const int &location);
+void verror_at(std::string &&msg, const int &location, const int &line_no);
 void error_token(std::string &&msg, Token *token);

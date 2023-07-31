@@ -161,6 +161,7 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
  */
 void CodeGen::generate_expression(unique_ptr<Node> &&node)
 {
+	*os << "  .loc 1 " << node->_token->_line_no << "\n";
 	switch (node->_kind)
 	{
 	/* 数値 */
@@ -314,6 +315,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
  */
 void CodeGen::generate_statement(unique_ptr<Node> &&node)
 {
+	*os << "  .loc 1 " << node->_token->_line_no << "\n";
 
 	switch (node->_kind)
 	{
@@ -506,21 +508,24 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(unique_ptr<Object> &&program, const std::string &path)
+void CodeGen::generate_code(unique_ptr<Object> &&program, const std::string &input_path, const std::string &output_path)
 {
 	/* ファイルを開くのに成功したら出力先をファイルに変更する */
 	/* ファイルを開くのに失敗したら出力先は標準出力のまま */
-	unique_ptr<std::ostream> ofs(new std::ofstream(path));
+	unique_ptr<std::ostream> ofs(new std::ofstream(output_path));
 	if (!ofs->fail())
 	{
 		os = ofs.get();
 	}
 
-	/* スタックサイズを計算してセット */
-	Object::assign_lvar_offsets(program);
-
 	/* intel記法であることを宣言 */
 	*os << ".intel_syntax noprefix\n";
+
+	/* .fileディレクティブを出力 */
+	*os << ".file 1 \"" << input_path << "\"\n";
+
+	/* スタックサイズを計算してセット */
+	Object::assign_lvar_offsets(program);
 
 	/* .data部を出力 */
 	emit_data(program);

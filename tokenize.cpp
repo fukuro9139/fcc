@@ -37,13 +37,37 @@ void error(string &&msg)
 }
 
 /**
+ * @brief エラー箇所の位置を受け取ってエラー出力
+ * 
+ * @param msg エラーメッセージ
+ * @param location エラー箇所の位置
+ */
+void error_at(string &&msg, const int &location)
+{
+
+	/* エラー箇所が含まれる行の行数を取得 */
+	int line_no = 1;
+	for (int l = 0; l < location; ++l)
+	{
+		if (current_input[l] == '\n')
+		{
+			++line_no;
+		}
+	}
+
+	verror_at(std::move(msg), location, line_no);
+
+}
+
+/**
  * @brief 下記のフォーマットでエラー箇所を報告して終了する
  * foo.c:10: x = y + 1;
  *               ^ <error message here>
  * @param msg エラーメッセージ
  * @param location エラー箇所
+ * @param line_no エラー箇所の行数
  */
-void error_at(string &&msg, const int &location)
+void verror_at(std::string && msg, const int & location, const int & line_no)
 {
 	int line_start = location;
 	/* エラー箇所が含まれる行の先頭位置を探す */
@@ -60,14 +84,9 @@ void error_at(string &&msg, const int &location)
 		++line_end;
 	}
 
-	/* エラー箇所が含まれる行の行数を取得 */
-	int line_no = 1;
-	for (int l = 0; l < line_start; ++l)
-	{
-		if (current_input[l] == '\n')
-		{
-			++line_no;
-		}
+	/* 行頭の空白をスキップ */
+	while(std::isspace(current_input[line_start]) && line_start < line_end){
+		++line_start;
 	}
 
 	/* ファイル名 */
@@ -84,6 +103,7 @@ void error_at(string &&msg, const int &location)
 	exit(1);
 }
 
+
 /**
  * @brief トークンを受け取ってエラーメッセージを出力
  * 
@@ -92,7 +112,7 @@ void error_at(string &&msg, const int &location)
  */
 void error_token(std::string && msg, Token * token)
 {
-	error_at(std::move(msg), token->_location);
+	verror_at(std::move(msg), token->_location, token->_line_no);
 }
 
 /***************/
@@ -228,7 +248,7 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 			continue;
 		}
 
-		error_at("不正なトークンです", itr - first);
+		error_token("不正なトークンです", current_token);
 	}
 
 	/* 最後に終端トークンを作成して繋ぐ */
@@ -464,7 +484,7 @@ Token *Token::skip(Token *token, std::string &&op)
 {
 	if (!token->is_equal(std::move(op)))
 	{
-		error_at("不正な構文です", token->_location);
+		error_token("不正な構文です", token);
 	}
 	return token->_next.get();
 }
@@ -585,7 +605,7 @@ void Token::add_line_number(Token *token)
 {
 	int pos = 0;
 	const int total = current_input.end() - current_input.begin();
-	int n = 0;
+	int n = 1;
 
 	while (token->_kind != TokenKind::TK_EOF && pos != total)
 	{

@@ -26,7 +26,7 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static void generate_code(std::unique_ptr<Object> &&program, const std::string &path);
+	static void generate_code(std::unique_ptr<Object> &&program, const std::string &input_path, const std::string &output_path);
 
 private:
 	/* このクラスのインスタンス化は禁止 */

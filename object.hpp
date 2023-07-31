@@ -65,7 +65,7 @@ public:
 
 	/* 静的メンバ変数 */
 
-	/** 変数や関数オブジェクトのリスト。パース中に生成される全てのローカル変数はこのリストに連結される。 */
+	/** 変数や関数オブジェクトのリスト。パース中に生成される全ての変数はこのリストに連結される。 */
 	static std::unique_ptr<Object> locals;
 	static std::unique_ptr<Object> globals;
 
