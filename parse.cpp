@@ -427,7 +427,7 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 	/* 構造体のタグが存在し、かつ定義ではない場合 */
 	/* 例 struct foo hoge; */
 	if(tag && !current_token->is_equal("{")){
-		auto ty = Object::find_tag(current_token);
+		auto ty = Object::find_tag(tag);
 		/* タグが見つからなかったらエラー */
 		if(!ty){
 			error_token("未定義の構造体です", tag);
