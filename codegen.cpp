@@ -68,7 +68,7 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
  * @brief raxの値をスタックのトップのアドレスが示すメモリにストアする。
  *
  */
-void CodeGen::store(const Type *ty)
+void CodeGen::store(const std::shared_ptr<Type> &ty)
 {
 	pop("rdi");
 
@@ -128,7 +128,7 @@ void CodeGen::pop(const std::string &reg)
  * @note ノードが変数ではないときエラーとする。
  * @param node 対象ノード
  */
-void CodeGen::generate_address(unique_ptr<Node> &&node)
+void CodeGen::generate_address(Node *node)
 {
 	switch (node->_kind)
 	{
@@ -146,14 +146,14 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 
 		return;
 	case NodeKind::ND_DEREF:
-		generate_expression(std::move(node->_lhs));
+		generate_expression(node->_lhs.get());
 		return;
 	case NodeKind::ND_COMMA:
-		generate_expression(std::move(node->_lhs));
-		generate_address(std::move(node->_rhs));
+		generate_expression(node->_lhs.get());
+		generate_address(node->_rhs.get());
 		return;
 	case NodeKind::ND_MEMBER:
-		generate_address(std::move(node->_lhs));
+		generate_address(node->_lhs.get());
 		*os << "  add rax, " << node->_member->_offset << "\n";
 		return;
 	default:
@@ -167,7 +167,7 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
  *
  * @param node 変換対象のAST
  */
-void CodeGen::generate_expression(unique_ptr<Node> &&node)
+void CodeGen::generate_expression(Node *node)
 {
 	*os << "  .loc 1 " << node->_token->_line_no << "\n";
 	switch (node->_kind)
@@ -180,7 +180,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	/* 単項演算子の'-' */
 	case NodeKind::ND_NEG:
 		/* '-'がかかる式を評価 */
-		generate_expression(std::move(node->_lhs));
+		generate_expression(node->_lhs.get());
 		/* 符号を反転させる */
 		*os << "  neg rax\n";
 		return;
@@ -188,52 +188,48 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	case NodeKind::ND_VAR:
 	case NodeKind::ND_MEMBER:
 	{
-		auto ty = node->_ty;
 		/* 変数のアドレスを計算 */
-		generate_address(std::move(node));
+		generate_address(node);
 		/* 変数のアドレスから値をロードする */
-		load(ty);
+		load(node->_ty);
 		return;
 	}
 	/* 参照外し */
 	case NodeKind::ND_DEREF:
 		/* 参照先のアドレスを計算 */
-		generate_expression(std::move(node->_lhs));
+		generate_expression(node->_lhs.get());
 		/* 参照先のアドレスの値をロード */
 		load(node->_ty);
 		return;
 	/* 参照 */
 	case NodeKind::ND_ADDR:
 		/* アドレスを計算 */
-		generate_address(std::move(node->_lhs));
+		generate_address(node->_lhs.get());
 		return;
 	/* 代入 */
 	case NodeKind::ND_ASSIGN:
 		/* 左辺の代入先の変数のアドレスを計算 */
-		generate_address(std::move(node->_lhs));
+		generate_address(node->_lhs.get());
 		/* 変数のアドレスをスタックにpush */
 		push();
 		/* 右辺を評価する。評価結果は'rax' */
-		generate_expression(std::move(node->_rhs));
+		generate_expression(node->_rhs.get());
 		/* raxの値をストアする */
-		store(node->_ty.get());
+		store(node->_ty);
 		return;
 	/* 重複文 */
 	case NodeKind::ND_STMT_EXPR:
 	{
-		auto cur = std::move(node->_body);
-		unique_ptr<Node> next;
-		for (; cur; cur = std::move(next))
+		for (auto cur = node->_body.get(); cur; cur = cur->_next.get())
 		{
-			next = std::move(cur->_next);
-			generate_statement(std::move(cur));
+			generate_statement(cur);
 		}
 		return;
 	}
 	/* カンマ区切り */
 	case NodeKind::ND_COMMA:
-		generate_expression(std::move(node->_lhs));
-		generate_expression(std::move(node->_rhs));
+		generate_expression(node->_lhs.get());
+		generate_expression(node->_rhs.get());
 		return;
 	/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
@@ -241,14 +237,10 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		/* 引数の数 */
 		int nargs = 0;
 
-		auto arg = std::move(node->_args);
-		unique_ptr<Node> next_arg;
-
-		for (; arg; arg = std::move(next_arg))
+		for (auto arg = node->_args.get(); arg; arg = arg->_next.get())
 		{
-			next_arg = std::move(arg->_next);
 			/* 引数の値を評価 */
-			generate_expression(std::move(arg));
+			generate_expression(arg);
 			/* スタックに入れる */
 			push();
 			++nargs;
@@ -268,11 +260,11 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 	}
 
 	/* 右辺を計算 */
-	generate_expression(std::move(node->_rhs));
+	generate_expression(node->_rhs.get());
 	/* 計算結果をスタックにpush */
 	push();
 	/* 左辺を計算 */
-	generate_expression(std::move(node->_lhs));
+	generate_expression(node->_lhs.get());
 	/* 右辺の計算結果を'rdi'にpop */
 	pop("rdi");
 
@@ -330,7 +322,7 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
  *
  * @param node 変換対象のAST
  */
-void CodeGen::generate_statement(unique_ptr<Node> &&node)
+void CodeGen::generate_statement(Node *node)
 {
 	*os << "  .loc 1 " << node->_token->_line_no << "\n";
 
@@ -338,12 +330,12 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 	{
 	case NodeKind::ND_RETURN:
 		/* return の後の式を評価 */
-		generate_expression(std::move(node->_lhs));
+		generate_expression(node->_lhs.get());
 		/* エピローグまでjmpする */
 		*os << "  jmp .L.return." << current_func->_name << "\n";
 		return;
 	case NodeKind::ND_EXPR_STMT:
-		generate_expression(std::move(node->_lhs));
+		generate_expression(node->_lhs.get());
 		return;
 	case NodeKind::ND_IF:
 	{
@@ -351,13 +343,13 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		const int c = label_count();
 
 		/* 条件を評価 */
-		generate_expression(std::move(node->_condition));
+		generate_expression(node->_condition.get());
 		/* 条件を比較 */
 		*os << "  cmp rax, 0\n";
 		/* 条件がfalseなら.L.else.cラベルに飛ぶ */
 		*os << "  je .L.else." << c << "\n";
 		/* trueのときに実行 */
-		generate_statement(std::move(node->_then));
+		generate_statement(node->_then.get());
 		/* elseは実行しない */
 		*os << "  jmp .L.end." << c << "\n";
 
@@ -365,7 +357,7 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		*os << ".L.else." << c << ":\n";
 		if (node->_else)
 		{
-			generate_statement(std::move(node->_else));
+			generate_statement(node->_else.get());
 		}
 		*os << ".L.end." << c << ":\n";
 		return;
@@ -380,22 +372,22 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 		/* forの場合、初期化処理 */
 		if (node->_init)
 		{
-			generate_statement(std::move(node->_init));
+			generate_statement(node->_init.get());
 		}
 
 		*os << ".L.begin." << c << ":\n";
 		/* 終了条件判定 */
 		if (node->_condition)
 		{
-			generate_expression(std::move(node->_condition));
+			generate_expression(node->_condition.get());
 			*os << "  cmp rax, 0\n";
 			*os << "  je .L.end." << c << "\n";
 		}
-		generate_statement(std::move(node->_then));
+		generate_statement(node->_then.get());
 		/* 加算処理 */
 		if (node->_inc)
 		{
-			generate_expression(std::move(node->_inc));
+			generate_expression(node->_inc.get());
 		}
 		*os << "  jmp .L.begin." << c << "\n";
 		*os << ".L.end." << c << ":\n";
@@ -404,21 +396,10 @@ void CodeGen::generate_statement(unique_ptr<Node> &&node)
 
 	case NodeKind::ND_BLOCK:
 	{
-		/* これから処理を進めていくノード */
-		unique_ptr<Node> current_node = std::move(node->_body);
-
-		/* ブロックの中が空なら何もしない */
-		if (!current_node)
-		{
-			return;
-		}
-		unique_ptr<Node> next_node;
 		/* Bodyに含まれるノードをすべて評価する */
-		for (; current_node;)
+		for (auto cur = node->_body.get(); cur; cur=cur->_next.get())
 		{
-			next_node = std::move(current_node->_next);
-			generate_statement(std::move(current_node));
-			current_node = std::move(next_node);
+			generate_statement(cur);
 		}
 		return;
 	}
@@ -506,7 +487,7 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 		}
 
 		/* コードを出力 */
-		generate_statement(std::move(fn->_body));
+		generate_statement(fn->_body.get());
 
 		/* 関数終了時にスタックの深さが0 (popし残し、popし過ぎがない) */
 		assert(depth == 0);
@@ -525,7 +506,7 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(unique_ptr<Object> &&program, const std::string &input_path, const std::string &output_path)
+void CodeGen::generate_code(const unique_ptr<Object> &program, const std::string &input_path, const std::string &output_path)
 {
 	/* ファイルを開くのに成功したら出力先をファイルに変更する */
 	/* ファイルを開くのに失敗したら出力先は標準出力のまま */

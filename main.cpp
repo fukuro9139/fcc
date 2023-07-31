@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	auto program = Node::parse(token.get());
 
 	/* 抽象構文木を巡回しながらコード生成 */
-	CodeGen::generate_code(std::move(program), Input::opt.input_path, Input::opt.opt_o);
+	CodeGen::generate_code(program, Input::opt.input_path, Input::opt.opt_o);
 
 	return 0;
 }

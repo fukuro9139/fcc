@@ -26,7 +26,7 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static void generate_code(std::unique_ptr<Object> &&program, const std::string &input_path, const std::string &output_path);
+	static void generate_code(const std::unique_ptr<Object> &program, const std::string &input_path, const std::string &output_path);
 
 private:
 	/* このクラスのインスタンス化は禁止 */
@@ -40,10 +40,10 @@ private:
 	static void pop(std::string &&reg);
 	static void pop(const std::string &reg);
 	static void load(const std::shared_ptr<Type> &ty);
-	static void store(const Type *ty);
-	static void generate_address(std::unique_ptr<Node> &&node);
-	static void generate_expression(std::unique_ptr<Node> &&node);
-	static void generate_statement(std::unique_ptr<Node> &&node);
+	static void store(const std::shared_ptr<Type> &ty);
+	static void generate_address(Node *node);
+	static void generate_expression(Node *node);
+	static void generate_statement(Node *node);
 	static void emit_data(const std::unique_ptr<Object> &program);
 	static void emit_text(const std::unique_ptr<Object> &program);
 	static int label_count();
