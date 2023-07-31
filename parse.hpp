@@ -122,6 +122,8 @@ private:
 	static std::unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
 	static Token *function_definition(Token *token, std::shared_ptr<Type> &&base);
 	static std::shared_ptr<Type> struct_decl(Token **next_token, Token *current_token);
+	static std::shared_ptr<Type> union_decl(Token **next_token, Token *current_token);
+	static std::shared_ptr<Type> struct_union_decl(Token **next_token, Token *current_token);
 	static void struct_members(Token **next_token, Token *current_token, Type *ty);
 	static std::shared_ptr<Member> get_struct_member(Type *ty, Token *token);
 	static std::unique_ptr<Node> struct_ref(std::unique_ptr<Node> &&lhs, Token *token);

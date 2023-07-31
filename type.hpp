@@ -12,6 +12,7 @@ enum class TypeKind
 	TY_FUNC,   /*!< 関数 */
 	TY_ARRAY,  /*!< 関数  */
 	TY_STRUCT, /*!< 構造体  */
+	TY_UNION,  /*!< 共用体 */
 };
 
 /* Node, Tokenクラスを使いたいので先に宣言 */
@@ -28,7 +29,7 @@ class Type
 public:
 	/* メンバ変数 (public) */
 
-	const TypeKind _kind; /*!< 型の種類 */
+	TypeKind _kind; /*!< 型の種類 */
 	int _size = 1;		  /* 型のサイズ */
 	int _align = 1;		  /*!< アライメント */
 

@@ -408,28 +408,31 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 }
 
 /**
- * @brief 構造体の宣言を読み込む
+ * @brief 構造体,共用体の宣言、定義を読み込む
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
- * @return 構造体の型
- * @details 下記のEBNF規則に従う。 @n struct-decl = identifier? "{" struct-members
+ * @return 構造体、共用体の型
+ * @details 下記のEBNF規則に従う。 @n struct-union-decl = identifier? ( "{" struct-members )?
  */
-shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
+shared_ptr<Type> Node::struct_union_decl(Token **next_token, Token *current_token)
 {
-	/* 存在するならば構造体のタグを読む */
+	/* 存在するならば構造体,共用体のタグを読む */
 	Token *tag = nullptr;
-	if(current_token->_kind == TokenKind::TK_IDENT){
+	if (current_token->_kind == TokenKind::TK_IDENT)
+	{
 		tag = current_token;
 		current_token = current_token->_next.get();
 	}
 
-	/* 構造体のタグが存在し、かつ定義ではない場合 */
+	/* 構造体,共用体のタグが存在し、かつ定義ではない場合 */
 	/* 例 struct foo hoge; */
-	if(tag && !current_token->is_equal("{")){
+	if (tag && !current_token->is_equal("{"))
+	{
 		auto ty = Object::find_tag(tag);
 		/* タグが見つからなかったらエラー */
-		if(!ty){
+		if (!ty)
+		{
 			error_token("未定義の構造体です", tag);
 		}
 		*next_token = current_token;
@@ -440,6 +443,29 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 	auto ty = std::make_shared<Type>(TypeKind::TY_STRUCT);
 	struct_members(next_token, current_token->_next.get(), ty.get());
 	ty->_align = 1;
+
+	/* タグが存在するならば現在のスコープに登録する */
+	if (tag)
+	{
+		Object::push_tag_scope(tag, ty);
+	}
+
+	return ty;
+}
+
+/**
+ * @brief 構造体の宣言、定義を読み込む
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 構造体の型
+ * @details 下記のEBNF規則に従う。 @n struct-decl = struct-union-decl
+ */
+shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
+{
+	/* 構造体の情報を読み込む */
+	auto ty = struct_union_decl(next_token, current_token);
+	ty->_kind = TypeKind::TY_STRUCT;
 
 	/* 構造体のメンバのオフセットを計算する */
 	int offset = 0;
@@ -454,12 +480,34 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 		}
 	}
 	ty->_size = Object::align_to(offset, ty->_align);
+	return ty;
+}
 
-	/* タグが存在するならば現在のスコープに登録する */
-	if(tag){
-		Object::push_tag_scope(tag, ty);
+/**
+ * @brief 共用体の宣言、定義を読み込む
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 共用体の型
+ * @details 下記のEBNF規則に従う。 @n union-decl = struct-union-decl
+ */
+shared_ptr<Type> Node::union_decl(Token **next_token, Token *current_token)
+{
+	auto ty = struct_union_decl(next_token, current_token);
+	ty->_kind = TypeKind::TY_UNION;
+
+	/* 共用体の場合、全てのoffsetは0で共通である。 */
+	/* アライメントと全体のサイズの計算だけ行う */
+	for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
+	{
+		if(ty->_align < mem->_ty->_align){
+			ty->_align = mem->_ty->_align;
+		}
+		if(ty->_size < mem->_ty->_size){
+			ty->_size = mem->_ty->_size;
+		}
 	}
-
+	ty->_size = Object::align_to(ty->_size, ty->_align);
 	return ty;
 }
 
@@ -531,21 +579,21 @@ shared_ptr<Member> Node::get_struct_member(Type *ty, Token *token)
 }
 
 /**
- * @brief 構造体のメンバにアクセスするノードを生成する
+ * @brief 構造体,共用体のメンバにアクセスするノードを生成する
  *
- * @param lhs 参照される構造体
- * @param token 構造体のメンバの呼び出し
- * @return 構造体のメンバに対応するノード
+ * @param lhs 参照される構造体、共用体
+ * @param token メンバの呼び出しに対応するトークン
+ * @return メンバに対応するノード
  */
 unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
 {
 	/* 型を確定させる */
 	Type::add_type(lhs.get());
 
-	/* 構造体でなければエラー */
-	if (lhs->_ty->_kind != TypeKind::TY_STRUCT)
+	/* 構造体,共用体でなければエラー */
+	if (lhs->_ty->_kind != TypeKind::TY_STRUCT && lhs->_ty->_kind != TypeKind::TY_UNION)
 	{
-		error_token("構造体ではありません", token);
+		error_token("構造体または共用体ではありません", token);
 	}
 
 	auto mem = get_struct_member(lhs->_ty.get(), token);
@@ -580,6 +628,11 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 	if (current_token->is_equal("struct"))
 	{
 		return struct_decl(next_token, current_token->_next.get());
+	}
+	/* 共用体 */
+	if (current_token->is_equal("union"))
+	{
+		return union_decl(next_token, current_token->_next.get());
 	}
 
 	/* どれでもなければエラー */
@@ -866,7 +919,8 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 			continue;
 		}
 		/* 構造体のポインタ */
-		if(current_token->is_equal("->")){
+		if (current_token->is_equal("->"))
+		{
 			/* x->y を(*x).y を読み替える */
 			node = std::make_unique<Node>(NodeKind::ND_DEREF, std::move(node), current_token);
 			node = struct_ref(std::move(node), current_token->_next.get());

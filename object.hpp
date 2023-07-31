@@ -78,7 +78,7 @@ private:
 };
 
 /**
- * @brief 構造体の名前のスコープ
+ * @brief 構造体、共用体のタグのスコープ
  *
  */
 struct TagScope

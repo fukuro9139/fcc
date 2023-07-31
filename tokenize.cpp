@@ -295,6 +295,7 @@ bool Token::is_keyword(Token *&token)
 		"sizeof",
 		"char",
 		"struct",
+		"union",
 	};
 
 	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
@@ -470,7 +471,7 @@ bool Token::is_equal(const std::string &op) const
  */
 bool Token::is_typename() const
 {
-	return is_equal("char") || is_equal("int") || is_equal("struct");
+	return is_equal("char") || is_equal("int") || is_equal("struct") || is_equal("union");
 }
 
 /**
