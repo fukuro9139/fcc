@@ -29,8 +29,8 @@ public:
 	/* メンバ変数 (public) */
 
 	const TypeKind _kind; /*!< 型の種類 */
-	int _size = 0;		  /* 型のサイズ */
-	int _align = 0;		  /*!< アライメントの基数  */
+	int _size = 1;		  /* 型のサイズ */
+	int _align = 1;		  /*!< アライメント */
 
 	/**
 	 * @brief kindがTY_PTRまたはTY_ARRAYのとき、参照先の型

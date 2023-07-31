@@ -103,12 +103,14 @@ void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
 		for (auto *var = fn->_params.get(); var; var = var->_next.get())
 		{
 			offset += var->_ty->_size;
+			offset = align_to(offset, var->_ty->_align);
 			var->_offset = offset;
 		}
 		/* ローカル変数 */
 		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
 		{
 			offset += var->_ty->_size;
+			offset = align_to(offset, var->_ty->_align);
 			var->_offset = offset;
 		}
 		/* スタックサイズが16の倍数になるようにアライメントする */
