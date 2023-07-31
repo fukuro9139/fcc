@@ -154,7 +154,7 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 		return;
 	case NodeKind::ND_MEMBER:
 		generate_address(std::move(node->_lhs));
-		*os << "  sub rax, " << node->_member->_offset << "\n";
+		*os << "  add rax, " << node->_member->_offset << "\n";
 		return;
 	default:
 		break;
