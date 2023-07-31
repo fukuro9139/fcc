@@ -29,6 +29,7 @@ enum class NodeKind
 	ND_DIV,		  /*!< / */
 	ND_NEG,		  /*!< 負の単項 */
 	ND_ASSIGN,	  /*!< = */
+	ND_COMMA,	  /*!< , */
 	ND_ADDR,	  /* 単項 & */
 	ND_DEREF,	  /* 単項* */
 	ND_RETURN,	  /*!< return */

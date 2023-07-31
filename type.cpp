@@ -84,7 +84,11 @@ void Type::add_type(Node *node)
 		/* オブジェクトの型に一致させる */
 		node->_ty = node->_var->_ty;
 		return;
-
+	/* カンマ区切りの型は右辺に一致させる
+	 */
+	case NodeKind::ND_COMMA:
+		node->_ty = node->_rhs->_ty;
+		return;
 	/* 参照は参照先へのポインタ型 */
 	case NodeKind::ND_ADDR:
 		/* 配列型の変数への参照はポインタ型としてみた配列の型と同じ */

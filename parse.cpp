@@ -458,12 +458,20 @@ unique_ptr<Node> Node::expression_statement(Token **next_token, Token *current_t
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n expression = assign
+ * @details 下記のEBNF規則に従う。 @n expression = assign (',' expression)?
  */
 unique_ptr<Node> Node::expression(Token **next_token, Token *current_token)
 {
-	return assign(next_token, current_token);
-}
+	auto node = assign(&current_token, current_token);
+
+	/* 後ろにカンマがあるときは式が続く */
+	if(current_token->is_equal(",")){
+		return std::make_unique<Node>(NodeKind::ND_COMMA, std::move(node), expression(next_token, current_token->_next.get()), current_token);
+	}
+	*next_token = current_token;
+	return node;
+}	
+
 
 /**
  * @brief 代入式を読み取る。

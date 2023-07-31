@@ -148,6 +148,10 @@ void CodeGen::generate_address(unique_ptr<Node> &&node)
 	case NodeKind::ND_DEREF:
 		generate_expression(std::move(node->_lhs));
 		return;
+	case NodeKind::ND_COMMA:
+		generate_expression(std::move(node->_lhs));
+		generate_address(std::move(node->_rhs));
+		return;
 	default:
 		break;
 	}
@@ -218,6 +222,11 @@ void CodeGen::generate_expression(unique_ptr<Node> &&node)
 		}
 		return;
 	}
+	/* カンマ区切り */
+	case NodeKind::ND_COMMA:
+		generate_expression(std::move(node->_lhs));
+		generate_expression(std::move(node->_rhs));
+		return;
 	/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
 	{
