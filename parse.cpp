@@ -838,10 +838,9 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 			current_token = current_token->_next->_next.get();
 			continue;
 		}
+		*next_token = current_token;
+		return node;
 	}
-
-	*next_token = current_token;
-	return node;
 }
 
 /**
