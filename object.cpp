@@ -15,10 +15,10 @@ std::unique_ptr<Scope> Object::scope = std::make_unique<Scope>();
 
 Object::Object() = default;
 
-Object::Object(std::string &&name) : _name(std::move(name)) {}
+Object::Object(const std::string &name) : _name(name) {}
 
-Object::Object(std::string &&name, unique_ptr<Object> &&next, shared_ptr<Type> &&ty)
-	: _name(std::move(name)), _next(std::move(next)), _ty(std::move(ty)) {}
+Object::Object(const std::string &name, unique_ptr<Object> &&next, shared_ptr<Type> &&ty)
+	: _name(name), _next(std::move(next)), _ty(std::move(ty)) {}
 
 Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(std::move(body)), _locals(std::move(locs)) {}
 
@@ -30,9 +30,9 @@ Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(std::
  * @param  オブジェクトの型
  * @return 生成した変数へのポインタ
  */
-Object *Object::new_lvar(shared_ptr<Type> &&ty)
+Object *Object::new_lvar(const std::string &name, shared_ptr<Type> &&ty)
 {
-	locals = std::make_unique<Object>(std::move(ty->_name), std::move(locals), std::move(ty));
+	locals = std::make_unique<Object>(name, std::move(locals), std::move(ty));
 	locals->is_local = true;
 	push_scope(locals.get());
 	return locals.get();
@@ -44,9 +44,9 @@ Object *Object::new_lvar(shared_ptr<Type> &&ty)
  * @param  ty オブジェクトの型
  * @return 生成した変数へのポインタ
  */
-Object *Object::new_gvar(shared_ptr<Type> &&ty)
+Object *Object::new_gvar(const std::string &name, shared_ptr<Type> &&ty)
 {
-	globals = std::make_unique<Object>(std::move(ty->_name), std::move(globals), std::move(ty));
+	globals = std::make_unique<Object>(name, std::move(globals), std::move(ty));
 	push_scope(globals.get());
 	return globals.get();
 }
@@ -126,7 +126,7 @@ void Object::create_params_lvars(shared_ptr<Type> &&param)
 	if (param)
 	{
 		create_params_lvars(std::move(param->_next));
-		new_lvar(std::move(param));
+		new_lvar(param->_token->_str, std::move(param));
 	}
 }
 

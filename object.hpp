@@ -44,8 +44,8 @@ public:
 	/* コンストラクタ */
 
 	Object();
-	Object(std::string &&name);
-	Object(std::string &&name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty);
+	Object(const std::string &name);
+	Object(const std::string &name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty);
 	Object(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locs);
 
 	/* デストラクタ */
@@ -53,8 +53,8 @@ public:
 
 	/* 静的メンバ関数 (public) */
 
-	static Object *new_lvar(std::shared_ptr<Type> &&ty);
-	static Object *new_gvar(std::shared_ptr<Type> &&ty);
+	static Object *new_lvar(const std::string &name, std::shared_ptr<Type> &&ty);
+	static Object *new_gvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static const Object *find_var(const Token *token);
 	static int align_to(const int &n, const int &align);
 	static void assign_lvar_offsets(const std::unique_ptr<Object> &prog);
@@ -81,8 +81,8 @@ private:
 struct VarScope
 {
 	std::unique_ptr<VarScope> _next; /*!< 次の変数  */
-	const std::string _name = "";			 /*!< 変数名 */
-	const Object *_obj = nullptr;			 /*!< 対応する変数のオブジェクト */
+	const std::string _name = "";	 /*!< 変数名 */
+	const Object *_obj = nullptr;	 /*!< 対応する変数のオブジェクト */
 
 	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name, const Object *obj) : _next(std::move(next)), _name(name), _obj(obj) {}
 };

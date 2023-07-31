@@ -212,7 +212,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 
 	auto parameters = ty->_params;
 	/* 新しい関数を生成してObject::globalsの先頭に追加する。 */
-	auto fn = std::make_unique<Object>(std::move(ty->_name), std::move(Object::globals), std::move(ty));
+	auto fn = std::make_unique<Object>(std::move(ty->_token->_str), std::move(Object::globals), std::move(ty));
 	/* グローバル変数としてscopeに追加 */
 	Object::push_scope(fn.get());
 
@@ -278,7 +278,7 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token)
 
 		/* 変数の最終的な型を決定 */
 		auto ty = declarator(&current_token, current_token, base);
-		const auto var = Object::new_lvar(std::move(ty));
+		const auto var = Object::new_lvar(ty->_token->_str, std::move(ty));
 
 		/* 宣言の後に初期化式がない場合は次のループへ */
 		if (!current_token->is_equal("="))
@@ -401,8 +401,7 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 	/* 関数か変数か */
 	ty = type_suffix(next_token, current_token->_next.get(), std::move(ty));
 
-	/* 名前と参照トークンを設定 */
-	ty->_name = current_token->_str;
+	/* 参照トークンを設定 */
 	ty->_token = current_token;
 
 	return ty;
@@ -874,7 +873,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
  * @param location ノードと対応する入力文字列の位置
  * @return 対応するASTノード
  */
-unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token* token)
+unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
 {
 	/* 右辺と左辺の型を確定する */
 	Type::add_type(lhs.get());
@@ -995,7 +994,7 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base)
 
 		/* 最終的な型を決定する */
 		auto ty = declarator(&token, token, base);
-		Object::new_gvar(std::move(ty));
+		Object::new_gvar(ty->_token->_str, std::move(ty));
 	}
 
 	return token;
@@ -1020,8 +1019,7 @@ std::string Node::new_unique_name()
  */
 Object *Node::new_anonymous_gvar(std::shared_ptr<Type> &&ty)
 {
-	ty->_name = new_unique_name();
-	return Object::new_gvar(std::move(ty));
+	return Object::new_gvar(new_unique_name(), std::move(ty));
 }
 
 /**

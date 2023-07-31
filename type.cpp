@@ -19,7 +19,7 @@ Type::Type(const TypeKind &kind) : _kind(kind) {}
 Type::Type(const shared_ptr<Type> &base, const int &size) : _kind(TypeKind::TY_PTR), _base(base), _size(size) {}
 
 Type::Type(Token *token, const shared_ptr<Type> &return_ty)
-	: _kind(TypeKind::TY_FUNC), _name(token->_str), _token(token), _return_ty(return_ty) {}
+	: _kind(TypeKind::TY_FUNC), _token(token), _return_ty(return_ty) {}
 
 /**
  * @brief 抽象構文木(AST)を巡回しながら型情報を設定する。
