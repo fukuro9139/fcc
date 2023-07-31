@@ -839,7 +839,7 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]" | "." ident)*
+ * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]" | "." identifier | "->" identifier)*
  */
 unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 {
@@ -865,6 +865,15 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 			current_token = current_token->_next->_next.get();
 			continue;
 		}
+		/* 構造体のポインタ */
+		if(current_token->is_equal("->")){
+			/* x->y を(*x).y を読み替える */
+			node = std::make_unique<Node>(NodeKind::ND_DEREF, std::move(node), current_token);
+			node = struct_ref(std::move(node), current_token->_next.get());
+			current_token = current_token->_next->_next.get();
+			continue;
+		}
+
 		*next_token = current_token;
 		return node;
 	}

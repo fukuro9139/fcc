@@ -67,7 +67,7 @@ public:
 private:
 	/* 静的メンバ関数 (private) */
 
-	static bool start_with(const std::string &str, std::string &&op);
+	static bool start_with(const std::string &str, const std::string &op);
 	static size_t read_punct(std::string &&str);
 	static bool is_first_char_of_ident(const char &c);
 	static bool is_char_of_ident(const char &c);

@@ -516,7 +516,7 @@ bool Token::consume(Token **next_token, Token *current_token, std::string &&str)
  * @param op 比較する文字列
  * @return 一致:true, 不一致:false
  */
-bool Token::start_with(const std::string &str, std::string &&op)
+bool Token::start_with(const std::string &str, const std::string &op)
 {
 	return str.size() >= op.size() && std::equal(op.begin(), op.end(), str.begin());
 }
@@ -531,11 +531,16 @@ bool Token::start_with(const std::string &str, std::string &&op)
  */
 size_t Token::read_punct(std::string &&str)
 {
-	if (start_with(str, "==") || start_with(str, "!=") ||
-		start_with(str, "<=") || start_with(str, ">="))
+	static const std::vector<string> kw = {"==", "!=", "<=", ">=", "->"};
+
+	for (size_t i = 0, sz = kw.size(); i < sz; ++i)
 	{
-		return 2;
+		if (start_with(str, kw[i]))
+		{
+			return kw[i].size();
+		}
 	}
+
 	return std::ispunct(str.front()) ? 1 : 0;
 }
 
