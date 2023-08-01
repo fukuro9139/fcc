@@ -289,7 +289,8 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token)
 		auto ty = declarator(&current_token, current_token, base);
 
 		/* 変数がvoid型で宣言されていたらエラー */
-		if(TypeKind::TY_VOID ==  ty->_kind){
+		if (TypeKind::TY_VOID == ty->_kind)
+		{
 			error_token("変数がvoid型で宣言されています", current_token);
 		}
 
@@ -635,60 +636,107 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
 }
 
 /**
- * @brief 変数宣言の型宣言部分を読み取る
+ * @brief 変数宣言の型指定子部分を読み取る
  *
- * @details 下記のEBNF規則に従う。 @n declspec =  "void" | "int" | "short" | "long" | "char" | struct-decl | union-decl
+ * @details
+ * 下記のEBNF規則に従う。 @n declspec =  ("void" | "int" | "short" | "long" | "char" | struct-decl | union-decl)+ @n
+ * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
+ * 'long` や `short` が指定されていれば `int` を省略できるので、`static long` と書くこともできる。
+ * しかし、`char int` のようなものは有効な型指定子ではなく、型名の組み合わせは限られている。
+ * この関数では、それまでの型名が表す「現在の」型オブジェクトを保持したまま、各型名の出現回数を数える。
+ * 型名でないトークンに達すると、現在の型オブジェクトを返す。
+ *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 変数の型
  */
 shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 {
-	/* void型 */
-	if(current_token->is_equal("void")){
-		*next_token = current_token->_next.get();
-		return Type::VOID_BASE;
-	}
-	/* char型 */
-	if (current_token->is_equal("char"))
-	{
-		*next_token = current_token->_next.get();
-		return Type::CHAR_BASE;
-	}
-	/* short型 */
-	if (current_token->is_equal("short"))
-	{
-		*next_token = current_token->_next.get();
-		return Type::SHORT_BASE;
-	}
-	/* int型 */
-	if (current_token->is_equal("int"))
-	{
-		*next_token = current_token->_next.get();
-		return Type::INT_BASE;
-	}
-	/* long型 */
-	if (current_token->is_equal("long"))
-	{
-		*next_token = current_token->_next.get();
-		return Type::LONG_BASE;
-	}
-	/* 構造体 */
-	if (current_token->is_equal("struct"))
-	{
-		return struct_decl(next_token, current_token->_next.get());
-	}
-	/* 共用体 */
-	if (current_token->is_equal("union"))
-	{
-		return union_decl(next_token, current_token->_next.get());
-	}
+	constexpr int VOID = 1 << 0;
+	constexpr int CHAR = 1 << 2;
+	constexpr int SHORT = 1 << 4;
+	constexpr int INT = 1 << 6;
+	constexpr int LONG = 1 << 8;
+	constexpr int OTHER = 1 << 10;
 
-	/* どれでもなければエラー */
-	error_token("型名ではありません", current_token);
+	/* それぞれの型名の出現回数を表すカウンタ。
+	 * 例えばビット0, 1は「void」という型名の出現回数を表す。
+	 */
+	int counter = 0;
+	auto ty = Type::INT_BASE;
 
-	/* コンパイルエラー対策 */
-	return nullptr;
+	while (current_token->is_typename())
+	{
+		if (current_token->is_equal("struct"))
+		{
+			ty = struct_decl(&current_token, current_token->_next.get());
+			counter += OTHER;
+			continue;
+		}
+		if (current_token->is_equal("union"))
+		{
+			ty = union_decl(&current_token, current_token->_next.get());
+			counter += OTHER;
+			continue;
+		}
+		/* void型 */
+		if (current_token->is_equal("void"))
+		{
+			counter += VOID;
+		}
+		/* char型 */
+		else if (current_token->is_equal("char"))
+		{
+			counter += CHAR;
+		}
+		/* short型 */
+		else if (current_token->is_equal("short"))
+		{
+			counter += SHORT;
+		}
+		/* int型 */
+		else if (current_token->is_equal("int"))
+		{
+			counter += INT;
+		}
+		/* long型 */
+		else if (current_token->is_equal("long"))
+		{
+			counter += LONG;
+		}
+		/* どれでもなければエラー */
+		else
+		{
+			error_token("型名ではありません", current_token);
+		}
+
+		switch (counter)
+		{
+		case VOID:
+			ty = Type::VOID_BASE;
+			break;
+		case CHAR:
+			ty = Type::CHAR_BASE;
+			break;
+		case SHORT:
+		case SHORT + INT:
+			ty = Type::SHORT_BASE;
+			break;
+		case INT:
+			ty = Type::INT_BASE;
+			break;
+		case LONG:
+		case LONG + INT:
+			ty = Type::LONG_BASE;
+			break;
+		default:
+			error_token("無効な型指定です", current_token);
+		}
+
+		current_token = current_token->_next.get();
+	}
+	*next_token = current_token;
+	return ty;
 }
 
 /**
