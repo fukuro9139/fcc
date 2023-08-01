@@ -302,11 +302,9 @@ bool Token::is_keyword(Token *&token)
 		"void",
 	};
 
-	auto &str = token->_str;
-
 	for (auto &kw : kws)
 	{
-		if (kw == str)
+		if (token->is_equal(kw))
 		{
 			return true;
 		}
@@ -477,7 +475,7 @@ bool Token::is_equal(const std::string &op) const
  */
 bool Token::is_typename() const
 {
-	static const std::vector<string> kws = {"char", "short", "int", "long", "struct", "union"};
+	static const std::vector<string> kws = {"void", "char", "short", "int", "long", "struct", "union"};
 
 	for (auto &kw : kws)
 	{
