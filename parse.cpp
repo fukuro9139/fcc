@@ -178,9 +178,10 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 			/* 型指定子を読み取る */
 			VarAttr attr = {};
 			auto base = declspec(&current_token, current_token, &attr);
-			
+
 			/* typedefの場合 */
-			if(attr.is_typedef){
+			if (attr.is_typedef)
+			{
 				current_token = parse_typedef(current_token, base);
 				continue;
 			}
@@ -1162,30 +1163,30 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 
 /**
  * @brief typedefを読み取る
- * 
+ *
  * @param token 現在のトークン
  * @param base ベースの型
  * @return 次のトークン
  */
-Token * Node::parse_typedef(Token * token, shared_ptr<Type> base)
+Token *Node::parse_typedef(Token *token, shared_ptr<Type> base)
 {
 	bool first = true;
 
 	/* ";"が出てくるまで読み込み続ける */
-	while(!Token::consume(&token, token, ";")){
+	while (!Token::consume(&token, token, ";"))
+	{
 		/* 2個目以降では","区切りが必要 */
-		if(!first){
+		if (!first)
+		{
 			token = Token::skip(token, ",");
 		}
 		first = false;
 
 		auto ty = declarator(&token, token, base);
-		Object::push_scope(ty->_name)->type_def = ty;
+		Object::push_scope(ty->_token->_str)->type_def = ty;
 	}
 	return token;
 }
-
-
 
 /**
  * @brief 関数呼び出し
@@ -1334,7 +1335,8 @@ unique_ptr<Object> Node::parse(Token *token)
 		auto base = declspec(&token, token, &attr);
 
 		/* typedef */
-		if(attr.is_typedef){
+		if (attr.is_typedef)
+		{
 			token = parse_typedef(token, base);
 			continue;
 		}
