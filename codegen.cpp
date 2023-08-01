@@ -40,9 +40,64 @@ static Object *current_func = nullptr;
 /* 入出力 */
 static std::ostream *os = &std::cout;
 
+/* 符号拡張転送 */
+static const string i32i8 = "  movsx eax, al\n";
+static const string i32i16 = "  movsx eax, ax\n";
+static const string i32i64 = "  movsxd rax, eax\n";
+
+static const string cast_table[4][4] = {
+	{"", "", "", i32i64},		 /* i8 */
+	{i32i8, "", "", i32i64},	 /* i16 */
+	{i32i8, i32i16, "", i32i64}, /* i32 */
+	{i32i8, i32i16, "", ""}};	 /* i64 */
+
 /*****************/
 /* CodeGen Class */
 /*****************/
+
+/**
+ * @brief 型をサイズごとに分類したIDを返す
+ *
+ * @param ty 判定する型
+ * @return 型のID
+ */
+TypeID CodeGen::get_TypeId(Type *ty)
+{
+	switch (ty->_kind)
+	{
+	case TypeKind::TY_CHAR:
+		return TypeID::I8;
+	case TypeKind::TY_SHORT:
+		return TypeID::I16;
+	case TypeKind::TY_INT:
+		return TypeID::I32;
+	default:
+		break;
+	}
+	return TypeID::I64;
+}
+
+/**
+ * @brief 型キャストする
+ *
+ * @param from 変換元の型
+ * @param to 変換後の型
+ */
+void CodeGen::cast(Type *from, Type *to)
+{
+	/* void型に対する変換では何もしない */
+	if (TypeKind::TY_VOID == to->_kind)
+	{
+		return;
+	}
+
+	auto t1 = static_cast<int>(get_TypeId(from));
+	auto t2 = static_cast<int>(get_TypeId(to));
+	if (!cast_table[t1][t2].empty())
+	{
+		*os << cast_table[t1][t2];
+	}
+}
 
 /**
  * @brief raxがさすアドレスの値をロードする。
@@ -74,7 +129,7 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 	}
 	else if (4 == ty->_size)
 	{
-		*os << " mov eax, [rax]\n";
+		*os << "  mov eax, [rax]\n";
 	}
 	else
 	{
@@ -296,6 +351,10 @@ void CodeGen::generate_expression(Node *node)
 	case NodeKind::ND_COMMA:
 		generate_expression(node->_lhs.get());
 		generate_expression(node->_rhs.get());
+		return;
+	case NodeKind::ND_CAST:
+		generate_expression(node->_lhs.get());
+		cast(node->_lhs->_ty.get(), node->_ty.get());
 		return;
 	/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:

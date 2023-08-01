@@ -961,29 +961,60 @@ unique_ptr<Node> Node::add(Token **next_token, Token *current_token)
 }
 
 /**
+ * @brief 型キャストを読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n "(" type-name ")" cast | unary
+ */
+unique_ptr<Node> Node::cast(Token **next_token, Token *current_token)
+{
+	/* キャストを含む場合 */
+	if (current_token->is_equal("(") && current_token->_next->is_typename())
+	{
+		auto start = current_token;
+
+		/* キャスト先の型を読み取る */
+		auto ty = type_name(&current_token, current_token->_next.get());
+		current_token = Token::skip(current_token, ")");
+
+		/* キャスト対象の式を評価 */
+		auto lhs = cast(next_token, current_token);
+		Type::add_type(lhs.get());
+
+		auto node = std::make_unique<Node>(NodeKind::ND_CAST, std::move(lhs), start);
+		node->_ty = ty;
+		return node;
+	}
+
+	return unary(next_token, current_token);
+}
+
+/**
  * @brief 積を読み取る。
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n mul = unary ("*" unary | "/" unary)*
+ * @details 下記のEBNF規則に従う。 @n mul = cast ("*" cast | "/" cast)*
  */
 unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
 {
-	auto node = unary(&current_token, current_token);
+	auto node = cast(&current_token, current_token);
 
 	while (true)
 	{
 		auto start = current_token;
 		if (current_token->is_equal("*"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), unary(&current_token, current_token->_next.get()), start);
+			node = std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), cast(&current_token, current_token->_next.get()), start);
 			continue;
 		}
 
 		if (current_token->is_equal("/"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), unary(&current_token, current_token->_next.get()), start);
+			node = std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), cast(&current_token, current_token->_next.get()), start);
 			continue;
 		}
 
@@ -999,28 +1030,28 @@ unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&") unary | postfix
+ * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&") cast | postfix
  */
 unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 {
 	if (current_token->is_equal("+"))
 	{
-		return unary(next_token, current_token->_next.get());
+		return cast(next_token, current_token->_next.get());
 	}
 
 	if (current_token->is_equal("-"))
 	{
-		return std::make_unique<Node>(NodeKind::ND_NEG, unary(next_token, current_token->_next.get()), current_token);
+		return std::make_unique<Node>(NodeKind::ND_NEG, cast(next_token, current_token->_next.get()), current_token);
 	}
 
 	if (current_token->is_equal("&"))
 	{
-		return std::make_unique<Node>(NodeKind::ND_ADDR, unary(next_token, current_token->_next.get()), current_token);
+		return std::make_unique<Node>(NodeKind::ND_ADDR, cast(next_token, current_token->_next.get()), current_token);
 	}
 
 	if (current_token->is_equal("*"))
 	{
-		return std::make_unique<Node>(NodeKind::ND_DEREF, unary(next_token, current_token->_next.get()), current_token);
+		return std::make_unique<Node>(NodeKind::ND_DEREF, cast(next_token, current_token->_next.get()), current_token);
 	}
 
 	return postfix(next_token, current_token);
@@ -1235,7 +1266,7 @@ shared_ptr<Type> Node::abstract_declarator(Token **next_token, Token *current_to
 }
 
 /**
- * @brief typedefで使うための型情報を読み取る
+ * @brief 型情報を読み取る
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン

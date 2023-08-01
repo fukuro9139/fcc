@@ -18,6 +18,15 @@
 #include <vector>
 #include "parse.hpp"
 
+/* サイズにより型を分類したID */
+enum class TypeID
+{
+	I8,
+	I16,
+	I32,
+	I64,
+};
+
 /** @brief　アセンブリを生成 */
 class CodeGen
 {
@@ -48,4 +57,6 @@ private:
 	static void emit_data(const std::unique_ptr<Object> &program);
 	static void emit_text(const std::unique_ptr<Object> &program);
 	static int label_count();
+	static void cast(Type *from, Type *to);
+	static TypeID get_TypeId(Type *ty);
 };

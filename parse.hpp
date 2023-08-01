@@ -58,6 +58,7 @@ enum class NodeKind
 	ND_EXPR_STMT, /*!< 文 */
 	ND_STMT_EXPR, /*!< ステートメント式  */
 	ND_VAR,		  /*!< 変数 */
+	ND_CAST,	  /*!< 型キャスト */
 };
 
 /**
@@ -138,6 +139,7 @@ private:
 	static std::unique_ptr<Node> equality(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> relational(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> add(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> cast(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> mul(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> unary(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> postfix(Token **next_token, Token *current_token);
