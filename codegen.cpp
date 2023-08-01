@@ -13,7 +13,7 @@
 
 #include "codegen.hpp"
 
-#define unreachable() error("エラー: " + std::string(__FILE__) + " : " + std::to_string(__LINE__))
+#define unreachable() error("エラー: " + string(__FILE__) + " : " + std::to_string(__LINE__))
 
 using std::endl;
 using std::string;
@@ -182,7 +182,7 @@ void CodeGen::pop(string &&reg)
  *
  * @param reg 数値をセットするレジスタ
  */
-void CodeGen::pop(const std::string &reg)
+void CodeGen::pop(const string &reg)
 {
 	*os << "  pop " << reg << "\n";
 	--depth;
@@ -334,51 +334,78 @@ void CodeGen::generate_expression(Node *node)
 	/* 右辺の計算結果を'rdi'にpop */
 	pop("rdi");
 
+	string ax, di;
+
+	/* long型およびポインタに対しては64ビットレジスタを使う */
+	if (node->_lhs->_ty->_kind == TypeKind::TY_LONG || node->_lhs->_ty->_base)
+	{
+		ax = "rax";
+		di = "rdi";
+	}
+	/* それ以外は32ビットレジスタを使う */
+	else
+	{
+		ax = "eax";
+		di = "edi";
+	}
+
 	/* 演算子ノードなら演算命令を出力する */
 	switch (node->_kind)
 	{
 	case NodeKind::ND_ADD:
 		/* 'rax' = 'rax' + 'rdi' */
-		*os << "  add rax, rdi\n";
+		*os << "  add " << ax << ", " << di << "\n";
 		return;
 	case NodeKind::ND_SUB:
 		/* 'rax' = 'rax' - 'rdi' */
-		*os << "  sub rax, rdi\n";
+		*os << "  sub " << ax << ", " << di << "\n";
 		return;
 	case NodeKind::ND_MUL:
 		/* 'rax' = 'rax' * 'rdi' */
-		*os << "  imul rax, rdi\n";
+		*os << "  imul " << ax << ", " << di << "\n";
 		return;
 	case NodeKind::ND_DIV:
-		/* 'rax'(64ビット)を128ビットに拡張して'rdx'と'rax'にセット */
-		*os << "  cqo\n";
-		/* 'rdx'と'rax'を合わせた128ビットの値を'rdi'で割って商を'rax', 余りを'rdx'にセット */
-		*os << "  idiv rdi\n";
+		if (8 == node->_lhs->_ty->_size)
+		{
+			/* 'rax'(64ビット)を128ビットに拡張して'rdx'と'rax'にセット */
+			*os << "  cqo\n";
+		}
+		else
+		{
+			/* 'eax'(32ビット)を128ビットに拡張して'rdx'と'rax'にセット */
+			*os << "  cdq\n";
+		}
+
+		/* 'rdx(edx)'と'rax(eax)'を合わせた128ビットの値を'rdi'で割って商を'rax(eax)', 余りを'rdx(edx)'にセット */
+		*os << "  idiv " << di << "\n";
 		return;
 	case NodeKind::ND_EQ:
-		*os << "  cmp rax, rdi\n";
-		*os << "  sete al\n";
-		*os << "  movzb rax, al\n";
-		return;
 	case NodeKind::ND_NE:
-		*os << "  cmp rax, rdi\n";
-		*os << "  setne al\n";
-		*os << "  movzb rax, al\n";
-		return;
 	case NodeKind::ND_LT:
-		*os << "  cmp rax, rdi\n";
-		*os << "  setl al\n";
-		*os << "  movzb rax, al\n";
-		return;
 	case NodeKind::ND_LE:
-		*os << "  cmp rax, rdi\n";
-		*os << "  setle al\n";
+		*os << "  cmp " << ax << ", " << di << "\n";
+
+		if (NodeKind::ND_EQ == node->_kind)
+		{
+			*os << "  sete al\n";
+		}
+		else if (NodeKind::ND_NE == node->_kind)
+		{
+			*os << "  setne al\n";
+		}
+		else if (NodeKind::ND_LT == node->_kind)
+		{
+			*os << "  setl al\n";
+		}
+		else
+		{
+			*os << "  setle al\n";
+		}
 		*os << "  movzb rax, al\n";
 		return;
 	default:
 		break;
 	}
-
 	/* エラー */
 	error_token("不正な式です", node->_token);
 }
@@ -565,7 +592,7 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(const unique_ptr<Object> &program, const std::string &input_path, const std::string &output_path)
+void CodeGen::generate_code(const unique_ptr<Object> &program, const string &input_path, const string &output_path)
 {
 	/* ファイルを開くのに成功したら出力先をファイルに変更する */
 	/* ファイルを開くのに失敗したら出力先は標準出力のまま */
