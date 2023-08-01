@@ -33,8 +33,8 @@ all: clean $(OBJS) $(TARGET)
 
 #テスト
 test/%.exe: fcc test/%.c
-	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
-	./fcc -o test/$*.s test/tmp_$*.c
+	$(CC) -o test/tmp_$* -E -P -C test/$*.c
+	./fcc -o test/$*.s test/tmp_$*
 	$(CC) -o $@ test/$*.s -xc test/common
 
 test: $(TESTS)
