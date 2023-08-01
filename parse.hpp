@@ -93,7 +93,7 @@ public:
 	std::string _func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	std::unique_ptr<Node> _args; /*!< 引数  */
 
-	int64_t _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
+	int64_t _val = 0;			  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
 	Token *_token = nullptr; /* ノードと対応するトークン */
@@ -127,7 +127,7 @@ private:
 	static void struct_members(Token **next_token, Token *current_token, Type *ty);
 	static std::shared_ptr<Member> get_struct_member(Type *ty, Token *token);
 	static std::unique_ptr<Node> struct_ref(std::unique_ptr<Node> &&lhs, Token *token);
-	static std::shared_ptr<Type> declspec(Token **next_token, Token *current_token, VarAttr * attr);
+	static std::shared_ptr<Type> declspec(Token **next_token, Token *current_token, VarAttr *attr);
 	static std::shared_ptr<Type> declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> ty);
 	static std::unique_ptr<Node> declaration(Token **next_token, Token *current_token, std::shared_ptr<Type> base);
 	static std::shared_ptr<Type> function_parameters(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
@@ -142,7 +142,9 @@ private:
 	static std::unique_ptr<Node> unary(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> postfix(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> primary(Token **next_token, Token *current_token);
-	static Token * parse_typedef(Token *token, std::shared_ptr<Type> base);
+	static Token *parse_typedef(Token *token, std::shared_ptr<Type> base);
+	static std::shared_ptr<Type> abstract_declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
+	static std::shared_ptr<Type> type_name(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> function_call(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
 	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);

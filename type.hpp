@@ -44,7 +44,6 @@ public:
 	 */
 	std::shared_ptr<Type> _base;
 
-	std::string _name = "";	 /*!< 変数の名前 */
 	Token *_token = nullptr; /*!< 変数に対応するトークン */
 
 	/* 配列 */

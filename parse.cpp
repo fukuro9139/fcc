@@ -1080,7 +1080,7 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | identifier args? | str | num @n
+ * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | "sizeof" "(" type-name ")" | identifier args? | str | num @n
  * args = "(" ")"
  */
 unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
@@ -1113,7 +1113,19 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		return std::make_unique<Node>(var, current_token);
 	}
 
-	/* トークンがsizeof演算子の場合 */
+	/* sizeof演算子（対象が型そのもの） */
+	if (current_token->is_equal("sizeof") &&
+		current_token->_next->is_equal("(") &&
+		current_token->_next->_next->is_typename())
+	{
+		auto start = current_token;
+		/* sizeof演算子の対象の型情報を読む */
+		auto ty = type_name(&current_token, current_token->_next->_next.get());
+		*next_token = Token::skip(current_token, ")");
+		return std::make_unique<Node>(ty->_size, start);
+	}
+
+	/* sizeof演算子（対象が式） */
 	if (current_token->is_equal("sizeof"))
 	{
 		/* sizeofの対象を評価 */
@@ -1186,6 +1198,54 @@ Token *Node::parse_typedef(Token *token, shared_ptr<Type> base)
 		Object::push_scope(ty->_token->_str)->type_def = ty;
 	}
 	return token;
+}
+
+/**
+ * @brief 識別子をもたない仮想的な変数宣言として型情報を読む
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 型指定子の型
+ * @return 読み取った型
+ * @details 下記のEBNF規則に従う。 @n abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
+ */
+shared_ptr<Type> Node::abstract_declarator(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
+{
+	/* "*"の数だけその前までの型に対するポインター */
+	while (current_token->is_equal("*"))
+	{
+		ty = Type::pointer_to(ty);
+		current_token = current_token->_next.get();
+	}
+
+	/* ネストしている型 */
+	if (current_token->is_equal("("))
+	{
+		auto start = current_token;
+		auto dummy = std::make_shared<Type>();
+		/* ネストの中を飛ばす */
+		abstract_declarator(&current_token, start->_next.get(), std::move(dummy));
+		current_token = Token::skip(current_token, ")");
+		/* ネストの外側の型を読み込む */
+		ty = type_suffix(next_token, current_token, std::move(ty));
+		/* ネストの外側の型をベースとして内側の型を読む */
+		return abstract_declarator(&current_token, start->_next.get(), std::move(ty));
+	}
+	return type_suffix(next_token, current_token, std::move(ty));
+}
+
+/**
+ * @brief typedefで使うための型情報を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 読み取った型
+ * @details 下記のEBNF規則に従う。 @n type-name = declspec abstract-declarator
+ */
+shared_ptr<Type> Node::type_name(Token **next_token, Token *current_token)
+{
+	auto ty = declspec(&current_token, current_token, nullptr);
+	return abstract_declarator(next_token, current_token, std::move(ty));
 }
 
 /**
