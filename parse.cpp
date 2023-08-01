@@ -287,6 +287,12 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token)
 
 		/* 変数の最終的な型を決定 */
 		auto ty = declarator(&current_token, current_token, base);
+
+		/* 変数がvoid型で宣言されていたらエラー */
+		if(TypeKind::TY_VOID ==  ty->_kind){
+			error_token("変数がvoid型で宣言されています", current_token);
+		}
+
 		const auto var = Object::new_lvar(ty->_token->_str, std::move(ty));
 
 		/* 宣言の後に初期化式がない場合は次のループへ */
@@ -631,13 +637,18 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
 /**
  * @brief 変数宣言の型宣言部分を読み取る
  *
- * @details 下記のEBNF規則に従う。 @n declspec = "int" | "short" | "long" | "char" | struct-decl | union-decl
+ * @details 下記のEBNF規則に従う。 @n declspec =  "void" | "int" | "short" | "long" | "char" | struct-decl | union-decl
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 変数の型
  */
 shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 {
+	/* void型 */
+	if(current_token->is_equal("void")){
+		*next_token = current_token->_next.get();
+		return Type::VOID_BASE;
+	}
 	/* char型 */
 	if (current_token->is_equal("char"))
 	{

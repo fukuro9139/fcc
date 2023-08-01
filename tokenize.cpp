@@ -285,7 +285,8 @@ void Token::convert_keywords(Token *token)
  */
 bool Token::is_keyword(Token *&token)
 {
-	static const std::vector<string> keywords = {
+	/* 識別子一覧 */
+	static const std::vector<string> kws = {
 		"return",
 		"if",
 		"else",
@@ -298,11 +299,14 @@ bool Token::is_keyword(Token *&token)
 		"union",
 		"short",
 		"long",
+		"void",
 	};
 
-	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
+	auto &str = token->_str;
+
+	for (auto &kw : kws)
 	{
-		if (keywords[i].size() == token->_str.size() && std::equal(keywords[i].begin(), keywords[i].end(), token->_str.begin()))
+		if (kw == str)
 		{
 			return true;
 		}
@@ -473,8 +477,17 @@ bool Token::is_equal(const std::string &op) const
  */
 bool Token::is_typename() const
 {
-	return is_equal("char") || is_equal("short") || is_equal("long") || is_equal("int") ||
-		   is_equal("struct") || is_equal("union");
+	static const std::vector<string> kws = {"char", "short", "int", "long", "struct", "union"};
+
+	for (auto &kw : kws)
+	{
+		if (is_equal(kw))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -535,13 +548,13 @@ bool Token::start_with(const std::string &str, const std::string &op)
  */
 size_t Token::read_punct(std::string &&str)
 {
-	static const std::vector<string> kw = {"==", "!=", "<=", ">=", "->"};
+	static const std::vector<string> kws = {"==", "!=", "<=", ">=", "->"};
 
-	for (size_t i = 0, sz = kw.size(); i < sz; ++i)
+	for (auto &kw : kws)
 	{
-		if (start_with(str, kw[i]))
+		if (start_with(str, kw))
 		{
-			return kw[i].size();
+			return kw.size();
 		}
 	}
 

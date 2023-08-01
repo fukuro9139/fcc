@@ -7,6 +7,7 @@ using std::shared_ptr;
 /* Type Class */
 /**************/
 
+const shared_ptr<Type> Type::VOID_BASE = std::make_shared<Type>(TypeKind::TY_VOID, 1, 1);
 const shared_ptr<Type> Type::SHORT_BASE = std::make_shared<Type>(TypeKind::TY_SHORT, 2, 2);
 const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 4, 4);
 const shared_ptr<Type> Type::LONG_BASE = std::make_shared<Type>(TypeKind::TY_LONG, 8, 8);
@@ -115,10 +116,16 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_DEREF:
 		/* デリファレンスできるのはポインタ型のみ */
 		if (!node->_lhs->_ty->_base)
+		{
 			error_token("デリファレンスできるのはポインタ型のみです", node->_token);
-		else
-			/* ポインタのベース型 */
-			node->_ty = node->_lhs->_ty->_base;
+		}
+		/* void型のポインタはデリファレンス不可 */
+		if (TypeKind::TY_VOID == node->_lhs->_ty->_base->_kind)
+		{
+			error_token("void型のポインタはデリファレンスできません", node->_token);
+		}
+		/* ポインタのベース型 */
+		node->_ty = node->_lhs->_ty->_base;
 
 		return;
 
