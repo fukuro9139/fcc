@@ -28,7 +28,8 @@ public:
 	int _offset = 0; /*!< RBPからのオフセット */
 
 	/* グローバル変数 or 関数用 */
-	bool is_function = false; /*!< 関数であるか */
+	bool is_function = false;	/*!< 関数であるか */
+	bool is_definition = false; /*!< 宣言であるか */
 
 	/* グローバル変数 */
 	std::string _init_data = ""; /*!< 文字列リテラル */

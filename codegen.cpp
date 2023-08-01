@@ -518,8 +518,8 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 {
 	for (auto fn = program.get(); fn; fn = fn->_next.get())
 	{
-		/* 関数でなければ何もしない */
-		if (!fn->is_function)
+		/* 関数の宣言でなければ何もしない */
+		if (!fn->is_function || !fn->is_definition)
 		{
 			continue;
 		}

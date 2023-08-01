@@ -198,12 +198,12 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 }
 
 /**
- * @brief 関数宣言を読み取る。
+ * @brief 関数宣言、定義を読み取る。
  *
  * @param token 現在処理しているトークン
  * @param base 関数の戻り値の型のベース
  * @return 次のトークン
- * @details 下記のEBNF規則に従う。 @n function-definition = declarator "{" compound-statement
+ * @details 下記のEBNF規則に従う。 @n function-definition = declarator ( "{" compound-statement | ";" )
  */
 Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 {
@@ -218,6 +218,15 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 
 	/* 関数であるフラグをセット */
 	fn->is_function = true;
+
+	/* 定義か宣言か、後ろに";"がくるなら宣言 */
+	fn->is_definition = !Token::consume(&token, token, ";");
+
+	/* 宣言であるなら現在のトークンを返して抜ける */
+	if (!fn->is_definition)
+	{
+		return token;
+	}
 
 	/* 関数のブロックスコープに入る */
 	Object::enter_scope();
@@ -394,7 +403,8 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 	}
 
 	/* ネストした型の場合、外側を先に評価する */
-	if(current_token->is_equal("(")){
+	if (current_token->is_equal("("))
+	{
 		auto start = current_token;
 		auto dummy = std::make_shared<Type>();
 		/* ネスト部分を飛ばす */
