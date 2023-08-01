@@ -122,7 +122,7 @@ void error_token(std::string &&msg, Token *token)
 
 Token::Token() = default;
 Token::Token(const TokenKind &kind, const int &location) : _kind(kind), _location(location) {}
-Token::Token(const int &location, const int &value) : _kind(TokenKind::TK_NUM), _location(location), _value(std::move(value)) {}
+Token::Token(const int &location, const int64_t &value) : _kind(TokenKind::TK_NUM), _location(location), _value(std::move(value)) {}
 Token::Token(const TokenKind &kind, const int &location, std::string &&str) : _kind(kind), _location(location), _str(std::move(str)) {}
 
 /**
@@ -202,7 +202,7 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 			/* 数値変換する。変換にした数値を持つ数値トークンを生成し */
 			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
 			size_t idx;
-			current_token->_next = std::make_unique<Token>(itr - first, std::stoi(string(itr, last), &idx));
+			current_token->_next = std::make_unique<Token>(itr - first, std::stoll(string(itr, last), &idx));
 			current_token = current_token->_next.get();
 			itr += idx;
 			continue;
@@ -296,6 +296,8 @@ bool Token::is_keyword(Token *&token)
 		"char",
 		"struct",
 		"union",
+		"short",
+		"long",
 	};
 
 	for (size_t i = 0, sz = keywords.size(); i < sz; ++i)
@@ -471,7 +473,8 @@ bool Token::is_equal(const std::string &op) const
  */
 bool Token::is_typename() const
 {
-	return is_equal("char") || is_equal("int") || is_equal("struct") || is_equal("union");
+	return is_equal("char") || is_equal("short") || is_equal("long") || is_equal("int") ||
+		   is_equal("struct") || is_equal("union");
 }
 
 /**

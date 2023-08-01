@@ -8,6 +8,7 @@ using std::shared_ptr;
 /**************/
 
 const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 4, 4);
+const shared_ptr<Type> Type::LONG_BASE = std::make_shared<Type>(TypeKind::TY_LONG, 8, 8);
 const std::shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
@@ -70,14 +71,14 @@ void Type::add_type(Node *node)
 		node->_ty = node->_lhs->_ty;
 		return;
 
-	/* 比較演算の結果はint型 */
+	/* 比較演算の結果はlong型(一番大きい数値型へ合わせてしまう) */
 	case NodeKind::ND_EQ:
 	case NodeKind::ND_NE:
 	case NodeKind::ND_LT:
 	case NodeKind::ND_LE:
 	case NodeKind::ND_NUM:
 	case NodeKind::ND_FUNCALL:
-		node->_ty = Type::INT_BASE;
+		node->_ty = Type::LONG_BASE;
 		return;
 
 	case NodeKind::ND_VAR:
@@ -154,7 +155,7 @@ void Type::add_type(Node *node)
  */
 bool Type::is_integer() const
 {
-	return TypeKind::TY_INT == this->_kind || TypeKind::TY_CHAR == this->_kind;
+	return TypeKind::TY_INT == this->_kind || TypeKind::TY_CHAR == this->_kind || TypeKind::TY_LONG == this->_kind;
 }
 
 /**

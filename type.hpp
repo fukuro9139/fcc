@@ -8,6 +8,7 @@ enum class TypeKind
 {
 	TY_CHAR,   /*!< char型  */
 	TY_INT,	   /*!< int型 */
+	TY_LONG,   /*!< long型 */
 	TY_PTR,	   /*!< ポインター型 */
 	TY_FUNC,   /*!< 関数 */
 	TY_ARRAY,  /*!< 関数  */
@@ -30,8 +31,8 @@ public:
 	/* メンバ変数 (public) */
 
 	TypeKind _kind; /*!< 型の種類 */
-	int _size = 1;		  /* 型のサイズ */
-	int _align = 1;		  /*!< アライメント */
+	int _size = 1;	/* 型のサイズ */
+	int _align = 1; /*!< アライメント */
 
 	/**
 	 * @brief kindがTY_PTRまたはTY_ARRAYのとき、参照先の型
@@ -76,5 +77,6 @@ public:
 	/* 静的メンバ変数 (public) */
 
 	static const std::shared_ptr<Type> INT_BASE;  /*!< int型 */
+	static const std::shared_ptr<Type> LONG_BASE;  /*!< long型 */
 	static const std::shared_ptr<Type> CHAR_BASE; /*!< char型 */
 };

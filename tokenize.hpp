@@ -39,7 +39,7 @@ public:
 
 	std::unique_ptr<Token> _next;		 /*!< 次のトークン */
 	TokenKind _kind = TokenKind::TK_EOF; /*!< トークンの型 */
-	int _value = 0;						 /*!< kindがTK_NUMの場合、その数値 */
+	int64_t _value = 0;					 /*!< kindがTK_NUMの場合、その数値 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	std::string _str = "";				 /*!< トークンが表す文字列 */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
@@ -47,7 +47,7 @@ public:
 	/* コンストラクタ */
 	Token();
 	Token(const TokenKind &kind, const int &location);
-	Token(const int &location, const int &value);
+	Token(const int &location, const int64_t &value);
 	Token(const TokenKind &kind, const int &location, std::string &&str);
 
 	/* メンバ関数 */
@@ -61,7 +61,7 @@ public:
 
 	static std::unique_ptr<Token> tokenize(const std::string &filename, std::string &&input);
 	static std::unique_ptr<Token> tokenize_file(const std::string &filepath);
-	static Token* skip(Token *token, std::string &&op);
+	static Token *skip(Token *token, std::string &&op);
 	static bool consume(Token **next_token, Token *current_token, std::string &&str);
 
 private:

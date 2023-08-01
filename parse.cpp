@@ -38,7 +38,7 @@ Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Toke
 Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, Token *token)
 	: _kind(std::move(kind)), _lhs(std::move(lhs)), _token(token) {}
 
-Node::Node(const int &val, Token *token) : _kind(NodeKind::ND_NUM), _val(val), _token(token) {}
+Node::Node(const int64_t &val, Token *token) : _kind(NodeKind::ND_NUM), _val(val), _token(token) {}
 
 Node::Node(const Object *var, Token *token) : _kind(NodeKind::ND_VAR), _var(var), _token(token) {}
 
@@ -500,10 +500,12 @@ shared_ptr<Type> Node::union_decl(Token **next_token, Token *current_token)
 	/* アライメントと全体のサイズの計算だけ行う */
 	for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
 	{
-		if(ty->_align < mem->_ty->_align){
+		if (ty->_align < mem->_ty->_align)
+		{
 			ty->_align = mem->_ty->_align;
 		}
-		if(ty->_size < mem->_ty->_size){
+		if (ty->_size < mem->_ty->_size)
+		{
 			ty->_size = mem->_ty->_size;
 		}
 	}
@@ -605,7 +607,7 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
 /**
  * @brief 変数宣言の型宣言部分を読み取る
  *
- * @details 下記のEBNF規則に従う。 @n declspec = "int" | "char" | struct-decl
+ * @details 下記のEBNF規則に従う。 @n declspec = "int" | "short" | "long" | "char" | struct-decl | union-decl
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 変数の型
@@ -623,6 +625,12 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 	{
 		*next_token = current_token->_next.get();
 		return Type::INT_BASE;
+	}
+	/* long型 */
+	if (current_token->is_equal("long"))
+	{
+		*next_token = current_token->_next.get();
+		return Type::LONG_BASE;
 	}
 	/* 構造体 */
 	if (current_token->is_equal("struct"))

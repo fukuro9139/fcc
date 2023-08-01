@@ -93,7 +93,7 @@ public:
 	std::string _func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	std::unique_ptr<Node> _args; /*!< 引数  */
 
-	int _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
+	int64_t _val = 0;				  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
 	Token *_token = nullptr; /* ノードと対応するトークン */
@@ -104,7 +104,7 @@ public:
 	Node(NodeKind &&kind, Token *token);
 	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
 	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, Token *token);
-	Node(const int &val, Token *token);
+	Node(const int64_t &val, Token *token);
 	Node(const Object *var, Token *token);
 
 	/**************************/
