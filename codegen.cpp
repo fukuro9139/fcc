@@ -117,15 +117,18 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 		return;
 	}
 
-	/* x86-64では、下位8ビットのエイリアスのレジスタに読み込むときには */
-	/* 上位56ビットは0クリアされない。そのため符号拡張してraxにロードする。 */
+	/* char型およびshort型の値をロードするとき、常にint型のサイズに符号拡張する。
+	 * つまり、64ビットレジスタの下位32ビットは常に正しい値が入っているとみなせる。
+	 * このとき上位32ビットレジスタにはごみが残っている可能性がある。
+	 * int型よりサイズの大きな型の値をロードするときは単純にレジスタ全体が置き換えられる。
+	 */
 	if (1 == ty->_size)
 	{
-		*os << "  movsx rax, BYTE PTR [rax]\n";
+		*os << "  movsx eax, BYTE PTR [rax]\n";
 	}
 	else if (2 == ty->_size)
 	{
-		*os << "  movsx rax, WORD PTR [rax]\n";
+		*os << "  movsx eax, WORD PTR [rax]\n";
 	}
 	else if (4 == ty->_size)
 	{

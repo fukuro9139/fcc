@@ -43,6 +43,206 @@ Node::Node(const int64_t &val, Token *token) : _kind(NodeKind::ND_NUM), _val(val
 Node::Node(const Object *var, Token *token) : _kind(NodeKind::ND_VAR), _var(var), _token(token) {}
 
 /**
+ * @brief 型キャストに対応するノードを作成する
+ *
+ * @param expr 型キャストの対象とする式
+ * @param ty キャスト後の型
+ * @return std::unique_ptr<Node> 型キャストに対応するノード
+ */
+std::unique_ptr<Node> Node::new_cast(std::unique_ptr<Node> &&expr, std::shared_ptr<Type> &ty)
+{
+	/* 型を確定 */
+	Type::add_type(expr.get());
+
+	auto node = std::make_unique<Node>(NodeKind::ND_CAST, std::move(expr), expr->_token);
+	node->_ty = std::make_shared<Type>(*ty);
+	return node;
+}
+
+/**
+ * @brief 左辺 + 右辺の計算結果を表すノードを生成する。
+ *
+ * @details
+ * C言語では、+演算子はポインタ演算を行うためにオーバーロードされている。
+ * もしpがポインタである場合、p+nはnを加えるのではなく、sizeof(*p)*nをpの値に加える。
+ * そのため、p+nはpからn個先の要素（バイトではなく）を指すようになる。
+ * 言い換えれば、ポインタ値に加える前に整数値をスケールする必要があり、この関数はそのスケーリングを処理する。
+ * @param lhs 左辺
+ * @param rhs 右辺
+ * @param location ノードと対応する入力文字列の位置
+ * @return 対応するASTノード
+ */
+unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
+{
+	/* 右辺と左辺の型を確定する */
+	Type::add_type(lhs.get());
+	Type::add_type(rhs.get());
+
+	/* 数 + 数 */
+	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
+	{
+		return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), token);
+	}
+
+	/* ptr + ptr は無効な演算 */
+	if (lhs->_ty->_base && rhs->_ty->_base)
+	{
+		error_token("無効な演算です", token);
+	}
+
+	/* "数 + ptr" を "ptr + 数" に変換する*/
+	if (!lhs->_ty->_base && rhs->_ty->_base)
+	{
+		std::swap(lhs, rhs);
+	}
+
+	/* ptr + 数 */
+	rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), new_long(lhs->_ty->_base->_size, token), token);
+	return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), token);
+}
+
+/**
+ * @brief 左辺 - 右辺の計算結果を表すノードを生成する。
+ *
+ * @details
+ * C言語では、-演算子も'+'演算子と同様にポインタ演算を行うためにオーバーロードされている。
+ * ポインタ - ポインタは2つのポインタ間にある要素の数を返す。
+ * @param lhs 左辺
+ * @param rhs 右辺
+ * @param location ノードと対応する入力文字列の位置
+ * @return 対応するASTノード
+ */
+unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
+{
+	/* 右辺と左辺の型を確定する */
+	Type::add_type(lhs.get());
+	Type::add_type(rhs.get());
+
+	/* 数 - 数 */
+	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
+	{
+		return std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), token);
+	}
+
+	/* ptr - 数 */
+	if (lhs->_ty->_base && !rhs->_ty->_base)
+	{
+		rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), new_long(lhs->_ty->_base->_size, token), token);
+		Type::add_type(rhs.get());
+		auto node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), token);
+		return node;
+	}
+
+	/* ptr - ptr */
+	if (lhs->_ty->_base && rhs->_ty->_base)
+	{
+		int sz = lhs->_ty->_base->_size;
+		auto node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), token);
+		node->_ty = Type::INT_BASE;
+		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(sz, token), token);
+	}
+
+	/* 数 - ptr はエラー */
+	error_token("無効な演算です", token);
+
+	/* コンパイルエラー対策。直前のerror_token()で終了されるのでnullptrが返ることはない */
+	return nullptr;
+}
+
+/**
+ * @brief グローバル変数の仮名としてユニークな名前を生成する
+ *
+ * @return 生成した名前。".L..id"となる。(idは生成順)
+ */
+std::string Node::new_unique_name()
+{
+	static int id = 0;
+	return ".L.." + std::to_string(id++);
+}
+
+/**
+ * @brief 仮名を付けてグローバル変数を生成する
+ *
+ * @param ty 生成するグローバル変数の型
+ * @return unique_ptr<Object>
+ */
+Object *Node::new_anonymous_gvar(std::shared_ptr<Type> &&ty)
+{
+	return Object::new_gvar(new_unique_name(), std::move(ty));
+}
+
+/**
+ * @brief 文字列リテラルとしてstrをもつグローバル変数を生成する。
+ *
+ * @param str 文字列リテラル
+ * @return 生成したグローバル変数オブジェクトへのポインタ
+ */
+Object *Node::new_string_literal(const std::string &str)
+{
+	/* 文字列リテラルの型はchar型配列で長さは文字数+'\0'終端 */
+	auto ty = Type::array_of(Type::CHAR_BASE, str.size() + 1);
+
+	/* 仮名を使ってオブジェクトを生成 */
+	auto obj = new_anonymous_gvar(std::move(ty));
+
+	/* init_dataに文字列を入れて'\0'終端を追加 */
+	obj->_init_data = str;
+	obj->_init_data.push_back('\0');
+	obj->is_str_literal = true;
+	return obj;
+}
+
+/**
+ * @brief long型の数値ノードを作成する
+ *
+ * @param val 数値
+ * @param token 対応するトークン
+ * @return long型の数値ノード
+ */
+std::unique_ptr<Node> Node::new_long(const int64_t &val, Token *token)
+{
+	auto node = std::make_unique<Node>(val, token);
+	node->_ty = Type::LONG_BASE;
+	return node;
+}
+
+/**
+ * @brief トークン・リストを構文解析して関数ごとにASTを構築する
+ *
+ * @param token トークン・リストの先頭
+ * @return 構文解析結果
+ * @details program = (typedef | function-definition | global-variable)*
+ */
+unique_ptr<Object> Node::parse(Token *token)
+{
+	/* トークンリストを最後まで辿る*/
+	while (TokenKind::TK_EOF != token->_kind)
+	{
+		VarAttr attr = {};
+		auto base = declspec(&token, token, &attr);
+
+		/* typedef */
+		if (attr.is_typedef)
+		{
+			token = parse_typedef(token, base);
+			continue;
+		}
+
+		/* 関数 */
+		if (is_function(token))
+		{
+			token = function_definition(token, std::move(base));
+			continue;
+		}
+
+		/* グローバル変数 */
+		token = global_variable(token, std::move(base));
+	}
+
+	return std::move(Object::globals);
+}
+
+/**
  * @brief プログラム を読み取る。
  *
  * @param next_token 残りのトークンを返すための参照
@@ -979,12 +1179,8 @@ unique_ptr<Node> Node::cast(Token **next_token, Token *current_token)
 		auto ty = type_name(&current_token, current_token->_next.get());
 		current_token = Token::skip(current_token, ")");
 
-		/* キャスト対象の式を評価 */
-		auto lhs = cast(next_token, current_token);
-		Type::add_type(lhs.get());
-
-		auto node = std::make_unique<Node>(NodeKind::ND_CAST, std::move(lhs), start);
-		node->_ty = ty;
+		auto node = new_cast(cast(next_token, current_token), ty);
+		node->_token = start;
 		return node;
 	}
 
@@ -1321,132 +1517,6 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 }
 
 /**
- * @brief 左辺 + 右辺の計算結果を表すノードを生成する。
- *
- * @details
- * C言語では、+演算子はポインタ演算を行うためにオーバーロードされている。
- * もしpがポインタである場合、p+nはnを加えるのではなく、sizeof(*p)*nをpの値に加える。
- * そのため、p+nはpからn個先の要素（バイトではなく）を指すようになる。
- * 言い換えれば、ポインタ値に加える前に整数値をスケールする必要があり、この関数はそのスケーリングを処理する。
- * @param lhs 左辺
- * @param rhs 右辺
- * @param location ノードと対応する入力文字列の位置
- * @return 対応するASTノード
- */
-unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
-{
-	/* 右辺と左辺の型を確定する */
-	Type::add_type(lhs.get());
-	Type::add_type(rhs.get());
-
-	/* 数 + 数 */
-	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
-	{
-		return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), token);
-	}
-
-	/* ptr + ptr は無効な演算 */
-	if (lhs->_ty->_base && rhs->_ty->_base)
-	{
-		error_token("無効な演算です", token);
-	}
-
-	/* "数 + ptr" を "ptr + 数" に変換する*/
-	if (!lhs->_ty->_base && rhs->_ty->_base)
-	{
-		std::swap(lhs, rhs);
-	}
-
-	/* ptr + 数 */
-	rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(lhs->_ty->_base->_size, token), token);
-	return std::make_unique<Node>(NodeKind::ND_ADD, std::move(lhs), std::move(rhs), token);
-}
-
-/**
- * @brief 左辺 - 右辺の計算結果を表すノードを生成する。
- *
- * @details
- * C言語では、-演算子も'+'演算子と同様にポインタ演算を行うためにオーバーロードされている。
- * ポインタ - ポインタは2つのポインタ間にある要素の数を返す。
- * @param lhs 左辺
- * @param rhs 右辺
- * @param location ノードと対応する入力文字列の位置
- * @return 対応するASTノード
- */
-unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
-{
-	/* 右辺と左辺の型を確定する */
-	Type::add_type(lhs.get());
-	Type::add_type(rhs.get());
-
-	/* 数 - 数 */
-	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
-	{
-		return std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), token);
-	}
-
-	/* ptr - 数 */
-	if (lhs->_ty->_base && !rhs->_ty->_base)
-	{
-		rhs = std::make_unique<Node>(NodeKind::ND_MUL, std::move(rhs), std::make_unique<Node>(lhs->_ty->_base->_size, token), token);
-		Type::add_type(rhs.get());
-		auto node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), token);
-		return node;
-	}
-
-	/* ptr - ptr */
-	if (lhs->_ty->_base && rhs->_ty->_base)
-	{
-		int sz = lhs->_ty->_base->_size;
-		auto node = std::make_unique<Node>(NodeKind::ND_SUB, std::move(lhs), std::move(rhs), token);
-		node->_ty = Type::INT_BASE;
-		return std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), std::make_unique<Node>(sz, token), token);
-	}
-
-	/* 数 - ptr はエラー */
-	error_token("無効な演算です", token);
-
-	/* コンパイルエラー対策。直前のerror_token()で終了されるのでnullptrが返ることはない */
-	return nullptr;
-}
-
-/**
- * @brief トークン・リストを構文解析して関数ごとにASTを構築する
- *
- * @param token トークン・リストの先頭
- * @return 構文解析結果
- * @details program = (typedef | function-definition | global-variable)*
- */
-unique_ptr<Object> Node::parse(Token *token)
-{
-	/* トークンリストを最後まで辿る*/
-	while (TokenKind::TK_EOF != token->_kind)
-	{
-		VarAttr attr = {};
-		auto base = declspec(&token, token, &attr);
-
-		/* typedef */
-		if (attr.is_typedef)
-		{
-			token = parse_typedef(token, base);
-			continue;
-		}
-
-		/* 関数 */
-		if (is_function(token))
-		{
-			token = function_definition(token, std::move(base));
-			continue;
-		}
-
-		/* グローバル変数 */
-		token = global_variable(token, std::move(base));
-	}
-
-	return std::move(Object::globals);
-}
-
-/**
  * @brief トップレベルに出てくる定義が関数かどうか判定する
  *
  * @param token declarator部分のトークン
@@ -1506,47 +1576,4 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base)
 	}
 
 	return token;
-}
-
-/**
- * @brief グローバル変数の仮名としてユニークな名前を生成する
- *
- * @return 生成した名前。".L..id"となる。(idは生成順)
- */
-std::string Node::new_unique_name()
-{
-	static int id = 0;
-	return ".L.." + std::to_string(id++);
-}
-
-/**
- * @brief 仮名を付けてグローバル変数を生成する
- *
- * @param ty 生成するグローバル変数の型
- * @return unique_ptr<Object>
- */
-Object *Node::new_anonymous_gvar(std::shared_ptr<Type> &&ty)
-{
-	return Object::new_gvar(new_unique_name(), std::move(ty));
-}
-
-/**
- * @brief 文字列リテラルとしてstrをもつグローバル変数を生成する。
- *
- * @param str 文字列リテラル
- * @return 生成したグローバル変数オブジェクトへのポインタ
- */
-Object *Node::new_string_literal(const std::string &str)
-{
-	/* 文字列リテラルの型はchar型配列で長さは文字数+'\0'終端 */
-	auto ty = Type::array_of(Type::CHAR_BASE, str.size() + 1);
-
-	/* 仮名を使ってオブジェクトを生成 */
-	auto obj = new_anonymous_gvar(std::move(ty));
-
-	/* init_dataに文字列を入れて'\0'終端を追加 */
-	obj->_init_data = str;
-	obj->_init_data.push_back('\0');
-	obj->is_str_literal = true;
-	return obj;
 }

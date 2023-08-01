@@ -113,12 +113,19 @@ public:
 	/**************************/
 
 	static std::unique_ptr<Object> parse(Token *token);
+	static std::unique_ptr<Node> new_cast(std::unique_ptr<Node> &&expr, std::shared_ptr<Type> &ty);
 
 private:
 	/***************************/
 	/* 静的メンバ関数 (private) */
 	/***************************/
 
+	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
+	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
+	static Object *new_string_literal(const std::string &str);
+	static Object *new_anonymous_gvar(std::shared_ptr<Type> &&ty);
+	static std::string new_unique_name();
+	static std::unique_ptr<Node> new_long(const int64_t &val, Token *token);
 	static std::unique_ptr<Node> statement(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
 	static Token *function_definition(Token *token, std::shared_ptr<Type> &&base);
@@ -148,12 +155,7 @@ private:
 	static std::shared_ptr<Type> abstract_declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
 	static std::shared_ptr<Type> type_name(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> function_call(Token **next_token, Token *current_token);
-	static std::unique_ptr<Node> new_add(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
-	static std::unique_ptr<Node> new_sub(std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
 	static Token *global_variable(Token *token, std::shared_ptr<Type> &&base);
-	static Object *new_string_literal(const std::string &str);
-	static Object *new_anonymous_gvar(std::shared_ptr<Type> &&ty);
-	static std::string new_unique_name();
 
 	static bool is_function(Token *token);
 };

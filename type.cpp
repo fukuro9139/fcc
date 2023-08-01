@@ -12,6 +12,7 @@
 #include "type.hpp"
 #include "parse.hpp"
 
+using std::unique_ptr;
 using std::shared_ptr;
 
 /**************/
@@ -34,6 +35,32 @@ Type::Type(const shared_ptr<Type> &base, const int &size, const int &align) : _k
 
 Type::Type(Token *token, const shared_ptr<Type> &return_ty)
 	: _kind(TypeKind::TY_FUNC), _token(token), _return_ty(return_ty) {}
+
+/**
+ * @brief ty1とty2のうちサイズの大きいほうの型を返す。ポインタ型優先
+ *
+ * @param ty1 左辺の型
+ * @param ty2 右辺の型
+ * @return 共通の型
+ */
+std::shared_ptr<Type> Type::get_common_type(const Type *ty1, const Type *ty2)
+{
+	/* 左辺がポインタなら同じ型へのポインタを返す。 */
+	if (ty1->_base)
+	{
+		return pointer_to(ty1->_base);
+	}
+	/* どちらかの型サイズが8バイトであればlong型 */
+	if (ty1->_size == 8 || ty2->_size == 8)
+	{
+		return LONG_BASE;
+	}
+	/* どちらも8バイト未満ならint型を返す */
+	else
+	{
+		return INT_BASE;
+	}
+}
 
 /**
  * @brief 抽象構文木(AST)を巡回しながら型情報を設定する。
@@ -67,19 +94,36 @@ void Type::add_type(Node *node)
 
 	switch (node->_kind)
 	{
-	/* 演算結果の型は左辺の型にあわせる */
+	/* int型にしても値が変わらないならint型、変わる場合はlong型 */
+	case NodeKind::ND_NUM:
+		node->_ty = (node->_val == (int)node->_val) ? INT_BASE : LONG_BASE;
+		return;
+	/* 演算結果の型は大きいほうの型にあわせる */
 	case NodeKind::ND_ADD:
 	case NodeKind::ND_SUB:
 	case NodeKind::ND_MUL:
 	case NodeKind::ND_DIV:
-	case NodeKind::ND_NEG:
+		usual_arith_conv(node->_lhs, node->_rhs);
 		node->_ty = node->_lhs->_ty;
 		return;
+
+	case NodeKind::ND_NEG:
+	{
+		auto ty = get_common_type(INT_BASE.get(), node->_lhs->_ty.get());
+		node->_lhs = Node::new_cast(std::move(node->_lhs), ty);
+		node->_ty = ty;
+		return;
+	}
 
 	case NodeKind::ND_ASSIGN:
 		if (TypeKind::TY_ARRAY == node->_lhs->_ty->_kind)
 		{
 			error_token("左辺値ではありません", node->_lhs->_token);
+		}
+		/* 左辺に合わせてキャストする */
+		if (TypeKind::TY_STRUCT != node->_lhs->_ty->_kind)
+		{
+			node->_rhs = Node::new_cast(std::move(node->_rhs), node->_lhs->_ty);
 		}
 		node->_ty = node->_lhs->_ty;
 		return;
@@ -89,7 +133,11 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_NE:
 	case NodeKind::ND_LT:
 	case NodeKind::ND_LE:
-	case NodeKind::ND_NUM:
+		/* 比較の前に大きいほうの型に合わせる */
+		usual_arith_conv(node->_lhs, node->_rhs);
+		node->_ty = node->_lhs->_ty;
+		return;
+
 	case NodeKind::ND_FUNCALL:
 		node->_ty = Type::LONG_BASE;
 		return;
@@ -214,4 +262,21 @@ shared_ptr<Type> Type::array_of(shared_ptr<Type> base, int length)
 	ret->_base = base;
 	ret->_array_length = length;
 	return ret;
+}
+
+/**
+ * @brief 算術演算の暗黙の型変換を行う
+ *
+ * @details 多くの二幸演算子ではオペランドを暗黙のうちに昇格させて
+ * 両方のオペランドが同じ型になるようにしている。int型よりも小さい方は常に
+ * int型に昇格する。一方のオペランドが他方より大きい場合（int型とlog型など）
+ * 小さいほうの型が大きいほうの型に昇格する。
+ * @param lhs 左辺のノード
+ * @param rhs 右辺のノード
+ */
+void Type::usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs)
+{
+	auto ty = Type::get_common_type(lhs->_ty.get(), rhs->_ty.get());
+	lhs = Node::new_cast(std::move(lhs), ty);
+	rhs = Node::new_cast(std::move(rhs), ty);
 }

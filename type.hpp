@@ -82,9 +82,11 @@ public:
 	/* 静的メンバ関数 (public) */
 
 	static void add_type(Node *node);
+	static std::shared_ptr<Type> get_common_type(const Type *ty1, const Type *ty2);
 	static std::shared_ptr<Type> pointer_to(const std::shared_ptr<Type> &base);
 	static std::shared_ptr<Type> array_of(std::shared_ptr<Type> base, int length);
 	static std::shared_ptr<Type> func_type(const std::shared_ptr<Type> &return_ty);
+	static void usual_arith_conv(std::unique_ptr<Node> &lhs, std::unique_ptr<Node> &rhs);
 
 	/* 静的メンバ変数 (public) */
 
