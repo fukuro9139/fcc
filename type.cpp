@@ -7,7 +7,7 @@ using std::shared_ptr;
 /* Type Class */
 /**************/
 
-const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 8, 8);
+const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 4, 4);
 const std::shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}

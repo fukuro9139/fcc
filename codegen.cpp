@@ -13,6 +13,8 @@
 
 #include "codegen.hpp"
 
+#define unreachable() error("エラー: " + std::string(__FILE__) + " : " + std::to_string(__LINE__))
+
 using std::endl;
 using std::string;
 using std::unique_ptr;
@@ -22,6 +24,9 @@ static int depth = 0;
 
 /** 64ビット整数レジスタ、前から順に関数の引数を格納される */
 static const std::vector<string> arg_regs64 = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+/** 整数レジスタの下位32ビットのエイリアス、前から順に関数の引数を格納される */
+static const std::vector<string> arg_regs32 = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 
 /** 整数レジスタの下位8ビットのエイリアス、前から順に関数の引数を格納される */
 static const std::vector<string> arg_regs8 = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
@@ -60,6 +65,10 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 	{
 		*os << "  movzx rax, BYTE PTR [rax]\n";
 	}
+	else if (4 == ty->_size)
+	{
+		*os << " mov eax, DWORD PTR [rax]\n";
+	}
 	else
 	{
 		*os << "  mov rax, [rax]\n";
@@ -74,22 +83,55 @@ void CodeGen::store(const std::shared_ptr<Type> &ty)
 {
 	pop("rdi");
 
-	/* 1バイトずつr8b経由でストアする */
-	if(ty->_kind == TypeKind::TY_STRUCT || ty->_kind == TypeKind::TY_UNION){
-		for(int i=0; i< ty->_size; ++i){
+	/* 構造体、共用体の場合は1バイトずつr8b経由でストアする */
+	if (ty->_kind == TypeKind::TY_STRUCT || ty->_kind == TypeKind::TY_UNION)
+	{
+		for (int i = 0; i < ty->_size; ++i)
+		{
 			*os << "  mov r8b, [rax + " << i << " ]\n";
 			*os << "  mov [rdi + " << i << " ], r8b\n";
 		}
 		return;
 	}
+
 	if (1 == ty->_size)
 	{
 		*os << "  mov [rdi], al\n";
+	}
+	else if (4 == ty->_size)
+	{
+		*os << "  mov [rdi], eax\n";
 	}
 	else
 	{
 		*os << "  mov [rdi], rax\n";
 	}
+}
+
+/**
+ * @brief 引数の値をレジスタから受け取ってスタック領域にローカル変数としてストアする
+ *
+ * @param r 何番目の引数か
+ * @param offset ストアするスタック領域のオフセット
+ * @param sz データサイズ
+ */
+void CodeGen::store_gp(const int &r, const int &offset, const int &sz)
+{
+	switch (sz)
+	{
+	case 1:
+		*os << "  mov [rbp - " << offset << "], " << arg_regs8[r] << "\n";
+		return;
+	case 4:
+		*os << "  mov [rbp - " << offset << "], " << arg_regs32[r] << "\n";
+		return;
+	case 8:
+		*os << "  mov [rbp - " << offset << "], " << arg_regs64[r] << "\n";
+		return;
+	default:
+		break;
+	}
+	unreachable();
 }
 
 /**
@@ -486,14 +528,7 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 		int cnt = 0;
 		for (auto var = fn->_params.get(); var; var = var->_next.get())
 		{
-			if (1 == var->_ty->_size)
-			{
-				*os << "  mov [rbp - " << var->_offset << "], " << arg_regs8[cnt++] << "\n";
-			}
-			else
-			{
-				*os << "  mov [rbp - " << var->_offset << "], " << arg_regs64[cnt++] << "\n";
-			}
+			store_gp(cnt++, var->_offset, var->_ty->_size);
 		}
 
 		/* コードを出力 */

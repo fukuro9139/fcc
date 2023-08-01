@@ -44,6 +44,7 @@ private:
 	static void generate_address(Node *node);
 	static void generate_expression(Node *node);
 	static void generate_statement(Node *node);
+	static void store_gp(const int &r, const int &offset, const int &sz);
 	static void emit_data(const std::unique_ptr<Object> &program);
 	static void emit_text(const std::unique_ptr<Object> &program);
 	static int label_count();
