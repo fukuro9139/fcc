@@ -379,7 +379,7 @@ shared_ptr<Type> Node::type_suffix(Token **next_token, Token *current_token, sha
  * @details
  * 変数の型は変数名に辿りつくまで確定できない。 @n
  * 例：int a, *b, **c; aはint型、bはint型へのポインタ、cはint型へのポインタへのポインタ @n
- * 下記のEBNF規則に従う。 @n declarator = "*"* ident
+ * 下記のEBNF規則に従う。 @n declarator = "*"* ("(" identifier ")" | "(" declarator ")" | identifier) type-suffix
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param ty 変数の型の基準
@@ -392,6 +392,20 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 	{
 		ty = Type::pointer_to(ty);
 	}
+
+	/* ネストした型の場合、外側を先に評価する */
+	if(current_token->is_equal("(")){
+		auto start = current_token;
+		auto dummy = std::make_shared_for_overwrite<Type>();
+		/* ネスト部分を飛ばす */
+		declarator(&current_token, start->_next.get(), dummy);
+		current_token = Token::skip(current_token, ")");
+		/* ネストの外側の型を決める */
+		ty = type_suffix(next_token, current_token, std::move(ty));
+		/* 外側の型をベースの型としてネスト部分の型を決定する */
+		return declarator(&current_token, start->_next.get(), ty);
+	}
+
 	/* トークンの種類が識別子でないときエラー */
 	if (TokenKind::TK_IDENT != current_token->_kind)
 	{
