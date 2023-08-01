@@ -727,6 +727,8 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 			break;
 		case LONG:
 		case LONG + INT:
+		case LONG + LONG:
+		case LONG + LONG + INT:
 			ty = Type::LONG_BASE;
 			break;
 		default:
@@ -735,6 +737,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 
 		current_token = current_token->_next.get();
 	}
+
 	*next_token = current_token;
 	return ty;
 }
