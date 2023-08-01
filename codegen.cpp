@@ -47,7 +47,9 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 	/* これは一般的に配列全体をレジスタに読み込むことはできないからである。*/
 	/* そのため配列型の変数の評価は配列そのものではなく配列のアドレスとなる。*/
 	/* これは配列型が暗黙に配列の最初の要素へのポインタへ返還されることを示している。 */
-	if (TypeKind::TY_ARRAY == ty->_kind)
+	if (TypeKind::TY_ARRAY == ty->_kind ||
+		TypeKind::TY_STRUCT == ty->_kind ||
+		TypeKind::TY_UNION == ty->_kind)
 	{
 		return;
 	}
@@ -72,6 +74,14 @@ void CodeGen::store(const std::shared_ptr<Type> &ty)
 {
 	pop("rdi");
 
+	/* 1バイトずつr8b経由でストアする */
+	if(ty->_kind == TypeKind::TY_STRUCT || ty->_kind == TypeKind::TY_UNION){
+		for(int i=0; i< ty->_size; ++i){
+			*os << "  mov r8b, [rax + " << i << " ]\n";
+			*os << "  mov [rdi + " << i << " ], r8b\n";
+		}
+		return;
+	}
 	if (1 == ty->_size)
 	{
 		*os << "  mov [rdi], al\n";
@@ -397,7 +407,7 @@ void CodeGen::generate_statement(Node *node)
 	case NodeKind::ND_BLOCK:
 	{
 		/* Bodyに含まれるノードをすべて評価する */
-		for (auto cur = node->_body.get(); cur; cur=cur->_next.get())
+		for (auto cur = node->_body.get(); cur; cur = cur->_next.get())
 		{
 			generate_statement(cur);
 		}
