@@ -28,6 +28,9 @@ static const std::vector<string> arg_regs64 = {"rdi", "rsi", "rdx", "rcx", "r8",
 /** 整数レジスタの下位32ビットのエイリアス、前から順に関数の引数を格納される */
 static const std::vector<string> arg_regs32 = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 
+/** 整数レジスタの下位16ビットのエイリアス、前から順に関数の引数を格納される */
+static const std::vector<string> arg_regs16 = {"di", "si", "dx", "cx", "r8w", "r9w"};
+
 /** 整数レジスタの下位8ビットのエイリアス、前から順に関数の引数を格納される */
 static const std::vector<string> arg_regs8 = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
@@ -63,11 +66,15 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
 	/* 上位56ビットは0クリアされない。そのため符号拡張してraxにロードする。 */
 	if (1 == ty->_size)
 	{
-		*os << "  movzx rax, BYTE PTR [rax]\n";
+		*os << "  movsx rax, BYTE PTR [rax]\n";
+	}
+	else if (2 == ty->_size)
+	{
+		*os << "  movsx rax, WORD PTR [rax]\n";
 	}
 	else if (4 == ty->_size)
 	{
-		*os << " mov eax, DWORD PTR [rax]\n";
+		*os << " mov eax, [rax]\n";
 	}
 	else
 	{
@@ -98,6 +105,10 @@ void CodeGen::store(const std::shared_ptr<Type> &ty)
 	{
 		*os << "  mov [rdi], al\n";
 	}
+	else if (2 == ty->_size)
+	{
+		*os << "  mov [rdi], ax\n";
+	}
 	else if (4 == ty->_size)
 	{
 		*os << "  mov [rdi], eax\n";
@@ -109,7 +120,7 @@ void CodeGen::store(const std::shared_ptr<Type> &ty)
 }
 
 /**
- * @brief 引数の値をレジスタから受け取ってスタック領域にローカル変数としてストアする
+ * @brief GPレジスタ上の引数の値をスタック領域にストアする
  *
  * @param r 何番目の引数か
  * @param offset ストアするスタック領域のオフセット
@@ -121,6 +132,9 @@ void CodeGen::store_gp(const int &r, const int &offset, const int &sz)
 	{
 	case 1:
 		*os << "  mov [rbp - " << offset << "], " << arg_regs8[r] << "\n";
+		return;
+	case 2:
+		*os << "  mov [rbp - " << offset << "], " << arg_regs16[r] << "\n";
 		return;
 	case 4:
 		*os << "  mov [rbp - " << offset << "], " << arg_regs32[r] << "\n";

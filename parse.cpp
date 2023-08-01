@@ -620,6 +620,12 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 		*next_token = current_token->_next.get();
 		return Type::CHAR_BASE;
 	}
+	/* short型 */
+	if (current_token->is_equal("short"))
+	{
+		*next_token = current_token->_next.get();
+		return Type::SHORT_BASE;
+	}
 	/* int型 */
 	if (current_token->is_equal("int"))
 	{

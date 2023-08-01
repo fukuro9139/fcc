@@ -7,6 +7,7 @@
 enum class TypeKind
 {
 	TY_CHAR,   /*!< char型  */
+	TY_SHORT,  /*!< short型 */
 	TY_INT,	   /*!< int型 */
 	TY_LONG,   /*!< long型 */
 	TY_PTR,	   /*!< ポインター型 */
@@ -76,7 +77,8 @@ public:
 
 	/* 静的メンバ変数 (public) */
 
-	static const std::shared_ptr<Type> INT_BASE;  /*!< int型 */
+	static const std::shared_ptr<Type> INT_BASE;   /*!< int型 */
 	static const std::shared_ptr<Type> LONG_BASE;  /*!< long型 */
-	static const std::shared_ptr<Type> CHAR_BASE; /*!< char型 */
+	static const std::shared_ptr<Type> CHAR_BASE;  /*!< char型 */
+	static const std::shared_ptr<Type> SHORT_BASE; /*!< short型 */
 };

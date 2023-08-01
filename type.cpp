@@ -7,9 +7,10 @@ using std::shared_ptr;
 /* Type Class */
 /**************/
 
+const shared_ptr<Type> Type::SHORT_BASE = std::make_shared<Type>(TypeKind::TY_SHORT, 2, 2);
 const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 4, 4);
 const shared_ptr<Type> Type::LONG_BASE = std::make_shared<Type>(TypeKind::TY_LONG, 8, 8);
-const std::shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
+const shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
 
@@ -155,7 +156,9 @@ void Type::add_type(Node *node)
  */
 bool Type::is_integer() const
 {
-	return TypeKind::TY_INT == this->_kind || TypeKind::TY_CHAR == this->_kind || TypeKind::TY_LONG == this->_kind;
+	const auto k = this->_kind;
+	return TypeKind::TY_CHAR == k || TypeKind::TY_SHORT == k || TypeKind::TY_INT == k ||
+		   TypeKind::TY_LONG == k;
 }
 
 /**
