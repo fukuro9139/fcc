@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @author K.fukunaga
+ * @author K.Fukunaga
  * @brief C言語をコンパイルしてアセンブリを出力するx86-64用のコンパイラです。
  *
  * 以下の、順序に従ってコンパイルを行う。
@@ -11,7 +11,7 @@
  * @version 0.1
  * @date 2023-07-22
  *
- * @copyright Copyright (c) 2023
+ * @copyright Copyright (c) 2023 MIT Licence
  *
  */
 

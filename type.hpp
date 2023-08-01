@@ -1,3 +1,14 @@
+/**
+ * @file type.hpp
+ * @author K.Fukunaga
+ * @brief 型を表現するためのクラス
+ * @version 0.1
+ * @date 2023-08-01
+ *
+ * @copyright Copyright (c) 2023 MIT License
+ *
+ */
+
 #pragma once
 
 #include <memory>
@@ -77,7 +88,7 @@ public:
 
 	/* 静的メンバ変数 (public) */
 
-	static const std::shared_ptr<Type> VOID_BASE;   /*!< void型 */
+	static const std::shared_ptr<Type> VOID_BASE;  /*!< void型 */
 	static const std::shared_ptr<Type> INT_BASE;   /*!< int型 */
 	static const std::shared_ptr<Type> LONG_BASE;  /*!< long型 */
 	static const std::shared_ptr<Type> CHAR_BASE;  /*!< char型 */

@@ -1,3 +1,14 @@
+/**
+ * @file type.cpp
+ * @author K.Fukunaga
+ * @brief 型を表すためのクラス
+ * @version 0.1
+ * @date 2023-08-01
+ *
+ * @copyright Copyright (c) 2023 MIT License
+ *
+ */
+
 #include "type.hpp"
 #include "parse.hpp"
 

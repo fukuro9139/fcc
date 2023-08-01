@@ -1,3 +1,14 @@
+/**
+ * @file input.cpp
+ * @author K.Fukunaga
+ * @brief 入力された引数を解析するためのクラス
+ * @version 0.1
+ * @date 2023-08-01
+ *
+ * @copyright Copyright (c) 2023 MIT License
+ *
+ */
+
 #include "input.hpp"
 
 Options Input::opt;
