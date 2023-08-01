@@ -396,7 +396,7 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 	/* ネストした型の場合、外側を先に評価する */
 	if(current_token->is_equal("(")){
 		auto start = current_token;
-		auto dummy = std::make_shared_for_overwrite<Type>();
+		auto dummy = std::make_shared<Type>();
 		/* ネスト部分を飛ばす */
 		declarator(&current_token, start->_next.get(), dummy);
 		current_token = Token::skip(current_token, ")");
