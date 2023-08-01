@@ -7,6 +7,7 @@
 
 /* 先に宣言 */
 struct Scope;
+struct VarScope;
 
 /**
  * @brief 変数または関数を表す。各オブジェクトは名前によって区別する
@@ -56,14 +57,15 @@ public:
 
 	static Object *new_lvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static Object *new_gvar(const std::string &name, std::shared_ptr<Type> &&ty);
-	static const Object *find_var(const Token *token);
+	static VarScope *find_var(const Token *token);
+	static std::shared_ptr<Type> find_typedef(const Token *token);
 	static std::shared_ptr<Type> find_tag(const Token *token);
 	static int align_to(const int &n, const int &align);
 	static void assign_lvar_offsets(const std::unique_ptr<Object> &prog);
 	static void create_params_lvars(std::shared_ptr<Type> &&param);
 	static void enter_scope();
 	static void leave_scope();
-	static void push_scope(const Object *obj);
+	static VarScope *push_scope(const std::string &name);
 	static void push_tag_scope(Token *token, const std::shared_ptr<Type> &ty);
 
 	/* 静的メンバ変数 */
@@ -92,7 +94,7 @@ struct TagScope
 };
 
 /**
- * @brief スコープ内の変数を表す
+ * @brief ローカル変数、グローバル変数、typedefのスコープ
  *
  */
 struct VarScope
@@ -100,8 +102,9 @@ struct VarScope
 	std::unique_ptr<VarScope> _next; /*!< 次の変数  */
 	const std::string _name = "";	 /*!< 変数名 */
 	const Object *_obj = nullptr;	 /*!< 対応する変数のオブジェクト */
+	std::shared_ptr<Type> type_def;	 /*!< typedefされた型  */
 
-	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name, const Object *obj) : _next(std::move(next)), _name(name), _obj(obj) {}
+	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name) : _next(std::move(next)), _name(name) {}
 };
 
 /**
@@ -111,9 +114,18 @@ struct VarScope
 struct Scope
 {
 	std::unique_ptr<Scope> _next;	 /*!< 次のスコープ  */
-	std::unique_ptr<VarScope> _vars; /*!< スコープ内の変数 */
-	std::unique_ptr<TagScope> _tags; /*!< 構造体のタグ */
+	std::unique_ptr<VarScope> _vars; /*!< 変数のスコープ */
+	std::unique_ptr<TagScope> _tags; /*!< 構造体のタグのスコープ */
 
 	Scope() {}
 	Scope(std::unique_ptr<Scope> &&next) : _next(std::move(next)) {}
+};
+
+/**
+ * @brief 変数がもつ属性、例：typedef, extern
+ *
+ */
+struct VarAttr
+{
+	bool is_typedef = false;
 };

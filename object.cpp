@@ -33,7 +33,7 @@ Object *Object::new_lvar(const std::string &name, shared_ptr<Type> &&ty)
 {
 	locals = std::make_unique<Object>(name, std::move(locals), std::move(ty));
 	locals->is_local = true;
-	push_scope(locals.get());
+	push_scope(name)->_obj = locals.get();
 	return locals.get();
 }
 
@@ -46,17 +46,17 @@ Object *Object::new_lvar(const std::string &name, shared_ptr<Type> &&ty)
 Object *Object::new_gvar(const std::string &name, shared_ptr<Type> &&ty)
 {
 	globals = std::make_unique<Object>(name, std::move(globals), std::move(ty));
-	push_scope(globals.get());
+	push_scope(name)->_obj = globals.get();
 	return globals.get();
 }
 
 /**
- * @brief 変数を名前で検索する。見つからなかった場合はNULLを返す。
+ * @brief 変数を名前で検索する。見つからなかった場合はnullptrを返す。
  *
  * @param token 検索対象のトークン
- * @return 既出の変数であればその変数オブジェクトへのポインタ
+ * @return 既出の変数であればその変数が属するスコープ
  */
-const Object *Object::find_var(const Token *token)
+VarScope *Object::find_var(const Token *token)
 {
 	/* スコープを内側から探していく */
 	for (auto sc = scope.get(); sc; sc = sc->_next.get())
@@ -65,7 +65,7 @@ const Object *Object::find_var(const Token *token)
 		{
 			if (token->is_equal(sc2->_name))
 			{
-				return sc2->_obj;
+				return sc2;
 			}
 		}
 	}
@@ -74,7 +74,26 @@ const Object *Object::find_var(const Token *token)
 }
 
 /**
- * @brief 構造体のタグを名前で検索する。見つからなかった場合はNULLを返す。
+ * @brief typedefされた型を検索する。見つからなければnullptrを返す
+ *
+ * @param token 検索するトークン
+ * @return typedefされた型
+ */
+shared_ptr<Type> Object::find_typedef(const Token *token)
+{
+	if (TokenKind::TK_IDENT == token->_kind)
+	{
+		auto sc = find_var(token);
+		if (sc)
+		{
+			return sc->type_def;
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * @brief 構造体のタグを名前で検索する。見つからなかった場合はnullptrを返す。
  *
  * @param token 検索対象のトークン
  * @return 既出の構造体であればその型へのポインタ
@@ -180,9 +199,10 @@ void Object::leave_scope()
  * @param name 追加する変数の名前
  * @param obj 追加する変数のオブジェクト
  */
-void Object::push_scope(const Object *obj)
+VarScope *Object::push_scope(const std::string &name)
 {
-	scope->_vars = std::make_unique<VarScope>(std::move(scope->_vars), obj->_name, obj);
+	scope->_vars = std::make_unique<VarScope>(std::move(scope->_vars), name);
+	return scope->_vars.get();
 }
 
 /**

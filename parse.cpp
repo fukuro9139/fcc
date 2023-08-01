@@ -156,7 +156,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n compound-statement = (declaration | statement)* "}"
+ * @details 下記のEBNF規則に従う。 @n compound-statement = (typedef | declaration | statement)* "}"
  */
 unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_token)
 {
@@ -172,12 +172,22 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 	/* '}'が出てくるまでstatementをパースする */
 	while (!current_token->is_equal("}"))
 	{
-		/* 変数宣言 */
+		/* 変数宣言、定義 */
 		if (current_token->is_typename())
 		{
-			cur->_next = declaration(&current_token, current_token);
+			/* 型指定子を読み取る */
+			VarAttr attr = {};
+			auto base = declspec(&current_token, current_token, &attr);
+			
+			/* typedefの場合 */
+			if(attr.is_typedef){
+				current_token = parse_typedef(current_token, base);
+				continue;
+			}
+			/* それ以外の場合は変数の定義または宣言 */
+			cur->_next = declaration(&current_token, current_token, base);
 		}
-		/* 宣言以外の文 */
+		/* 宣言、定義以外の文 */
 		else
 		{
 			cur->_next = statement(&current_token, current_token);
@@ -214,7 +224,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 	/* 新しい関数を生成してObject::globalsの先頭に追加する。 */
 	auto fn = std::make_unique<Object>(std::move(ty->_token->_str), std::move(Object::globals), std::move(ty));
 	/* グローバル変数としてscopeに追加 */
-	Object::push_scope(fn.get());
+	Object::push_scope(fn->_name);
 
 	/* 関数であるフラグをセット */
 	fn->is_function = true;
@@ -263,10 +273,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n declaration = declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
  */
-unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token)
+unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, shared_ptr<Type> base)
 {
-	const auto base = declspec(&current_token, current_token);
-
 	/* ノードリストの先頭としてダミーのノードを作成 */
 	auto head = std::make_unique_for_overwrite<Node>();
 	auto cur = head.get();
@@ -344,7 +352,7 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 			/* 2個目以降の引数では","区切りが必要 */
 			current_token = Token::skip(current_token, ",");
 		}
-		auto base = declspec(&current_token, current_token);
+		auto base = declspec(&current_token, current_token, nullptr);
 		cur->_next = std::make_shared<Type>(*(declarator(&current_token, current_token, base)));
 		cur = cur->_next.get();
 	}
@@ -561,7 +569,7 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 	/* '}'が出てくるまで読み込み続ける */
 	while (!current_token->is_equal("}"))
 	{
-		auto base = declspec(&current_token, current_token);
+		auto base = declspec(&current_token, current_token, nullptr);
 		bool first = true;
 
 		/* ';'が出てくるまで読み込み続ける */
@@ -639,7 +647,10 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  * @brief 変数宣言の型指定子部分を読み取る
  *
  * @details
- * 下記のEBNF規則に従う。 @n declspec =  ("void" | "int" | "short" | "long" | "char" | struct-decl | union-decl)+ @n
+ * 下記のEBNF規則に従う。 @n
+ * declspec =  ("void" | "int" | "short" | "long" | "char"
+ * 				| "typedef"
+ * 				| struct-decl | union-decl)+ @n
  * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
  * 'long` や `short` が指定されていれば `int` を省略できるので、`static long` と書くこともできる。
  * しかし、`char int` のようなものは有効な型指定子ではなく、型名の組み合わせは限られている。
@@ -648,9 +659,10 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
+ * @param attr 読み取った型の属性を返すための参照
  * @return 変数の型
  */
-shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
+shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAttr *attr)
 {
 	constexpr int VOID = 1 << 0;
 	constexpr int CHAR = 1 << 2;
@@ -667,18 +679,45 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token)
 
 	while (current_token->is_typename())
 	{
-		if (current_token->is_equal("struct"))
+		/* typedef */
+		if (current_token->is_equal("typedef"))
 		{
-			ty = struct_decl(&current_token, current_token->_next.get());
+			/* typedefが使用できない箇所である場合エラー 例 function(int i, typedef int INT) */
+			if (!attr)
+			{
+				error_token("ここでストレージクラス指定子は使用できません", current_token);
+			}
+			attr->is_typedef = true;
+			current_token = current_token->_next.get();
+			continue;
+		}
+
+		/* ユーザー定義の型 */
+		auto ty2 = Object::find_typedef(current_token);
+		if (current_token->is_equal("struct") || current_token->is_equal("union") || ty2)
+		{
+			/* ユーザー定義型が他の型と組み合わさることはない 例 int hoge x; */
+			if (counter)
+			{
+				break;
+			}
+			if (current_token->is_equal("struct"))
+			{
+				ty = struct_decl(&current_token, current_token->_next.get());
+			}
+			else if (current_token->is_equal("union"))
+			{
+				ty = union_decl(&current_token, current_token->_next.get());
+			}
+			else
+			{
+				ty = ty2;
+				current_token = current_token->_next.get();
+			}
 			counter += OTHER;
 			continue;
 		}
-		if (current_token->is_equal("union"))
-		{
-			ty = union_decl(&current_token, current_token->_next.get());
-			counter += OTHER;
-			continue;
-		}
+
 		/* void型 */
 		if (current_token->is_equal("void"))
 		{
@@ -1094,14 +1133,14 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		}
 
 		/* それ以外なら普通の変数 */
-		const auto var = Object::find_var(current_token);
+		const auto sc = Object::find_var(current_token);
 
 		/* 変数が宣言されていない場合はエラー */
-		if (!var)
+		if (!sc || !sc->_obj)
 		{
 			error_token("未宣言の変数です", current_token);
 		}
-		auto node = std::make_unique<Node>(var, current_token);
+		auto node = std::make_unique<Node>(sc->_obj, current_token);
 		*next_token = current_token->_next.get();
 		return node;
 	}
@@ -1120,6 +1159,33 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	/* コンパイルエラー対策、error_token()内でプログラムは終了するためnullptrが返ることはない */
 	return nullptr;
 }
+
+/**
+ * @brief typedefを読み取る
+ * 
+ * @param token 現在のトークン
+ * @param base ベースの型
+ * @return 次のトークン
+ */
+Token * Node::parse_typedef(Token * token, shared_ptr<Type> base)
+{
+	bool first = true;
+
+	/* ";"が出てくるまで読み込み続ける */
+	while(!Token::consume(&token, token, ";")){
+		/* 2個目以降では","区切りが必要 */
+		if(!first){
+			token = Token::skip(token, ",");
+		}
+		first = false;
+
+		auto ty = declarator(&token, token, base);
+		Object::push_scope(ty->_name)->type_def = ty;
+	}
+	return token;
+}
+
+
 
 /**
  * @brief 関数呼び出し
@@ -1257,14 +1323,21 @@ unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
  *
  * @param token トークン・リストの先頭
  * @return 構文解析結果
- * @details program = (function-definition | global-variable)*
+ * @details program = (typedef | function-definition | global-variable)*
  */
 unique_ptr<Object> Node::parse(Token *token)
 {
 	/* トークンリストを最後まで辿る*/
 	while (TokenKind::TK_EOF != token->_kind)
 	{
-		auto base = declspec(&token, token);
+		VarAttr attr = {};
+		auto base = declspec(&token, token, &attr);
+
+		/* typedef */
+		if(attr.is_typedef){
+			token = parse_typedef(token, base);
+			continue;
+		}
 
 		/* 関数 */
 		if (is_function(token))
