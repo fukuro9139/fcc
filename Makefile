@@ -34,7 +34,7 @@ all: clean $(OBJS) $(TARGET)
 #ダミー
 .PHONY: test clean
 
-ifeq (WINDOWS, 0)
+ifeq ($(WINDOWS), 0)
 #テスト
 test/%.exe: fcc test/%.c
 	$(CC) -o test/tmp_$* -E -P -C test/$*.c
