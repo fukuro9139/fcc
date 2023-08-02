@@ -22,6 +22,9 @@
 using std::shared_ptr;
 using std::unique_ptr;
 
+/** 現在パースしている関数 */
+static Object * current_function = nullptr;
+
 /**************/
 /* Node Class */
 /**************/
@@ -265,10 +268,14 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 	{
 		/* "return"の次はexpresionがくる */
 		auto node = std::make_unique<Node>(NodeKind::ND_RETURN, current_token);
-		node->_lhs = expression(&current_token, current_token->_next.get());
+		auto expr = expression(&current_token, current_token->_next.get());
 
 		/* 最後は';'で終わるはず */
 		*next_token = Token::skip(current_token, ";");
+		/* 式の型を決定する */
+		Type::add_type(expr.get());
+		/* return先の型にキャストする */
+		node->_lhs = new_cast(std::move(expr), current_function->_ty->_return_ty);
 		return node;
 	}
 
@@ -436,6 +443,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 		return token;
 	}
 
+	current_function = fn;
+
 	/* 関数のブロックスコープに入る */
 	Object::enter_scope();
 
@@ -454,6 +463,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 
 	/* 関数のブロックスコープを抜ける */
 	Object::leave_scope();
+
+	current_function = nullptr;
 
 	return token;
 }

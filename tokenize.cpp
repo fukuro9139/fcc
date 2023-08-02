@@ -594,7 +594,7 @@ bool Token::is_char_of_ident(const char &c)
  *
  * @return int トークンが表す値
  */
-int Token::get_number() const
+int64_t Token::get_number() const
 {
 	if (TokenKind::TK_NUM != this->_kind)
 	{

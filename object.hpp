@@ -61,12 +61,8 @@ public:
 	Object(const std::string &name, std::shared_ptr<Type> &&ty);
 	Object(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locs);
 
-	/* デストラクタ */
-	//~Object();
-
 	/* 静的メンバ関数 (public) */
 
-	static std::unique_ptr<Object> new_var(const std::string &name, std::shared_ptr<Type> &&ty);
 	static Object *new_lvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static Object *new_gvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static VarScope *find_var(const Token *token);
@@ -88,6 +84,11 @@ public:
 	static std::unique_ptr<Object> globals;
 
 private:
+
+	/* 静的メンバ関数 (private) */
+
+	static std::unique_ptr<Object> new_var(const std::string &name, std::shared_ptr<Type> &&ty);
+
 	/** 変数のスコープ */
 	static std::unique_ptr<Scope> scope;
 };
