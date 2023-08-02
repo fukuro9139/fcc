@@ -47,7 +47,7 @@ public:
 	/* コンストラクタ */
 	Token();
 	Token(const TokenKind &kind, const int &location);
-	Token(const int &location, const int64_t &value);
+	Token(const int64_t &value, const int &location);
 	Token(const TokenKind &kind, const int &location, std::string &&str);
 
 	/* メンバ関数 */
@@ -68,14 +68,16 @@ private:
 	/* 静的メンバ関数 (private) */
 
 	static bool start_with(const std::string &str, const std::string &op);
+	static std::unique_ptr<Token> read_char_literal(std::string::const_iterator &start);
 	static size_t read_punct(std::string &&str);
+	static char read_escaped_char(std::string::const_iterator &new_pos, std::string::const_iterator &&pos);
+	static std::unique_ptr<Token> read_string_literal(std::string::const_iterator &itr);
+	static std::string::const_iterator string_literal_end(std::string::const_iterator itr);
 	static bool is_first_char_of_ident(const char &c);
 	static bool is_char_of_ident(const char &c);
 	static void convert_keywords(Token *token);
 	static bool is_keyword(Token *&token);
-	static std::unique_ptr<Token> read_string_literal(std::string::const_iterator &itr);
-	static char read_escaped_char(std::string::const_iterator &new_pos, std::string::const_iterator &&pos);
-	static std::string::const_iterator string_literal_end(std::string::const_iterator itr);
+
 	static int from_hex(const char &c);
 	static void add_line_number(Token *token);
 };

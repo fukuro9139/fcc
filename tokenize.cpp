@@ -123,7 +123,7 @@ void error_token(std::string &&msg, Token *token)
 
 Token::Token() = default;
 Token::Token(const TokenKind &kind, const int &location) : _kind(kind), _location(location) {}
-Token::Token(const int &location, const int64_t &value) : _kind(TokenKind::TK_NUM), _location(location), _value(std::move(value)) {}
+Token::Token(const int64_t &value, const int &location) : _kind(TokenKind::TK_NUM), _location(location), _value(std::move(value)) {}
 Token::Token(const TokenKind &kind, const int &location, std::string &&str) : _kind(kind), _location(location), _str(std::move(str)) {}
 
 /**
@@ -203,7 +203,7 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 			/* 数値変換する。変換にした数値を持つ数値トークンを生成し */
 			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
 			size_t idx;
-			current_token->_next = std::make_unique<Token>(itr - first, std::stoll(string(itr, last), &idx));
+			current_token->_next = std::make_unique<Token>(std::stoll(string(itr, last), &idx), itr - first);
 			current_token = current_token->_next.get();
 			itr += idx;
 			continue;
@@ -216,6 +216,15 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
 			current_token->_next = read_string_literal(itr);
 			current_token = current_token->_next.get();
+			continue;
+		}
+
+		/* 文字リテラル */
+		if ('\'' == *itr)
+		{
+			current_token->_next = read_char_literal(itr);
+			current_token = current_token->_next.get();
+			itr += current_token->_str.size();
 			continue;
 		}
 
@@ -446,6 +455,47 @@ char Token::read_escaped_char(string::const_iterator &new_pos, string::const_ite
 	default:
 		return *pos;
 	}
+}
+
+/**
+ * @brief 文字リテラルを読み取る
+ *
+ * @param start 開始位置("'"の位置)
+ * @return 文字リテラルのトークン
+ */
+unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
+{
+	auto pos = start + 1;
+	if (current_input.end() == pos)
+	{
+		error_at("文字リテラルが閉じられていません", start - current_input.begin());
+	}
+	char c;
+	/* エスケープされている場合 */
+	if (*pos == '\\')
+	{
+		c = read_escaped_char(pos, pos + 1);
+	}
+	else
+	{
+		c = *pos++;
+	}
+
+	/* ２個めの"'"を探す */
+	while (pos != current_input.end() && *pos != '\'')
+	{
+		++pos;
+	}
+
+	/* 見つからなければ閉じられていない */
+	if (pos == current_input.end())
+	{
+		error_at("文字リテラルが閉じられていません", start - current_input.begin());
+	}
+
+	auto token = std::make_unique<Token>(c, start - current_input.begin());
+	token->_str = string(start, pos + 1);
+	return token;
 }
 
 /**
