@@ -48,7 +48,7 @@ endif
 
 #不要ファイル削除
 clean:
-ifeq (WINDOWS, 0)
+ifeq ($(WINDOWS), 0)
 	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.s test/tmp*
 else
 	del fcc.exe $(OBJS) *.d
