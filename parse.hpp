@@ -144,6 +144,7 @@ private:
 	static std::shared_ptr<Type> type_suffix(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
 	static std::unique_ptr<Node> expression(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> expression_statement(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> to_assign(std::unique_ptr<Node> &&binary);
 	static std::unique_ptr<Node> assign(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> equality(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> relational(Token **next_token, Token *current_token);

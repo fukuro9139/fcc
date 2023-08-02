@@ -1153,6 +1153,42 @@ unique_ptr<Node> Node::expression(Token **next_token, Token *current_token)
 }
 
 /**
+ * @brief 演算代入式を表すノードを生成する
+ *
+ * @param binary 演算代入を行う左辺と右辺をもったノード
+ * @return 演算代入式を表すノード
+ * @details 'A op= B'を'tmp = &A, *tmp = *tmp op B'に変換する
+ */
+unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
+{
+	/* 左辺と右辺の型を決定 */
+	Type::add_type(binary->_lhs.get());
+	Type::add_type(binary->_rhs.get());
+
+	auto token = binary->_token;
+
+	/* 仮変数tmpの作成 */
+	auto var = Object::new_lvar("", Type::pointer_to(binary->_lhs->_ty));
+
+	/* tmp = &A */
+	auto expr1 = std::make_unique<Node>(NodeKind::ND_ASSIGN,
+										std::make_unique<Node>(var, token),
+										std::make_unique<Node>(NodeKind::ND_ADDR, std::move(binary->_lhs),token),
+										token);
+
+	/* *tmp = *tmp op B */
+	auto expr2 = std::make_unique<Node>(NodeKind::ND_ASSIGN,
+									   std::make_unique<Node>(NodeKind::ND_DEREF, std::make_unique<Node>(var, token), token),
+									   std::make_unique<Node>(std::move(binary->_kind),
+															  std::make_unique<Node>(NodeKind::ND_DEREF, std::make_unique<Node>(var, token), token),
+															  std::move(binary->_rhs),
+															  token),
+									   token);
+
+	return std::make_unique<Node>(NodeKind::ND_COMMA, std::move(expr1), std::move(expr2), token);
+}
+
+/**
  * @brief 代入式を読み取る。
  *
  * @param next_token 残りのトークンを返すための参照
@@ -1167,6 +1203,23 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 	{
 		return std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), assign(next_token, current_token->_next.get()), current_token);
 	}
+	if (current_token->is_equal("+="))
+	{
+		return to_assign(new_add(std::move(node), assign(next_token, current_token->_next.get()), current_token));
+	}
+	if (current_token->is_equal("-="))
+	{
+		return to_assign(new_sub(std::move(node), assign(next_token, current_token->_next.get()), current_token));
+	}
+	if (current_token->is_equal("*="))
+	{
+		return to_assign(std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), assign(next_token, current_token->_next.get()), current_token));
+	}
+	if (current_token->is_equal("/="))
+	{
+		return to_assign(std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), assign(next_token, current_token->_next.get()), current_token));
+	}
+
 	*next_token = current_token;
 	return node;
 }
