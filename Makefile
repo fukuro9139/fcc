@@ -2,7 +2,7 @@
 WINDOWS = 0
 CXX = g++
 
-ifeq (WINDOWS, 0)
+ifeq ($(WINDOWS), 0)
 CFLAGS = -std=c++20 -g -fno-common -MMD -MP
 else
 CFLAGS = -std=c++20 -g -fno-common -MMD -MP -fexec-charset=cp932
