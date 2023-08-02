@@ -139,7 +139,7 @@ private:
 	static std::shared_ptr<Type> declspec(Token **next_token, Token *current_token, VarAttr *attr);
 	static std::shared_ptr<Type> enum_specifier(Token **next_token, Token *current_token);
 	static std::shared_ptr<Type> declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> ty);
-	static std::unique_ptr<Node> declaration(Token **next_token, Token *current_token, std::shared_ptr<Type> base);
+	static std::unique_ptr<Node> declaration(Token **next_token, Token *current_token, std::shared_ptr<Type> &base);
 	static std::shared_ptr<Type> function_parameters(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
 	static std::shared_ptr<Type> type_suffix(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
 	static std::unique_ptr<Node> expression(Token **next_token, Token *current_token);
@@ -153,7 +153,7 @@ private:
 	static std::unique_ptr<Node> unary(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> postfix(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> primary(Token **next_token, Token *current_token);
-	static Token *parse_typedef(Token *token, std::shared_ptr<Type> base);
+	static Token *parse_typedef(Token *token, std::shared_ptr<Type> &base);
 	static std::shared_ptr<Type> abstract_declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
 	static std::shared_ptr<Type> type_name(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> function_call(Token **next_token, Token *current_token);

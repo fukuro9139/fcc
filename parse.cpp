@@ -311,8 +311,19 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		/* forの次は'('がくる */
 		current_token = Token::skip(current_token->_next.get(), "(");
 
-		/* 初期化処理 */
-		node->_init = expression_statement(&current_token, current_token);
+		/* for文のブロックスコープに入る */
+		Object::enter_scope();
+
+		/* 型指定子がきたら変数が定義されている */
+		if (current_token->is_typename())
+		{
+			auto base = declspec(&current_token, current_token, nullptr);
+			node->_init = declaration(&current_token, current_token, base);
+		}
+		else
+		{
+			node->_init = expression_statement(&current_token, current_token);
+		}
 
 		/* 次のトークンが';'でなければ条件が存在する */
 		if (!current_token->is_equal(";"))
@@ -329,6 +340,8 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		current_token = Token::skip(current_token, ")");
 		/* forの中の処理 */
 		node->_then = statement(next_token, current_token);
+		/* for文のブロックスコープを抜ける */
+		Object::leave_scope();
 		return node;
 	}
 
@@ -480,7 +493,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n declaration = declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
  */
-unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, shared_ptr<Type> base)
+unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, shared_ptr<Type> &base)
 {
 	/* ノードリストの先頭としてダミーのノードを作成 */
 	auto head = std::make_unique_for_overwrite<Node>();
@@ -1529,7 +1542,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
  * @param base ベースの型
  * @return 次のトークン
  */
-Token *Node::parse_typedef(Token *token, shared_ptr<Type> base)
+Token *Node::parse_typedef(Token *token, shared_ptr<Type> &base)
 {
 	bool first = true;
 
