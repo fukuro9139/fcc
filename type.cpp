@@ -143,6 +143,10 @@ void Type::add_type(Node *node)
 		node->_ty = Type::LONG_BASE;
 		return;
 
+	case NodeKind::ND_NOT:
+		node->_ty = INT_BASE;
+		return;
+
 	case NodeKind::ND_VAR:
 		/* オブジェクトの型に一致させる */
 		node->_ty = node->_var->_ty;

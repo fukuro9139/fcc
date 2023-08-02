@@ -45,6 +45,7 @@ enum class NodeKind
 	ND_MEMBER,	  /*!< 構造体のメンバ  */
 	ND_ADDR,	  /* 単項 & */
 	ND_DEREF,	  /* 単項* */
+	ND_NOT,		  /*!< ! */
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/

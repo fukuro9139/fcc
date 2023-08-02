@@ -327,6 +327,7 @@ void CodeGen::generate_expression(Node *node)
 		/* 数値を'rax'に格納 */
 		*os << "  mov rax, " << node->_val << "\n";
 		return;
+
 	/* 単項演算子の'-' */
 	case NodeKind::ND_NEG:
 		/* '-'がかかる式を評価 */
@@ -334,6 +335,7 @@ void CodeGen::generate_expression(Node *node)
 		/* 符号を反転させる */
 		*os << "  neg rax\n";
 		return;
+
 	/* 変数, 構造体のメンバ */
 	case NodeKind::ND_VAR:
 	case NodeKind::ND_MEMBER:
@@ -344,6 +346,7 @@ void CodeGen::generate_expression(Node *node)
 		load(node->_ty.get());
 		return;
 	}
+
 	/* 参照外し */
 	case NodeKind::ND_DEREF:
 		/* 参照先のアドレスを計算 */
@@ -351,11 +354,13 @@ void CodeGen::generate_expression(Node *node)
 		/* 参照先のアドレスの値をロード */
 		load(node->_ty.get());
 		return;
+
 	/* 参照 */
 	case NodeKind::ND_ADDR:
 		/* アドレスを計算 */
 		generate_address(node->_lhs.get());
 		return;
+
 	/* 代入 */
 	case NodeKind::ND_ASSIGN:
 		/* 左辺の代入先の変数のアドレスを計算 */
@@ -367,6 +372,7 @@ void CodeGen::generate_expression(Node *node)
 		/* raxの値をストアする */
 		store(node->_ty.get());
 		return;
+
 	/* 重複文 */
 	case NodeKind::ND_STMT_EXPR:
 	{
@@ -376,15 +382,28 @@ void CodeGen::generate_expression(Node *node)
 		}
 		return;
 	}
+
 	/* カンマ区切り */
 	case NodeKind::ND_COMMA:
 		generate_expression(node->_lhs.get());
 		generate_expression(node->_rhs.get());
 		return;
+	
+	/* 否定 (!) */
+	case NodeKind::ND_NOT:
+		generate_expression(node->_lhs.get());
+		/* 0と比較 */
+		*os << "  cmp rax, 0\n";
+		/* 0と一致なら1, それ以外は0 */
+		*os << "  sete al\n";
+		*os << "  movzx rax, al\n";
+		return;
+
 	case NodeKind::ND_CAST:
 		generate_expression(node->_lhs.get());
 		cast(node->_lhs->_ty.get(), node->_ty.get());
 		return;
+
 	/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
 	{
