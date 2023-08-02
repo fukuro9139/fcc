@@ -642,7 +642,7 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 		/* 関数のラベル部分を出力 */
 		if (fn->is_static)
 		{
-			*os << "  .locals " << fn->_name << "\n";
+			*os << "  .local " << fn->_name << "\n";
 		}
 		else
 		{
