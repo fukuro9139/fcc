@@ -1,9 +1,9 @@
 CXX = g++
 
 #For Linux
-CFLAGS = -std=c++20 -g -MMD -MP -static
+CFLAGS = -std=c++20 -g -fno-common -MMD -MP
 #For Windows
-#CFLAGS = -std=c++20 -g -MMD -MP -static -fexec-charset=cp932
+#CFLAGS = -std=c++20 -g -fno-common -MMD -MP -fexec-charset=cp932
 
 #プログラム名とオブジェクトファイル名
 TARGET = fcc
