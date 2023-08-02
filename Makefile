@@ -1,9 +1,12 @@
+#Windowsでビルドするときは1に設定する
+WINDOWS = 0
 CXX = g++
 
-#For Linux
+ifeq (WINDOWS, 0)
 CFLAGS = -std=c++20 -g -fno-common -MMD -MP
-#For Windows
-#CFLAGS = -std=c++20 -g -fno-common -MMD -MP -fexec-charset=cp932
+else
+CFLAGS = -std=c++20 -g -fno-common -MMD -MP -fexec-charset=cp932
+endif
 
 #プログラム名とオブジェクトファイル名
 TARGET = fcc
@@ -31,6 +34,7 @@ all: clean $(OBJS) $(TARGET)
 #ダミー
 .PHONY: test clean
 
+ifeq (WINDOWS, 0)
 #テスト
 test/%.exe: fcc test/%.c
 	$(CC) -o test/tmp_$* -E -P -C test/$*.c
@@ -40,14 +44,15 @@ test/%.exe: fcc test/%.c
 test: $(TESTS)
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
 	test/driver.sh
+endif
 
 #不要ファイル削除
 clean:
-#For Linux
+ifeq (WINDOWS, 0)
 	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.s test/tmp*
-
-#For Windows
-#	del fcc.exe $(OBJS)
+else
+	del fcc.exe $(OBJS) *.d
+endif
 
 #ヘッダフィルの依存関係
 -include *.d
