@@ -23,7 +23,7 @@ using std::shared_ptr;
 using std::unique_ptr;
 
 /** 現在パースしている関数 */
-static Object * current_function = nullptr;
+static Object *current_function = nullptr;
 
 /**************/
 /* Node Class */
@@ -1502,7 +1502,10 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 	{
 		error_token("関数以外として宣言されています", start);
 	}
-	auto ty = sc->_var->_ty->_return_ty;
+	/* 関数の型 */
+	auto ty = sc->_var->_ty;
+	/* 引数の型 */
+	auto param_ty = ty->_params;
 
 	/* 関数の引数を読む、引数は識別子の次の次のトークンから */
 	current_token = current_token->_next->_next.get();
@@ -1519,9 +1522,23 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 			/* 2個目以降の引数には区切りとして","が必要 */
 			current_token = Token::skip(current_token, ",");
 		}
-		cur->_next = assign(&current_token, current_token);
+		/* 引数を読み取る */
+		auto arg = assign(&current_token, current_token);
+		/* 引数の型を決定 */
+		Type::add_type(arg.get());
+
+		if (param_ty)
+		{
+			if (TypeKind::TY_STRUCT == param_ty->_kind || TypeKind::TY_UNION == param_ty->_kind)
+			{
+				error_token("構造体、共用体の値渡しはサポートしていません", arg->_token);
+			}
+			/* 実引数の型を宣言されている仮引数の型でキャストする */
+			arg = new_cast(std::move(arg), param_ty);
+			param_ty = param_ty->_next;
+		}
+		cur->_next = std::move(arg);
 		cur = cur->_next.get();
-		Type::add_type(cur);
 	}
 
 	/* 関数呼び出しノードを作成 */
@@ -1530,8 +1547,10 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 	node->_func_name = std::move(start->_str);
 	/* headの次のノード以降を切り離し返り値用のnodeのargsに繋ぐ */
 	node->_args = std::move(head->_next);
+	/* 関数の型をセット */
+	node->_func_ty = ty;
 	/* 戻り値の型をセット */
-	node->_ty = ty;
+	node->_ty = ty->_return_ty;
 
 	/* 最後は")"" */
 	*next_token = Token::skip(current_token, ")");

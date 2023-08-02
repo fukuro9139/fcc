@@ -91,8 +91,9 @@ public:
 	std::shared_ptr<Member> _member; /*!< 構造体メンバー */
 
 	/* 関数呼び出し */
-	std::string _func_name = ""; /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
-	std::unique_ptr<Node> _args; /*!< 引数  */
+	std::string _func_name = "";	/*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
+	std::shared_ptr<Type> _func_ty; /*!< 関数の型 */
+	std::unique_ptr<Node> _args;	/*!< 引数  */
 
 	int64_t _val = 0;			  /*!< kindがND_NUMの場合のみ使う、数値の値 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
