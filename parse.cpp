@@ -234,7 +234,7 @@ unique_ptr<Object> Node::parse(Token *token)
 		/* 関数 */
 		if (is_function(token))
 		{
-			token = function_definition(token, std::move(base));
+			token = function_definition(token, std::move(base), &attr);
 			continue;
 		}
 
@@ -423,7 +423,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
  * @return 次のトークン
  * @details 下記のEBNF規則に従う。 @n function-definition = declarator ( "{" compound-statement | ";" )
  */
-Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
+Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr *attr)
 {
 	/* 型を判定 */
 	auto ty = declarator(&token, token, base);
@@ -436,6 +436,9 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 
 	/* 定義か宣言か、後ろに";"がくるなら宣言 */
 	fn->is_definition = !Token::consume(&token, token, ";");
+
+	/* staticかどうか */
+	fn->is_static = attr->is_static;
 
 	/* 宣言であるなら現在のトークンを返して抜ける */
 	if (!fn->is_definition)
@@ -853,7 +856,7 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  * @details
  * 下記のEBNF規則に従う。 @n
  * declspec =  ("void" | "_BOOL" | "int" | "short" | "long" | "char" @n
- * 				| "typedef" @n
+ * 				| "typedef" | "static" @n
  * 				| struct-decl | union-decl | typedef-name @n
  * 				| enum-specifier)+ @n
  * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
@@ -885,15 +888,27 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 
 	while (current_token->is_typename())
 	{
-		/* typedef */
-		if (current_token->is_equal("typedef"))
+		/* ストレージクラス指定子 */
+		if (current_token->is_equal("typedef") || current_token->is_equal("static"))
 		{
-			/* typedefが使用できない箇所である場合エラー 例 function(int i, typedef int INT) */
+			/* ストレージクラス指定子が使用できない箇所である場合エラー 例 function(int i, typedef int INT) */
 			if (!attr)
 			{
-				error_token("ここでストレージクラス指定子は使用できません", current_token);
+				error_token("ここではストレージクラス指定子は使用できません", current_token);
 			}
-			attr->is_typedef = true;
+			if (current_token->is_equal("typedef"))
+			{
+				attr->is_typedef = true;
+			}
+			else
+			{
+				attr->is_static = true;
+			}
+			/* typedefとstaticが同時に指定されている場合 */
+			if (attr->is_static + attr->is_typedef > 1)
+			{
+				error_token("typedefとstaticは同時に指定できません", current_token);
+			}
 			current_token = current_token->_next.get();
 			continue;
 		}

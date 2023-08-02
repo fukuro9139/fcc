@@ -297,23 +297,9 @@ bool Token::is_keyword(Token *&token)
 {
 	/* 識別子一覧 */
 	static const std::vector<string> kws = {
-		"return",
-		"if",
-		"else",
-		"for",
-		"while",
-		"int",
-		"sizeof",
-		"char",
-		"struct",
-		"union",
-		"short",
-		"long",
-		"void",
-		"typedef",
-		"_Bool",
-		"enum",
-	};
+		"return", "if", "else", "for", "while", "int", "sizeof", "char",
+		"struct", "union", "short", "long", "void", "typedef", "_Bool",
+		"enum", "static"};
 
 	for (auto &kw : kws)
 	{
@@ -529,7 +515,8 @@ bool Token::is_equal(const std::string &op) const
  */
 bool Token::is_typename() const
 {
-	static const std::vector<string> kws = {"void", "_Bool", "char", "short", "int", "long", "struct", "union", "typedef", "enum"};
+	static const std::vector<string> kws = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
+											"typedef", "enum", "static"};
 
 	for (auto &kw : kws)
 	{

@@ -129,7 +129,7 @@ private:
 	static std::unique_ptr<Node> new_long(const int64_t &val, Token *token);
 	static std::unique_ptr<Node> statement(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
-	static Token *function_definition(Token *token, std::shared_ptr<Type> &&base);
+	static Token *function_definition(Token *token, std::shared_ptr<Type> &&base, VarAttr *attr);
 	static std::shared_ptr<Type> struct_decl(Token **next_token, Token *current_token);
 	static std::shared_ptr<Type> union_decl(Token **next_token, Token *current_token);
 	static std::shared_ptr<Type> struct_union_decl(Token **next_token, Token *current_token);

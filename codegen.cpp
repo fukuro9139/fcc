@@ -91,7 +91,8 @@ void CodeGen::cast(Type *from, Type *to)
 		return;
 	}
 
-	if(TypeKind::TY_BOOL ==  to->_kind){
+	if (TypeKind::TY_BOOL == to->_kind)
+	{
 		cmp_zero(from);
 		/* al = (from != 0) ? 1 : 0 */
 		*os << "  setne al\n";
@@ -639,7 +640,15 @@ void CodeGen::emit_text(const std::unique_ptr<Object> &program)
 		}
 
 		/* 関数のラベル部分を出力 */
-		*os << "  .globl " << fn->_name << "\n";
+		if (fn->is_static)
+		{
+			*os << "  .locals " << fn->_name << "\n";
+		}
+		else
+		{
+			*os << "  .globl " << fn->_name << "\n";
+		}
+
 		*os << "  .text\n";
 		*os << fn->_name << ":\n";
 

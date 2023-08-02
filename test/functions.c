@@ -66,6 +66,8 @@ int g1;
 int *g1_ptr() { return &g1; }
 char int_to_char(int x) { return x; }
 
+static int static_fn() { return 3; }
+
 int main()
 {
 	ASSERT(3, ret3());
@@ -97,6 +99,8 @@ int main()
 	ASSERT(0, bool_fn_sub(-3));
 	ASSERT(1, bool_fn_add(0));
 	ASSERT(1, bool_fn_sub(0));
+
+	ASSERT(3, static_fn());
 
 	printf("OK\n");
 	return 0;

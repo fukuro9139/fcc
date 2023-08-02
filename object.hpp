@@ -42,6 +42,7 @@ public:
 	/* グローバル変数 or 関数用 */
 	bool is_function = false;	/*!< 関数であるか */
 	bool is_definition = false; /*!< 宣言であるか */
+	bool is_static = false;		/*!< ファイルスコープか */
 
 	/* グローバル変数 */
 	std::string _init_data = ""; /*!< 文字列リテラル */
@@ -141,5 +142,6 @@ struct Scope
  */
 struct VarAttr
 {
-	bool is_typedef = false;
+	bool is_typedef = false; /*!< typedefされた型か*/
+	bool is_static = false;	 /*!< ファイルスコープか */
 };
