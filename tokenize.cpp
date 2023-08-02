@@ -202,10 +202,8 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 		{
 			/* 数値変換する。変換にした数値を持つ数値トークンを生成し */
 			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
-			size_t idx;
-			current_token->_next = std::make_unique<Token>(std::stoll(string(itr, last), &idx), itr - first);
+			current_token->_next = read_int_literal(itr);
 			current_token = current_token->_next.get();
-			itr += idx;
 			continue;
 		}
 
@@ -442,6 +440,53 @@ char Token::read_escaped_char(string::const_iterator &new_pos, string::const_ite
 	default:
 		return *pos;
 	}
+}
+
+/**
+ * @brief int型の数値を読み込む。
+ * 入力イテレーターは数値変換できた文字の次の文字まで進める。
+ *
+ * @param itr 開始位置
+ * @return 数値トークン
+ */
+unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
+{
+	auto itr = start;
+	int base = 0;
+
+	/* 2進数以外はstollがプレフィックスで判断可能 */
+	if (*itr == '0' && std::tolower(*(itr + 1)) == 'b' && std::isdigit(*(itr + 2)))
+	{
+		itr += 2;
+		base = 2;
+	}
+
+	size_t idx = 0;
+	int64_t val = 0;
+	try
+	{
+		val = std::stoll(string(itr, current_input.cend()), &idx, base);
+	}
+	catch (const std::invalid_argument &e)
+	{
+		error_at("無効な数値です", itr - current_input.begin());
+	}
+
+	/* 変換した数値の桁数だけイテレーターを進める */
+	itr += idx;
+
+	/* 数値変換完了位置の次の文字が数字またはアルファベットの場合、エラー
+	 * 例：0xfg, 123A, 0b1115, 012345f
+	 */
+	if (current_input.end() != itr && std::isalnum(*itr))
+	{
+		error_at("無効な数値です", itr - current_input.begin());
+	}
+
+	/* 入力イテレーターを進める */
+	start = itr;
+
+	return std::make_unique<Token>(val, start - current_input.begin());
 }
 
 /**

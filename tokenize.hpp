@@ -68,6 +68,7 @@ private:
 	/* 静的メンバ関数 (private) */
 
 	static bool start_with(const std::string &str, const std::string &op);
+	static std::unique_ptr<Token> read_int_literal(std::string::const_iterator &start);
 	static std::unique_ptr<Token> read_char_literal(std::string::const_iterator &start);
 	static size_t read_punct(std::string &&str);
 	static char read_escaped_char(std::string::const_iterator &new_pos, std::string::const_iterator &&pos);
