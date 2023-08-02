@@ -928,7 +928,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{
 			counter += VOID;
 		}
-		else if (current_token->is_equal("_BOOL"))
+		else if (current_token->is_equal("_Bool"))
 		{
 			counter += BOOL;
 		}
