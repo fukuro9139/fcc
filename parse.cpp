@@ -210,6 +210,27 @@ std::unique_ptr<Node> Node::new_long(const int64_t &val, Token *token)
 }
 
 /**
+ * @brief 後置++, --に対応するノードを生成する
+ *
+ * @param node インクリメント/デクリメントの対象ノード
+ * @param token ノードに対応するトークン
+ * @param addend インクリメントかデクリメントか
+ * @return 後置++, --に対応するノード
+ * @details 'A++'を'(typeof A)((A += 1) - 1)'と読み替える
+ */
+unique_ptr<Node> Node::new_inc_dec(unique_ptr<Node> &&node, Token *token, int addend)
+{
+	Type::add_type(node.get());
+	auto ty = node->_ty;
+	return new_cast(new_add(to_assign(new_add(std::move(node),
+											  std::make_unique<Node>(addend, token),
+											  token)),
+							std::make_unique<Node>(-addend, token),
+							token),
+					ty);
+}
+
+/**
  * @brief トークン・リストを構文解析して関数ごとにASTを構築する
  *
  * @param token トークン・リストの先頭
@@ -1447,7 +1468,7 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]" | "." identifier | "->" identifier)*
+ * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]" | "." identifier | "->" identifier | "++" | "--")*
  */
 unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 {
@@ -1480,6 +1501,20 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 			node = std::make_unique<Node>(NodeKind::ND_DEREF, std::move(node), current_token);
 			node = struct_ref(std::move(node), current_token->_next.get());
 			current_token = current_token->_next->_next.get();
+			continue;
+		}
+		/* 後置インクリメント */
+		if (current_token->is_equal("++"))
+		{
+			node = new_inc_dec(std::move(node), current_token, 1);
+			current_token = current_token->_next.get();
+			continue;
+		}
+		/* 後置デクリメント */
+		if (current_token->is_equal("--"))
+		{
+			node = new_inc_dec(std::move(node), current_token, -1);
+			current_token = current_token->_next.get();
 			continue;
 		}
 

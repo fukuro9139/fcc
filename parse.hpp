@@ -127,6 +127,7 @@ private:
 	static Object *new_anonymous_gvar(std::shared_ptr<Type> &&ty);
 	static std::string new_unique_name();
 	static std::unique_ptr<Node> new_long(const int64_t &val, Token *token);
+	static std::unique_ptr<Node> new_inc_dec(std::unique_ptr<Node> &&node, Token *token, int addend);
 	static std::unique_ptr<Node> statement(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
 	static Token *function_definition(Token *token, std::shared_ptr<Type> &&base, VarAttr *attr);
