@@ -72,7 +72,7 @@ std::unique_ptr<Node> Node::new_cast(std::unique_ptr<Node> &&expr, std::shared_p
  * 言い換えれば、ポインタ値に加える前に整数値をスケールする必要があり、この関数はそのスケーリングを処理する。
  * @param lhs 左辺
  * @param rhs 右辺
- * @param location ノードと対応する入力文字列の位置
+ * @param token ノードと対応するトークン
  * @return 対応するASTノード
  */
 unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
@@ -112,7 +112,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
  * ポインタ - ポインタは2つのポインタ間にある要素の数を返す。
  * @param lhs 左辺
  * @param rhs 右辺
- * @param location ノードと対応する入力文字列の位置
+ * @param token ノードと対応するトークン
  * @return 対応するASTノード
  */
 unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
@@ -1173,17 +1173,17 @@ unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
 	/* tmp = &A */
 	auto expr1 = std::make_unique<Node>(NodeKind::ND_ASSIGN,
 										std::make_unique<Node>(var, token),
-										std::make_unique<Node>(NodeKind::ND_ADDR, std::move(binary->_lhs),token),
+										std::make_unique<Node>(NodeKind::ND_ADDR, std::move(binary->_lhs), token),
 										token);
 
 	/* *tmp = *tmp op B */
 	auto expr2 = std::make_unique<Node>(NodeKind::ND_ASSIGN,
-									   std::make_unique<Node>(NodeKind::ND_DEREF, std::make_unique<Node>(var, token), token),
-									   std::make_unique<Node>(std::move(binary->_kind),
-															  std::make_unique<Node>(NodeKind::ND_DEREF, std::make_unique<Node>(var, token), token),
-															  std::move(binary->_rhs),
-															  token),
-									   token);
+										std::make_unique<Node>(NodeKind::ND_DEREF, std::make_unique<Node>(var, token), token),
+										std::make_unique<Node>(std::move(binary->_kind),
+															   std::make_unique<Node>(NodeKind::ND_DEREF, std::make_unique<Node>(var, token), token),
+															   std::move(binary->_rhs),
+															   token),
+										token);
 
 	return std::make_unique<Node>(NodeKind::ND_COMMA, std::move(expr1), std::move(expr2), token);
 }
@@ -1404,7 +1404,7 @@ unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&") cast | postfix
+ * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&") cast | ("++" | "--") unary |postfix
  */
 unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 {
@@ -1426,6 +1426,16 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 	if (current_token->is_equal("*"))
 	{
 		return std::make_unique<Node>(NodeKind::ND_DEREF, cast(next_token, current_token->_next.get()), current_token);
+	}
+	/* ++iをi+=1と読み替える */
+	if (current_token->is_equal("++"))
+	{
+		return to_assign(new_add(unary(next_token, current_token->_next.get()), std::make_unique<Node>(1, current_token), current_token));
+	}
+	/* --iをi+=1と読み替える */
+	if (current_token->is_equal("--"))
+	{
+		return to_assign(new_sub(unary(next_token, current_token->_next.get()), std::make_unique<Node>(1, current_token), current_token));
 	}
 
 	return postfix(next_token, current_token);
