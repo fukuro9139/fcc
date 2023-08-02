@@ -53,6 +53,11 @@ int div_long(long a, long b)
 	return a / b;
 }
 
+int div_char(char a, char b)
+{
+	return a / b;
+}
+
 int g1;
 
 int *g1_ptr() { return &g1; }
@@ -79,7 +84,7 @@ int main()
 	g1 = 3;
 	ASSERT(3, *g1_ptr());
 	ASSERT(5, int_to_char(261));
-	ASSERT(5, int_to_char(261));
+	ASSERT(1, div_char(261, 5));
 
 	ASSERT(-5, div_long(-10, 2));
 
