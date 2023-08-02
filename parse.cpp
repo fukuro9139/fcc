@@ -852,7 +852,7 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  *
  * @details
  * 下記のEBNF規則に従う。 @n
- * declspec =  ("void" | "int" | "short" | "long" | "char"
+ * declspec =  ("void" | "_BOOL" | "int" | "short" | "long" | "char"
  * 				| "typedef"
  * 				| struct-decl | union-decl)+ @n
  * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
@@ -869,11 +869,12 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
 shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAttr *attr)
 {
 	constexpr int VOID = 1 << 0;
-	constexpr int CHAR = 1 << 2;
-	constexpr int SHORT = 1 << 4;
-	constexpr int INT = 1 << 6;
-	constexpr int LONG = 1 << 8;
-	constexpr int OTHER = 1 << 10;
+	constexpr int BOOL = 1 << 2;
+	constexpr int CHAR = 1 << 4;
+	constexpr int SHORT = 1 << 6;
+	constexpr int INT = 1 << 8;
+	constexpr int LONG = 1 << 10;
+	constexpr int OTHER = 1 << 12;
 
 	/* それぞれの型名の出現回数を表すカウンタ。
 	 * 例えばビット0, 1は「void」という型名の出現回数を表す。
@@ -927,6 +928,10 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{
 			counter += VOID;
 		}
+		else if (current_token->is_equal("_BOOL"))
+		{
+			counter += BOOL;
+		}
 		/* char型 */
 		else if (current_token->is_equal("char"))
 		{
@@ -957,6 +962,9 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{
 		case VOID:
 			ty = Type::VOID_BASE;
+			break;
+		case BOOL:
+			ty = Type::BOOL_BASE;
 			break;
 		case CHAR:
 			ty = Type::CHAR_BASE;

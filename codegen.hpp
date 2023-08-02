@@ -48,8 +48,9 @@ private:
 	static void push();
 	static void pop(std::string &&reg);
 	static void pop(const std::string &reg);
-	static void load(const std::shared_ptr<Type> &ty);
-	static void store(const std::shared_ptr<Type> &ty);
+	static void load(const Type *ty);
+	static void store(const Type *ty);
+	static void cmp_zero(const Type *ty);
 	static void generate_address(Node *node);
 	static void generate_expression(Node *node);
 	static void generate_statement(Node *node);

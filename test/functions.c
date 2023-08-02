@@ -58,6 +58,9 @@ int div_char(char a, char b)
 	return a / b;
 }
 
+_Bool bool_fn_add(_Bool x) { return x + 1; }
+_Bool bool_fn_sub(_Bool x) { return x - 1; }
+
 int g1;
 
 int *g1_ptr() { return &g1; }
@@ -87,6 +90,13 @@ int main()
 	ASSERT(1, div_char(261, 5));
 
 	ASSERT(-5, div_long(-10, 2));
+
+	ASSERT(1, bool_fn_add(3));
+	ASSERT(0, bool_fn_sub(3));
+	ASSERT(1, bool_fn_add(-3));
+	ASSERT(0, bool_fn_sub(-3));
+	ASSERT(1, bool_fn_add(0));
+	ASSERT(1, bool_fn_sub(0));
 
 	printf("OK\n");
 	return 0;

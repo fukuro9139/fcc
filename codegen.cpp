@@ -91,6 +91,14 @@ void CodeGen::cast(Type *from, Type *to)
 		return;
 	}
 
+	if(TypeKind::TY_BOOL ==  to->_kind){
+		cmp_zero(from);
+		/* al = (from != 0) ? 1 : 0 */
+		*os << "  setne al\n";
+		*os << "  movzb eax, al\n";
+		return;
+	}
+
 	auto t1 = static_cast<int>(get_TypeId(from));
 	auto t2 = static_cast<int>(get_TypeId(to));
 	if (!cast_table[t1][t2].empty())
@@ -104,7 +112,7 @@ void CodeGen::cast(Type *from, Type *to)
  *
  * @param ty 読み込む値の型
  */
-void CodeGen::load(const std::shared_ptr<Type> &ty)
+void CodeGen::load(const Type *ty)
 {
 	/* 変数の型が配列型の場合、レジスタへ値をロードをしようとしてはいけない。*/
 	/* これは一般的に配列全体をレジスタに読み込むことはできないからである。*/
@@ -144,7 +152,7 @@ void CodeGen::load(const std::shared_ptr<Type> &ty)
  * @brief raxの値をスタックのトップのアドレスが示すメモリにストアする。
  *
  */
-void CodeGen::store(const std::shared_ptr<Type> &ty)
+void CodeGen::store(const Type *ty)
 {
 	pop("rdi");
 
@@ -204,6 +212,23 @@ void CodeGen::store_gp(const int &r, const int &offset, const int &sz)
 		break;
 	}
 	unreachable();
+}
+
+/**
+ * @brief raxの数値を0と比較するコードを出力
+ *
+ * @param ty 数値の型
+ */
+void CodeGen::cmp_zero(const Type *ty)
+{
+	if (ty->is_integer() && ty->_size <= 4)
+	{
+		*os << "  cmp eax, 0\n";
+	}
+	else
+	{
+		*os << "  cmp rax, 0\n";
+	}
 }
 
 /**
@@ -315,7 +340,7 @@ void CodeGen::generate_expression(Node *node)
 		/* 変数のアドレスを計算 */
 		generate_address(node);
 		/* 変数のアドレスから値をロードする */
-		load(node->_ty);
+		load(node->_ty.get());
 		return;
 	}
 	/* 参照外し */
@@ -323,7 +348,7 @@ void CodeGen::generate_expression(Node *node)
 		/* 参照先のアドレスを計算 */
 		generate_expression(node->_lhs.get());
 		/* 参照先のアドレスの値をロード */
-		load(node->_ty);
+		load(node->_ty.get());
 		return;
 	/* 参照 */
 	case NodeKind::ND_ADDR:
@@ -339,7 +364,7 @@ void CodeGen::generate_expression(Node *node)
 		/* 右辺を評価する。評価結果は'rax' */
 		generate_expression(node->_rhs.get());
 		/* raxの値をストアする */
-		store(node->_ty);
+		store(node->_ty.get());
 		return;
 	/* 重複文 */
 	case NodeKind::ND_STMT_EXPR:

@@ -12,8 +12,8 @@
 #include "type.hpp"
 #include "parse.hpp"
 
-using std::unique_ptr;
 using std::shared_ptr;
+using std::unique_ptr;
 
 /**************/
 /* Type Class */
@@ -24,6 +24,7 @@ const shared_ptr<Type> Type::SHORT_BASE = std::make_shared<Type>(TypeKind::TY_SH
 const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 4, 4);
 const shared_ptr<Type> Type::LONG_BASE = std::make_shared<Type>(TypeKind::TY_LONG, 8, 8);
 const shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
+const shared_ptr<Type> Type::BOOL_BASE = std::make_shared<Type>(TypeKind::TY_BOOL, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
 
@@ -224,7 +225,7 @@ bool Type::is_integer() const
 {
 	const auto k = this->_kind;
 	return TypeKind::TY_CHAR == k || TypeKind::TY_SHORT == k || TypeKind::TY_INT == k ||
-		   TypeKind::TY_LONG == k;
+		   TypeKind::TY_LONG == k || TypeKind::TY_BOOL == k;
 }
 
 /**

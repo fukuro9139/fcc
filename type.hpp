@@ -18,6 +18,7 @@
 enum class TypeKind
 {
 	TY_VOID,   /*!< void型 */
+	TY_BOOL,   /*!< bool型 */
 	TY_CHAR,   /*!< char型  */
 	TY_SHORT,  /*!< short型 */
 	TY_INT,	   /*!< int型 */
@@ -91,6 +92,7 @@ public:
 	/* 静的メンバ変数 (public) */
 
 	static const std::shared_ptr<Type> VOID_BASE;  /*!< void型 */
+	static const std::shared_ptr<Type> BOOL_BASE;  /*!< bool型 */
 	static const std::shared_ptr<Type> INT_BASE;   /*!< int型 */
 	static const std::shared_ptr<Type> LONG_BASE;  /*!< long型 */
 	static const std::shared_ptr<Type> CHAR_BASE;  /*!< char型 */
