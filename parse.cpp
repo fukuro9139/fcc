@@ -1486,11 +1486,22 @@ shared_ptr<Type> Node::type_name(Token **next_token, Token *current_token)
  */
 unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 {
-	/* 関数呼び出しノードを作成 */
-	auto node = std::make_unique<Node>(NodeKind::ND_FUNCALL, current_token);
-	/* 関数の名前をセット */
-	node->_func_name = std::move(current_token->_str);
+	auto start = current_token;
 
+	/* 名前を検索 */
+	auto sc = Object::find_var(start);
+	/* 未宣言または関数として定義されていない場合はエラー */
+	if (!sc)
+	{
+		error_token("未宣言の関数です", start);
+	}
+	if (!sc->_obj || sc->_obj->_ty->_kind != TypeKind::TY_FUNC)
+	{
+		error_token("関数定義がされていません", start);
+	}
+	auto ty = sc->_obj->_ty->_return_ty;
+
+	/* 関数の引数を読む、引数は識別子の次の次のトークンから */
 	current_token = current_token->_next->_next.get();
 
 	/* ノードリストの先頭としてダミーのノードを生成 */
@@ -1507,12 +1518,21 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 		}
 		cur->_next = assign(&current_token, current_token);
 		cur = cur->_next.get();
+		Type::add_type(cur);
 	}
+
+	/* 関数呼び出しノードを作成 */
+	auto node = std::make_unique<Node>(NodeKind::ND_FUNCALL, start);
+	/* 関数の名前をセット */
+	node->_func_name = std::move(start->_str);
+	/* headの次のノード以降を切り離し返り値用のnodeのargsに繋ぐ */
+	node->_args = std::move(head->_next);
+	/* 戻り値の型をセット */
+	node->_ty = ty;
 
 	/* 最後は")"" */
 	*next_token = Token::skip(current_token, ")");
-	/* headの次のノード以降を切り離し返り値用のnodeのargsに繋ぐ */
-	node->_args = std::move(head->_next);
+
 	return node;
 }
 
