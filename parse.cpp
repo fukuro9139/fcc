@@ -1060,7 +1060,7 @@ shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
 		if (current_token->is_equal("="))
 		{
 			val = current_token->_next->get_number();
-			current_token = current_token->_next.get();
+			current_token = current_token->_next->_next.get();
 		}
 
 		/* スコープに登録する。次の変数には+1インクリメントされた数値が対応する */
