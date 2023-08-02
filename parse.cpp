@@ -852,9 +852,10 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  *
  * @details
  * 下記のEBNF規則に従う。 @n
- * declspec =  ("void" | "_BOOL" | "int" | "short" | "long" | "char"
- * 				| "typedef"
- * 				| struct-decl | union-decl)+ @n
+ * declspec =  ("void" | "_BOOL" | "int" | "short" | "long" | "char" @n
+ * 				| "typedef" @n
+ * 				| struct-decl | union-decl | typedef-name @n
+ * 				| enum-specifier)+ @n
  * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
  * 'long` や `short` が指定されていれば `int` を省略できるので、`static long` と書くこともできる。
  * しかし、`char int` のようなものは有効な型指定子ではなく、型名の組み合わせは限られている。
@@ -899,7 +900,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 
 		/* ユーザー定義の型 */
 		auto ty2 = Object::find_typedef(current_token);
-		if (current_token->is_equal("struct") || current_token->is_equal("union") || ty2)
+		if (current_token->is_equal("struct") || current_token->is_equal("union") || current_token->is_equal("enum") || ty2)
 		{
 			/* ユーザー定義型が他の型と組み合わさることはない 例 int hoge x; */
 			if (counter)
@@ -913,6 +914,10 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 			else if (current_token->is_equal("union"))
 			{
 				ty = union_decl(&current_token, current_token->_next.get());
+			}
+			else if (current_token->is_equal("enum"))
+			{
+				ty = enum_specifier(&current_token, current_token->_next.get());
 			}
 			else
 			{
@@ -990,6 +995,87 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	}
 
 	*next_token = current_token;
+	return ty;
+}
+
+/**
+ * @brief 列挙型の定義を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応する列挙型の型
+ * @details 下記のEBNF規則に従う。 @n
+ * enum-specifier = ident? "{" enum-list? "}" | ident ("{" enum-list? "}")? @n
+ * enum-list = ident ("=" num)? ("," ident ("=" num)?)*
+ *
+ */
+shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
+{
+	auto ty = Type::enum_type();
+
+	/* 列挙型のタグを読む */
+	Token *tag = nullptr;
+	if (TokenKind::TK_IDENT == current_token->_kind)
+	{
+		tag = current_token;
+		current_token = current_token->_next.get();
+	}
+
+	/* 列挙型の変数宣言 */
+	if (tag && !current_token->is_equal("{"))
+	{
+		auto ty = Object::find_tag(tag);
+		if (!ty)
+		{
+			error_token("未定義の列挙型です", tag);
+		}
+		if (TypeKind::TY_ENUM != ty->_kind)
+		{
+			error_token("列挙型ではありません", tag);
+		}
+		*next_token = current_token;
+		return ty;
+	}
+
+	current_token = Token::skip(current_token, "{");
+
+	/* 列挙型のリストを読む */
+	bool first = true;
+	int val = 0;
+
+	/* "}"が出てくるまで読み続ける */
+	while (!current_token->is_equal("}"))
+	{
+		if (!first)
+		{
+			/* 2個目以降では","区切りが必要 */
+			current_token = Token::skip(current_token, ",");
+		}
+		first = false;
+		/* 列挙型の変数名 */
+		auto name = current_token->_str;
+		current_token = current_token->_next.get();
+
+		/* 数値の指定がある場合 */
+		if (current_token->is_equal("="))
+		{
+			val = current_token->get_number();
+			current_token = current_token->_next.get();
+		}
+
+		/* スコープに登録する。次の変数には+1インクリメントされた数値が対応する */
+		auto sc = Object::push_scope(name);
+		sc->enum_ty = ty;
+		sc->enum_val = val++;
+	}
+
+	*next_token = current_token->_next.get();
+
+	/* タグが存在するならばタグスコープに追加する */
+	if (tag)
+	{
+		Object::push_tag_scope(tag, ty);
+	}
 	return ty;
 }
 
@@ -1383,15 +1469,25 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 			return function_call(next_token, current_token);
 		}
 
-		/* それ以外なら普通の変数 */
+		/* それ以外なら普通の変数か列挙型の定数 */
 		const auto sc = Object::find_var(current_token);
 
 		/* 変数が宣言されていない場合はエラー */
-		if (!sc || !sc->_var)
+		if (!sc || (!sc->_var && !sc->enum_ty))
 		{
 			error_token("未宣言の変数です", current_token);
 		}
-		auto node = std::make_unique<Node>(sc->_var, current_token);
+		unique_ptr<Node> node;
+		/* 変数 */
+		if (sc->_var)
+		{
+			node = std::make_unique<Node>(sc->_var, current_token);
+		}
+		/* 列挙型の定数 */
+		else
+		{
+			node = std::make_unique<Node>(sc->enum_val, current_token);
+		}
 		*next_token = current_token->_next.get();
 		return node;
 	}

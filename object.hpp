@@ -84,7 +84,6 @@ public:
 	static std::unique_ptr<Object> globals;
 
 private:
-
 	/* 静的メンバ関数 (private) */
 
 	static std::unique_ptr<Object> new_var(const std::string &name, std::shared_ptr<Type> &&ty);
@@ -94,7 +93,7 @@ private:
 };
 
 /**
- * @brief 構造体、共用体のタグのスコープ
+ * @brief 構造体、共用体、列挙型のタグのスコープ
  *
  */
 struct TagScope
@@ -107,7 +106,7 @@ struct TagScope
 };
 
 /**
- * @brief ローカル変数、グローバル変数、typedefのスコープ
+ * @brief ローカル変数、グローバル変数、typedef, 列挙型のスコープ
  *
  */
 struct VarScope
@@ -116,12 +115,14 @@ struct VarScope
 	const std::string _name = "";	 /*!< 変数名 */
 	const Object *_var = nullptr;	 /*!< 対応する変数のオブジェクト */
 	std::shared_ptr<Type> type_def;	 /*!< typedefされた型  */
+	std::shared_ptr<Type> enum_ty;	 /*!< 列挙型の型 */
+	int enum_val = 0;				 /*!< 列挙型が表す数値 */
 
 	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name) : _next(std::move(next)), _name(name) {}
 };
 
 /**
- * @brief ローカル変数、構造体のスコープを表す
+ * @brief 変数/typedef、構造体/共用体/列挙型のスコープを表す
  *
  */
 struct Scope

@@ -225,7 +225,7 @@ bool Type::is_integer() const
 {
 	const auto k = this->_kind;
 	return TypeKind::TY_CHAR == k || TypeKind::TY_SHORT == k || TypeKind::TY_INT == k ||
-		   TypeKind::TY_LONG == k || TypeKind::TY_BOOL == k;
+		   TypeKind::TY_LONG == k || TypeKind::TY_BOOL == k || TypeKind::TY_ENUM == k;
 }
 
 /**
@@ -280,4 +280,14 @@ void Type::usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs)
 	auto ty = Type::get_common_type(lhs->_ty.get(), rhs->_ty.get());
 	lhs = Node::new_cast(std::move(lhs), ty);
 	rhs = Node::new_cast(std::move(rhs), ty);
+}
+
+/**
+ * @brief enum型の型を返す
+ *
+ * @return shared_ptr<Type>
+ */
+shared_ptr<Type> Type::enum_type()
+{
+	return std::make_shared<Type>(TypeKind::TY_ENUM, 4, 4);
 }

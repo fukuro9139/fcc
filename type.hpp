@@ -18,11 +18,12 @@
 enum class TypeKind
 {
 	TY_VOID,   /*!< void型 */
-	TY_BOOL,   /*!< bool型 */
+	TY_BOOL,   /*!< _Bool型 */
 	TY_CHAR,   /*!< char型  */
 	TY_SHORT,  /*!< short型 */
 	TY_INT,	   /*!< int型 */
 	TY_LONG,   /*!< long型 */
+	TY_ENUM,   /*!< enum型 */
 	TY_PTR,	   /*!< ポインター型 */
 	TY_FUNC,   /*!< 関数 */
 	TY_ARRAY,  /*!< 関数  */
@@ -87,6 +88,7 @@ public:
 	static std::shared_ptr<Type> pointer_to(const std::shared_ptr<Type> &base);
 	static std::shared_ptr<Type> array_of(std::shared_ptr<Type> base, int length);
 	static std::shared_ptr<Type> func_type(const std::shared_ptr<Type> &return_ty);
+	static std::shared_ptr<Type> enum_type();
 	static void usual_arith_conv(std::unique_ptr<Node> &lhs, std::unique_ptr<Node> &rhs);
 
 	/* 静的メンバ変数 (public) */

@@ -137,6 +137,7 @@ private:
 	static std::shared_ptr<Member> get_struct_member(Type *ty, Token *token);
 	static std::unique_ptr<Node> struct_ref(std::unique_ptr<Node> &&lhs, Token *token);
 	static std::shared_ptr<Type> declspec(Token **next_token, Token *current_token, VarAttr *attr);
+	static std::shared_ptr<Type> enum_specifier(Token **next_token, Token *current_token);
 	static std::shared_ptr<Type> declarator(Token **next_token, Token *current_token, std::shared_ptr<Type> ty);
 	static std::unique_ptr<Node> declaration(Token **next_token, Token *current_token, std::shared_ptr<Type> base);
 	static std::shared_ptr<Type> function_parameters(Token **next_token, Token *current_token, std::shared_ptr<Type> &&ty);
