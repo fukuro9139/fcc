@@ -1059,7 +1059,7 @@ shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
 		/* 数値の指定がある場合 */
 		if (current_token->is_equal("="))
 		{
-			val = current_token->get_number();
+			val = current_token->_next->get_number();
 			current_token = current_token->_next.get();
 		}
 
