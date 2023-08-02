@@ -58,7 +58,7 @@ public:
 
 	Object();
 	Object(const std::string &name);
-	Object(const std::string &name, std::unique_ptr<Object> &&next, std::shared_ptr<Type> &&ty);
+	Object(const std::string &name, std::shared_ptr<Type> &&ty);
 	Object(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locs);
 
 	/* デストラクタ */
@@ -66,6 +66,7 @@ public:
 
 	/* 静的メンバ関数 (public) */
 
+	static std::unique_ptr<Object> new_var(const std::string &name, std::shared_ptr<Type> &&ty);
 	static Object *new_lvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static Object *new_gvar(const std::string &name, std::shared_ptr<Type> &&ty);
 	static VarScope *find_var(const Token *token);
@@ -112,7 +113,7 @@ struct VarScope
 {
 	std::unique_ptr<VarScope> _next; /*!< 次の変数  */
 	const std::string _name = "";	 /*!< 変数名 */
-	const Object *_obj = nullptr;	 /*!< 対応する変数のオブジェクト */
+	const Object *_var = nullptr;	 /*!< 対応する変数のオブジェクト */
 	std::shared_ptr<Type> type_def;	 /*!< typedefされた型  */
 
 	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name) : _next(std::move(next)), _name(name) {}

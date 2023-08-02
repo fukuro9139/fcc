@@ -422,11 +422,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 	auto ty = declarator(&token, token, base);
 
 	auto parameters = ty->_params;
-	/* 新しい関数を生成してObject::globalsの先頭に追加する。 */
-	auto fn = std::make_unique<Object>(std::move(ty->_token->_str), std::move(Object::globals), std::move(ty));
-	/* グローバル変数としてscopeに追加 */
-	Object::push_scope(fn->_name);
-
+	/* 新しい関数を生成する。 */
+	auto fn = Object::new_gvar(ty->_token->_str, std::move(ty));
 	/* 関数であるフラグをセット */
 	fn->is_function = true;
 
@@ -449,16 +446,11 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base)
 	/* 引数の次は"{"がくる */
 	token = Token::skip(token, "{");
 
-	/* 後で中身を入れられるようにポインタをメモ */
-	auto current_function = fn.get();
-
-	/* 作成した関数オブジェクトをObject::globalにセット */
-	Object::globals = std::move(fn);
-
 	/* 関数の中身を読み取る */
-	current_function->_body = compound_statement(&token, token);
+	fn->_body = compound_statement(&token, token);
+
 	/* ローカル変数をセット */
-	current_function->_locals = std::move(Object::locals);
+	fn->_locals = std::move(Object::locals);
 
 	/* 関数のブロックスコープを抜ける */
 	Object::leave_scope();
@@ -1376,11 +1368,11 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		const auto sc = Object::find_var(current_token);
 
 		/* 変数が宣言されていない場合はエラー */
-		if (!sc || !sc->_obj)
+		if (!sc || !sc->_var)
 		{
 			error_token("未宣言の変数です", current_token);
 		}
-		auto node = std::make_unique<Node>(sc->_obj, current_token);
+		auto node = std::make_unique<Node>(sc->_var, current_token);
 		*next_token = current_token->_next.get();
 		return node;
 	}
@@ -1495,11 +1487,11 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 	{
 		error_token("未宣言の関数です", start);
 	}
-	if (!sc->_obj || sc->_obj->_ty->_kind != TypeKind::TY_FUNC)
+	if (!sc->_var || sc->_var->_ty->_kind != TypeKind::TY_FUNC)
 	{
-		error_token("関数定義がされていません", start);
+		error_token("関数以外として宣言されています", start);
 	}
-	auto ty = sc->_obj->_ty->_return_ty;
+	auto ty = sc->_var->_ty->_return_ty;
 
 	/* 関数の引数を読む、引数は識別子の次の次のトークンから */
 	current_token = current_token->_next->_next.get();

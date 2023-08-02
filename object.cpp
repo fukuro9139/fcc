@@ -27,12 +27,26 @@ Object::Object() = default;
 
 Object::Object(const std::string &name) : _name(name) {}
 
-Object::Object(const std::string &name, unique_ptr<Object> &&next, shared_ptr<Type> &&ty)
-	: _name(name), _next(std::move(next)), _ty(std::move(ty)) {}
+Object::Object(const std::string &name, shared_ptr<Type> &&ty)
+	: _name(name), _ty(std::move(ty)) {}
 
 Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(std::move(body)), _locals(std::move(locs)) {}
 
 /* メンバ関数 */
+
+/**
+ * @brief 新しい変数オブジェクトを作成する
+ *
+ * @param name 変数の名前
+ * @param ty 変数の型
+ * @return 作成したオブジェクトのポインタ
+ */
+unique_ptr<Object> Object::new_var(const std::string &name, shared_ptr<Type> &&ty)
+{
+	auto var = std::make_unique<Object>(name, std::move(ty));
+	push_scope(name)->_var = var.get();
+	return var;
+}
 
 /**
  * @brief 新しいローカル変数を生成してObject::localsの先頭に追加する。
@@ -42,9 +56,10 @@ Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(std::
  */
 Object *Object::new_lvar(const std::string &name, shared_ptr<Type> &&ty)
 {
-	locals = std::make_unique<Object>(name, std::move(locals), std::move(ty));
-	locals->is_local = true;
-	push_scope(name)->_obj = locals.get();
+	auto var = new_var(name, std::move(ty));
+	var->is_local = true;
+	var->_next = std::move(locals);
+	locals = std::move(var);
 	return locals.get();
 }
 
@@ -56,8 +71,9 @@ Object *Object::new_lvar(const std::string &name, shared_ptr<Type> &&ty)
  */
 Object *Object::new_gvar(const std::string &name, shared_ptr<Type> &&ty)
 {
-	globals = std::make_unique<Object>(name, std::move(globals), std::move(ty));
-	push_scope(name)->_obj = globals.get();
+	auto var = new_var(name, std::move(ty));
+	var->_next = std::move(globals);
+	globals = std::move(var);
 	return globals.get();
 }
 
