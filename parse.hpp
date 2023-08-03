@@ -48,6 +48,8 @@ enum class NodeKind
 	ND_DEREF,	  /* 単項* */
 	ND_NOT,		  /*!< ! */
 	ND_BITNOT,	  /*!< ~ */
+	ND_LOGAND,	  /*!< && */
+	ND_LOGOR,	  /*!< || */
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/
@@ -153,6 +155,8 @@ private:
 	static std::unique_ptr<Node> expression(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> expression_statement(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> to_assign(std::unique_ptr<Node> &&binary);
+	static std::unique_ptr<Node> log_or(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> log_and(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> assign(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> bit_or(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> bit_xor(Token **next_token, Token *current_token);

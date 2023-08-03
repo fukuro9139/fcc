@@ -148,6 +148,8 @@ void Type::add_type(Node *node)
 		return;
 
 	case NodeKind::ND_NOT:
+	case NodeKind::ND_LOGAND:
+	case NodeKind::ND_LOGOR:
 		node->_ty = INT_BASE;
 		return;
 

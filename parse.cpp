@@ -1197,7 +1197,7 @@ unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * assign = bitor (assign-op assign)? @n
+ * assign = logor (assign-op assign)? @n
  * assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "%="
  */
 unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
@@ -1210,7 +1210,7 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 		{"|=", NodeKind::ND_BITOR},
 		{"^=", NodeKind::ND_BITXOR}};
 
-	auto node = bit_or(&current_token, current_token);
+	auto node = log_or(&current_token, current_token);
 
 	if (current_token->is_equal("="))
 	{
@@ -1232,6 +1232,50 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 		return to_assign(std::make_unique<Node>(it->second, std::move(node), assign(next_token, current_token->_next.get()), current_token));
 	}
 
+	*next_token = current_token;
+	return node;
+}
+
+/**
+ * @brief log_orを読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n logor = logand ("||"  logand)*
+ */
+std::unique_ptr<Node> Node::log_or(Token **next_token, Token *current_token)
+{
+	auto node = log_and(&current_token, current_token);
+
+	/* "||"が出てくる限り読み込み続ける */
+	while (current_token->is_equal("||"))
+	{
+		auto start = current_token;
+		node = std::make_unique<Node>(NodeKind::ND_LOGOR, std::move(node), log_and(&current_token, current_token->_next.get()), start);
+	}
+	*next_token = current_token;
+	return node;
+}
+
+/**
+ * @brief log_andを読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n logand = bitor ("&&"  bitor)*
+ */
+std::unique_ptr<Node> Node::log_and(Token **next_token, Token *current_token)
+{
+	auto node = bit_or(&current_token, current_token);
+
+	/* "||"が出てくる限り読み込み続ける */
+	while (current_token->is_equal("&&"))
+	{
+		auto start = current_token;
+		node = std::make_unique<Node>(NodeKind::ND_LOGAND, std::move(node), bit_or(&current_token, current_token->_next.get()), start);
+	}
 	*next_token = current_token;
 	return node;
 }

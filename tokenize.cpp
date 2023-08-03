@@ -631,7 +631,7 @@ size_t Token::read_punct(std::string &&str)
 	static const std::vector<string> kws =
 	{
 		"==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=", "++", "--",
-	 	"%=", "&=", "|=", "^=",
+	 	"%=", "&=", "|=", "^=", "&&", "||",
 	};
 
 	for (auto &kw : kws)

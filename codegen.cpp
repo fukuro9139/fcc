@@ -389,7 +389,7 @@ void CodeGen::generate_expression(Node *node)
 		generate_expression(node->_rhs.get());
 		return;
 
-	/* 否定 (!) */
+	/* ! */
 	case NodeKind::ND_NOT:
 		generate_expression(node->_lhs.get());
 		/* 0と比較 */
@@ -399,11 +399,49 @@ void CodeGen::generate_expression(Node *node)
 		*os << "  movzx rax, al\n";
 		return;
 
-	/* ビット否定(~) */
+	/* ~ */
 	case NodeKind::ND_BITNOT:
 		generate_expression(node->_lhs.get());
 		*os << "  not rax\n";
 		return;
+
+	/* && */
+	case NodeKind::ND_LOGAND:
+	{
+		int c = label_count();
+		generate_expression(node->_lhs.get());
+		*os << "  cmp rax, 0\n";
+		/* 短絡評価、前半がfalseなら後半は評価しない */
+		*os << "  je .L.false." << c << "\n";
+		generate_expression(node->_rhs.get());
+		*os << "  cmp rax, 0\n";
+		*os << "  je .L.false." << c << "\n";
+		*os << "  mov rax, 1\n";
+		*os << "  jmp .L.end." << c << "\n";
+		*os << ".L.false." << c << ":\n";
+		*os << "  mov rax, 0\n";
+		*os << ".L.end." << c << ":\n";
+		return;
+	}
+
+	case NodeKind::ND_LOGOR:
+	{
+		int c = label_count();
+		generate_expression(node->_lhs.get());
+		*os << "  cmp rax, 0\n";
+		/* 短絡評価、前半がtrueなら後半は評価しない */
+		*os << "  jne .L.true." << c << "\n";
+		generate_expression(node->_rhs.get());
+		*os << "  cmp rax, 0\n";
+		*os << "  jne .L.true." << c << "\n";
+		*os << "  mov rax, 0\n";
+		*os << "  jmp .L.end." << c << "\n";
+		*os << ".L.true." << c << ":\n";
+		*os << "  mov rax, 1\n";
+		*os << ".L.end." << c << ":\n";
+		return;
+	}
+
 	case NodeKind::ND_CAST:
 		generate_expression(node->_lhs.get());
 		cast(node->_lhs->_ty.get(), node->_ty.get());
