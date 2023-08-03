@@ -628,7 +628,11 @@ bool Token::start_with(const std::string &str, const std::string &op)
  */
 size_t Token::read_punct(std::string &&str)
 {
-	static const std::vector<string> kws = {"==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=", "++", "--", "%="};
+	static const std::vector<string> kws =
+	{
+		"==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=", "++", "--",
+	 	"%=", "&=", "|=", "^=",
+	};
 
 	for (auto &kw : kws)
 	{

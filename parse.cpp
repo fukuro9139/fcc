@@ -33,13 +33,13 @@ static Object *current_function = nullptr;
 
 Node::Node() = default;
 
-Node::Node(NodeKind &&kind, Token *token) : _kind(std::move(kind)), _token(token) {}
+Node::Node(const NodeKind &kind, Token *token) : _kind(kind), _token(token) {}
 
-Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
-	: _kind(std::move(kind)), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _token(token) {}
+Node::Node(const NodeKind &kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token)
+	: _kind(kind), _lhs(std::move(lhs)), _rhs(std::move(rhs)), _token(token) {}
 
-Node::Node(NodeKind &&kind, unique_ptr<Node> &&lhs, Token *token)
-	: _kind(std::move(kind)), _lhs(std::move(lhs)), _token(token) {}
+Node::Node(const NodeKind &kind, unique_ptr<Node> &&lhs, Token *token)
+	: _kind(kind), _lhs(std::move(lhs)), _token(token) {}
 
 Node::Node(const int64_t &val, Token *token) : _kind(NodeKind::ND_NUM), _val(val), _token(token) {}
 
@@ -293,8 +293,10 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 
 		/* 最後は';'で終わるはず */
 		*next_token = Token::skip(current_token, ";");
+
 		/* 式の型を決定する */
 		Type::add_type(expr.get());
+
 		/* return先の型にキャストする */
 		node->_lhs = new_cast(std::move(expr), current_function->_ty->_return_ty);
 		return node;
@@ -914,6 +916,28 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	constexpr int LONG = 1 << 10;
 	constexpr int OTHER = 1 << 12;
 
+	static const std::unordered_map<std::string, int> str_to_type = {
+		{"void", VOID},
+		{"_Bool", BOOL},
+		{"char", CHAR},
+		{"short", SHORT},
+		{"int", INT},
+		{"long", LONG},
+	};
+
+	static const std::unordered_map<int, shared_ptr<Type>> int_to_type = {
+		{VOID, Type::VOID_BASE},
+		{BOOL, Type::BOOL_BASE},
+		{CHAR, Type::CHAR_BASE},
+		{SHORT, Type::SHORT_BASE},
+		{SHORT + INT, Type::SHORT_BASE},
+		{INT, Type::INT_BASE},
+		{LONG, Type::LONG_BASE},
+		{LONG + INT, Type::LONG_BASE},
+		{LONG + LONG, Type::LONG_BASE},
+		{LONG + LONG + INT, Type::LONG_BASE},
+	};
+
 	/* それぞれの型名の出現回数を表すカウンタ。
 	 * 例えばビット0, 1は「void」という型名の出現回数を表す。
 	 */
@@ -977,66 +1001,23 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 			continue;
 		}
 
-		/* void型 */
-		if (current_token->is_equal("void"))
+		auto it = str_to_type.find(current_token->_str);
+		if (it != str_to_type.end())
 		{
-			counter += VOID;
+			counter += it->second;
 		}
-		else if (current_token->is_equal("_Bool"))
-		{
-			counter += BOOL;
-		}
-		/* char型 */
-		else if (current_token->is_equal("char"))
-		{
-			counter += CHAR;
-		}
-		/* short型 */
-		else if (current_token->is_equal("short"))
-		{
-			counter += SHORT;
-		}
-		/* int型 */
-		else if (current_token->is_equal("int"))
-		{
-			counter += INT;
-		}
-		/* long型 */
-		else if (current_token->is_equal("long"))
-		{
-			counter += LONG;
-		}
-		/* どれでもなければエラー */
 		else
 		{
 			error_token("型名ではありません", current_token);
 		}
 
-		switch (counter)
+		auto it2 = int_to_type.find(counter);
+		if (it2 != int_to_type.end())
 		{
-		case VOID:
-			ty = Type::VOID_BASE;
-			break;
-		case BOOL:
-			ty = Type::BOOL_BASE;
-			break;
-		case CHAR:
-			ty = Type::CHAR_BASE;
-			break;
-		case SHORT:
-		case SHORT + INT:
-			ty = Type::SHORT_BASE;
-			break;
-		case INT:
-			ty = Type::INT_BASE;
-			break;
-		case LONG:
-		case LONG + INT:
-		case LONG + LONG:
-		case LONG + LONG + INT:
-			ty = Type::LONG_BASE;
-			break;
-		default:
+			ty = it2->second;
+		}
+		else
+		{
 			error_token("無効な型指定です", current_token);
 		}
 
@@ -1215,13 +1196,22 @@ unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n 
- * assign = equality (assign-op assign)? @n
+ * @details 下記のEBNF規則に従う。 @n
+ * assign = bitor (assign-op assign)? @n
  * assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "%="
  */
 unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 {
-	auto node = equality(&current_token, current_token);
+	static const std::unordered_map<std::string, NodeKind> str_to_op = {
+		{"*=", NodeKind::ND_MUL},
+		{"/=", NodeKind::ND_DIV},
+		{"%=", NodeKind::ND_MOD},
+		{"&=", NodeKind::ND_BITAND},
+		{"|=", NodeKind::ND_BITOR},
+		{"^=", NodeKind::ND_BITXOR}};
+
+	auto node = bit_or(&current_token, current_token);
+
 	if (current_token->is_equal("="))
 	{
 		return std::make_unique<Node>(NodeKind::ND_ASSIGN, std::move(node), assign(next_token, current_token->_next.get()), current_token);
@@ -1230,22 +1220,82 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 	{
 		return to_assign(new_add(std::move(node), assign(next_token, current_token->_next.get()), current_token));
 	}
+
 	if (current_token->is_equal("-="))
 	{
 		return to_assign(new_sub(std::move(node), assign(next_token, current_token->_next.get()), current_token));
 	}
-	if (current_token->is_equal("*="))
+
+	auto it = str_to_op.find(current_token->_str);
+	if (it != str_to_op.end())
 	{
-		return to_assign(std::make_unique<Node>(NodeKind::ND_MUL, std::move(node), assign(next_token, current_token->_next.get()), current_token));
-	}
-	if (current_token->is_equal("/="))
-	{
-		return to_assign(std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), assign(next_token, current_token->_next.get()), current_token));
-	}
-	if(current_token->is_equal("%=")){
-		return to_assign(std::make_unique<Node>(NodeKind::ND_MOD, std::move(node), assign(next_token, current_token->_next.get()), current_token));
+		return to_assign(std::make_unique<Node>(it->second, std::move(node), assign(next_token, current_token->_next.get()), current_token));
 	}
 
+	*next_token = current_token;
+	return node;
+}
+
+/**
+ * @brief bitorを読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n bitor = bitxor ("|" bitxor)*
+ */
+unique_ptr<Node> Node::bit_or(Token **next_token, Token *current_token)
+{
+	auto node = bit_xor(&current_token, current_token);
+
+	/* "|"が出てくる限り読み込み続ける */
+	while (current_token->is_equal("|"))
+	{
+		auto start = current_token;
+		node = std::make_unique<Node>(NodeKind::ND_BITOR, std::move(node), bit_xor(&current_token, current_token->_next.get()), start);
+	}
+	*next_token = current_token;
+	return node;
+}
+
+/**
+ * @brief bitxorを読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n bitxor = bitand ("^" bitand)*
+ */
+unique_ptr<Node> Node::bit_xor(Token **next_token, Token *current_token)
+{
+	auto node = bit_and(&current_token, current_token);
+	/* "^"が出てくる限り読み込み続ける */
+	while (current_token->is_equal("^"))
+	{
+		auto start = current_token;
+		node = std::make_unique<Node>(NodeKind::ND_BITXOR, std::move(node), bit_and(&current_token, current_token->_next.get()), start);
+	}
+	*next_token = current_token;
+	return node;
+}
+
+/**
+ * @brief bitandを読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n bitand = equality ("&" equality)*
+ */
+unique_ptr<Node> Node::bit_and(Token **next_token, Token *current_token)
+{
+	auto node = equality(&current_token, current_token);
+	/* "&"が出てくる限り読み込み続ける */
+	while (current_token->is_equal("&"))
+	{
+		auto start = current_token;
+		node = std::make_unique<Node>(NodeKind::ND_BITAND, std::move(node), equality(&current_token, current_token->_next.get()), start);
+	}
 	*next_token = current_token;
 	return node;
 }
@@ -1418,7 +1468,8 @@ unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
 			continue;
 		}
 
-		if(current_token->is_equal("%")){
+		if (current_token->is_equal("%"))
+		{
 			node = std::make_unique<Node>(NodeKind::ND_MOD, std::move(node), cast(&current_token, current_token->_next.get()), start);
 			continue;
 		}
@@ -1439,6 +1490,14 @@ unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
  */
 unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 {
+	static const std::unordered_map<std::string, NodeKind> str_to_type = {
+		{"-", NodeKind::ND_NEG},
+		{"&", NodeKind::ND_ADDR},
+		{"*", NodeKind::ND_DEREF},
+		{"!", NodeKind::ND_NOT},
+		{"~", NodeKind::ND_BITNOT},
+	};
+
 	if (current_token->is_equal("+"))
 	{
 		return cast(next_token, current_token->_next.get());
@@ -1449,23 +1508,10 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 		return std::make_unique<Node>(NodeKind::ND_NEG, cast(next_token, current_token->_next.get()), current_token);
 	}
 
-	if (current_token->is_equal("&"))
+	auto it = str_to_type.find(current_token->_str);
+	if (it != str_to_type.end())
 	{
-		return std::make_unique<Node>(NodeKind::ND_ADDR, cast(next_token, current_token->_next.get()), current_token);
-	}
-
-	if (current_token->is_equal("*"))
-	{
-		return std::make_unique<Node>(NodeKind::ND_DEREF, cast(next_token, current_token->_next.get()), current_token);
-	}
-
-	if (current_token->is_equal("!"))
-	{
-		return std::make_unique<Node>(NodeKind::ND_NOT, cast(next_token, current_token->_next.get()), current_token);
-	}
-
-	if(current_token->is_equal("~")){
-		return std::make_unique<Node>(NodeKind::ND_BITNOT, cast(next_token, current_token->_next.get()), current_token);
+		return std::make_unique<Node>(it->second, cast(next_token, current_token->_next.get()), current_token);
 	}
 
 	/* ++iをi+=1と読み替える */

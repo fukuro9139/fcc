@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include "tokenize.hpp"
 #include "object.hpp"
 #include "type.hpp"
@@ -51,8 +52,11 @@ enum class NodeKind
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/
 	ND_BLOCK,	  /*!< {...} */
-	ND_FUNCALL,	  /* 関数呼び出し */
-	ND_MOD,		  /* % */
+	ND_FUNCALL,	  /*!< 関数呼び出し */
+	ND_MOD,		  /*!< % */
+	ND_BITAND,	  /*!< & */
+	ND_BITOR,	  /*!< | */
+	ND_BITXOR,	  /*!< ^ */
 	ND_EQ,		  /*!< == */
 	ND_NE,		  /*!< != */
 	ND_LT,		  /*!< < */
@@ -106,9 +110,9 @@ public:
 	/* コンストラクタ */
 
 	Node();
-	Node(NodeKind &&kind, Token *token);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
-	Node(NodeKind &&kind, std::unique_ptr<Node> &&lhs, Token *token);
+	Node(const NodeKind &kind, Token *token);
+	Node(const NodeKind &kind, std::unique_ptr<Node> &&lhs, std::unique_ptr<Node> &&rhs, Token *token);
+	Node(const NodeKind &kind, std::unique_ptr<Node> &&lhs, Token *token);
 	Node(const int64_t &val, Token *token);
 	Node(const Object *var, Token *token);
 
@@ -150,6 +154,9 @@ private:
 	static std::unique_ptr<Node> expression_statement(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> to_assign(std::unique_ptr<Node> &&binary);
 	static std::unique_ptr<Node> assign(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> bit_or(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> bit_xor(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> bit_and(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> equality(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> relational(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> add(Token **next_token, Token *current_token);

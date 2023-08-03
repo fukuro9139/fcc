@@ -1,6 +1,7 @@
 #Windowsでビルドするときは1に設定する
 WINDOWS = 0
 CXX = g++
+CC = gcc
 
 ifeq ($(WINDOWS), 0)
 CFLAGS = -std=c++20 -g -fno-common -MMD -MP
@@ -29,14 +30,15 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CFLAGS) -c $<
 
 #makeとcleanをまとめて行う
-all: clean $(OBJS) $(TARGET)
+all: clean $(TARGET)
 
 #ダミー
 .PHONY: test clean
 
-ifeq ($(WINDOWS), 0)
+
 #テスト
-test/%.exe: fcc test/%.c
+ifeq ($(WINDOWS), 0)
+test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$* -E -P -C test/$*.c
 	./fcc -o test/$*.s test/tmp_$*
 	$(CC) -o $@ test/$*.s -xc test/common
@@ -44,6 +46,12 @@ test/%.exe: fcc test/%.c
 test: $(TESTS)
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
 	test/driver.sh
+else
+test/%.exe: $(TARGET) test/%.c
+	$(CC) -o test/tmp_$* -E -P -C test/$*.c
+	./fcc -o test/$*.s test/tmp_$*
+
+test: $(TESTS)
 endif
 
 #不要ファイル削除
@@ -51,7 +59,7 @@ clean:
 ifeq ($(WINDOWS), 0)
 	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.s test/tmp*
 else
-	del fcc.exe $(OBJS) *.d
+	del /s fcc.exe $(OBJS) *.d *.s tmp_*
 endif
 
 #ヘッダフィルの依存関係

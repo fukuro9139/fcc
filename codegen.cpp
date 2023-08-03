@@ -468,14 +468,17 @@ void CodeGen::generate_expression(Node *node)
 		/* 'rax' = 'rax' + 'rdi' */
 		*os << "  add " << ax << ", " << di << "\n";
 		return;
+
 	case NodeKind::ND_SUB:
 		/* 'rax' = 'rax' - 'rdi' */
 		*os << "  sub " << ax << ", " << di << "\n";
 		return;
+
 	case NodeKind::ND_MUL:
 		/* 'rax' = 'rax' * 'rdi' */
 		*os << "  imul " << ax << ", " << di << "\n";
 		return;
+
 	case NodeKind::ND_DIV:
 	case NodeKind::ND_MOD:
 		if (8 == node->_lhs->_ty->_size)
@@ -497,6 +500,19 @@ void CodeGen::generate_expression(Node *node)
 			*os << "  mov rax, rdx\n";
 		}
 		return;
+
+	case NodeKind::ND_BITAND:
+		*os << "  and rax, rdi\n";
+		return;
+
+	case NodeKind::ND_BITOR:
+		*os << "  or rax, rdi\n";
+		return;
+
+	case NodeKind::ND_BITXOR:
+		*os << "  xor rax, rdi\n";
+		return;
+
 	case NodeKind::ND_EQ:
 	case NodeKind::ND_NE:
 	case NodeKind::ND_LT:
