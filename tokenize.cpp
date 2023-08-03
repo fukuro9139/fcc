@@ -294,19 +294,12 @@ void Token::convert_keywords(Token *token)
 bool Token::is_keyword(Token *&token)
 {
 	/* 識別子一覧 */
-	static const std::vector<string> kws = {
+	static const std::unordered_set<string> kws = {
 		"return", "if", "else", "for", "while", "int", "sizeof", "char",
 		"struct", "union", "short", "long", "void", "typedef", "_Bool",
 		"enum", "static"};
 
-	for (auto &kw : kws)
-	{
-		if (token->is_equal(kw))
-		{
-			return true;
-		}
-	}
-	return false;
+	return kws.count(token->_str) > 0;
 }
 
 /**
@@ -555,23 +548,22 @@ bool Token::is_equal(const std::string &op) const
 /**
  * @brief トークンが型を表す識別子であるか
  *
+ * @param 対象のトークン
  * @return true 型を表す識別子である
  * @return false 型を表す識別子ではない
  */
-bool Token::is_typename() const
+bool Token::is_typename(const Token * token)
 {
-	static const std::vector<string> kws = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
+	static const std::unordered_set<string> kws = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
 											"typedef", "enum", "static"};
-
-	for (auto &kw : kws)
-	{
-		if (is_equal(kw))
-		{
-			return true;
-		}
+	
+	/* 標準の型指定子 */
+	if(kws.count(token->_str)){
+		return true;
 	}
+
 	/* typedefされた定義を検索する */
-	if (Object::find_typedef(this))
+	if (Object::find_typedef(token))
 	{
 		return true;
 	}
@@ -636,7 +628,7 @@ bool Token::start_with(const std::string &str, const std::string &op)
  */
 size_t Token::read_punct(std::string &&str)
 {
-	static const std::vector<string> kws = {"==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=", "++", "--"};
+	static const std::vector<string> kws = {"==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=", "++", "--", "%="};
 
 	for (auto &kw : kws)
 	{

@@ -388,7 +388,7 @@ void CodeGen::generate_expression(Node *node)
 		generate_expression(node->_lhs.get());
 		generate_expression(node->_rhs.get());
 		return;
-	
+
 	/* 否定 (!) */
 	case NodeKind::ND_NOT:
 		generate_expression(node->_lhs.get());
@@ -399,11 +399,11 @@ void CodeGen::generate_expression(Node *node)
 		*os << "  movzx rax, al\n";
 		return;
 
-		/* ビット否定(~) */
-		case NodeKind::ND_BITNOT:
-			generate_expression(node->_lhs.get());
-			*os << "  not rax\n";
-			return;
+	/* ビット否定(~) */
+	case NodeKind::ND_BITNOT:
+		generate_expression(node->_lhs.get());
+		*os << "  not rax\n";
+		return;
 	case NodeKind::ND_CAST:
 		generate_expression(node->_lhs.get());
 		cast(node->_lhs->_ty.get(), node->_ty.get());
@@ -477,6 +477,7 @@ void CodeGen::generate_expression(Node *node)
 		*os << "  imul " << ax << ", " << di << "\n";
 		return;
 	case NodeKind::ND_DIV:
+	case NodeKind::ND_MOD:
 		if (8 == node->_lhs->_ty->_size)
 		{
 			/* 'rax'(64ビット)を128ビットに拡張して'rdx'と'rax'にセット */
@@ -490,6 +491,11 @@ void CodeGen::generate_expression(Node *node)
 
 		/* 'rdx(edx)'と'rax(eax)'を合わせた128ビットの値を'rdi'で割って商を'rax(eax)', 余りを'rdx(edx)'にセット */
 		*os << "  idiv " << di << "\n";
+
+		if (NodeKind::ND_MOD == node->_kind)
+		{
+			*os << "  mov rax, rdx\n";
+		}
 		return;
 	case NodeKind::ND_EQ:
 	case NodeKind::ND_NE:

@@ -16,6 +16,7 @@
 #include <iostream>
 #include <locale>
 #include <vector>
+#include <unordered_set>
 
 /** @brief トークンの種類 */
 enum class TokenKind
@@ -55,7 +56,7 @@ public:
 	bool is_equal(std::string &&op) const;
 	bool is_equal(const std::string &op) const;
 	int64_t get_number() const;
-	bool is_typename() const;
+	
 
 	/* 静的メンバ関数 (public) */
 
@@ -63,6 +64,7 @@ public:
 	static std::unique_ptr<Token> tokenize_file(const std::string &filepath);
 	static Token *skip(Token *token, std::string &&op);
 	static bool consume(Token **next_token, Token *current_token, std::string &&str);
+	static bool is_typename(const Token *token);
 
 private:
 	/* 静的メンバ関数 (private) */

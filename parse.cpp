@@ -336,7 +336,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		Object::enter_scope();
 
 		/* 型指定子がきたら変数が定義されている */
-		if (current_token->is_typename())
+		if (Token::is_typename(current_token))
 		{
 			auto base = declspec(&current_token, current_token, nullptr);
 			node->_init = declaration(&current_token, current_token, base);
@@ -414,7 +414,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 	while (!current_token->is_equal("}"))
 	{
 		/* 変数宣言、定義 */
-		if (current_token->is_typename())
+		if (Token::is_typename(current_token))
 		{
 			/* 型指定子を読み取る */
 			VarAttr attr = {};
@@ -920,7 +920,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	int counter = 0;
 	auto ty = Type::INT_BASE;
 
-	while (current_token->is_typename())
+	while (Token::is_typename(current_token))
 	{
 		/* ストレージクラス指定子 */
 		if (current_token->is_equal("typedef") || current_token->is_equal("static"))
@@ -1215,7 +1215,9 @@ unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n assign = equality ("=" assign)?
+ * @details 下記のEBNF規則に従う。 @n 
+ * assign = equality (assign-op assign)? @n
+ * assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "%="
  */
 unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 {
@@ -1239,6 +1241,9 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 	if (current_token->is_equal("/="))
 	{
 		return to_assign(std::make_unique<Node>(NodeKind::ND_DIV, std::move(node), assign(next_token, current_token->_next.get()), current_token));
+	}
+	if(current_token->is_equal("%=")){
+		return to_assign(std::make_unique<Node>(NodeKind::ND_MOD, std::move(node), assign(next_token, current_token->_next.get()), current_token));
 	}
 
 	*next_token = current_token;
@@ -1370,7 +1375,7 @@ unique_ptr<Node> Node::add(Token **next_token, Token *current_token)
 unique_ptr<Node> Node::cast(Token **next_token, Token *current_token)
 {
 	/* キャストを含む場合 */
-	if (current_token->is_equal("(") && current_token->_next->is_typename())
+	if (current_token->is_equal("(") && Token::is_typename(current_token->_next.get()))
 	{
 		auto start = current_token;
 
@@ -1392,7 +1397,7 @@ unique_ptr<Node> Node::cast(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n mul = cast ("*" cast | "/" cast)*
+ * @details 下記のEBNF規則に従う。 @n mul = cast ("*" cast | "/" cast | "%" cast)*
  */
 unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
 {
@@ -1413,7 +1418,12 @@ unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
 			continue;
 		}
 
-		/* "*", "/"どちらも出てこなくなったらループを抜ける */
+		if(current_token->is_equal("%")){
+			node = std::make_unique<Node>(NodeKind::ND_MOD, std::move(node), cast(&current_token, current_token->_next.get()), start);
+			continue;
+		}
+
+		/* 除積演算子が出てこなくなったらループを抜ける */
 		*next_token = current_token;
 		return node;
 	}
@@ -1577,7 +1587,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	/* sizeof演算子（対象が型そのもの） */
 	if (current_token->is_equal("sizeof") &&
 		current_token->_next->is_equal("(") &&
-		current_token->_next->_next->is_typename())
+		Token::is_typename(current_token->_next->_next.get()))
 	{
 		auto start = current_token;
 		/* sizeof演算子の対象の型情報を読む */

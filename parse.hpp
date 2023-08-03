@@ -52,6 +52,7 @@ enum class NodeKind
 	ND_FOR,		  /*!< for or while*/
 	ND_BLOCK,	  /*!< {...} */
 	ND_FUNCALL,	  /* 関数呼び出し */
+	ND_MOD,		  /* % */
 	ND_EQ,		  /*!< == */
 	ND_NE,		  /*!< != */
 	ND_LT,		  /*!< < */
