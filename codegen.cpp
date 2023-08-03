@@ -399,6 +399,11 @@ void CodeGen::generate_expression(Node *node)
 		*os << "  movzx rax, al\n";
 		return;
 
+		/* ビット否定(~) */
+		case NodeKind::ND_BITNOT:
+			generate_expression(node->_lhs.get());
+			*os << "  not rax\n";
+			return;
 	case NodeKind::ND_CAST:
 		generate_expression(node->_lhs.get());
 		cast(node->_lhs->_ty.get(), node->_ty.get());

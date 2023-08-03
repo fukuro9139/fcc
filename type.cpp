@@ -147,6 +147,10 @@ void Type::add_type(Node *node)
 		node->_ty = INT_BASE;
 		return;
 
+	case NodeKind::ND_BITNOT:
+		node->_ty = node->_lhs->_ty;
+		return;
+
 	case NodeKind::ND_VAR:
 		/* オブジェクトの型に一致させる */
 		node->_ty = node->_var->_ty;

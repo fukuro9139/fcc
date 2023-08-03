@@ -46,6 +46,7 @@ enum class NodeKind
 	ND_ADDR,	  /* 単項 & */
 	ND_DEREF,	  /* 単項* */
 	ND_NOT,		  /*!< ! */
+	ND_BITNOT,	  /*!< ~ */
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/

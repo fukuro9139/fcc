@@ -1425,7 +1425,7 @@ unique_ptr<Node> Node::mul(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&" | "!") cast | ("++" | "--") unary |postfix
+ * @details 下記のEBNF規則に従う。 @n unary = ("+" | "-" | "*" | "&" | "!" | "~") cast | ("++" | "--") unary |postfix
  */
 unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 {
@@ -1452,6 +1452,10 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 	if (current_token->is_equal("!"))
 	{
 		return std::make_unique<Node>(NodeKind::ND_NOT, cast(next_token, current_token->_next.get()), current_token);
+	}
+
+	if(current_token->is_equal("~")){
+		return std::make_unique<Node>(NodeKind::ND_BITNOT, cast(next_token, current_token->_next.get()), current_token);
 	}
 
 	/* ++iをi+=1と読み替える */
