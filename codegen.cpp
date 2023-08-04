@@ -653,7 +653,7 @@ void CodeGen::generate_statement(Node *node)
 		{
 			generate_expression(node->_condition.get());
 			*os << "  cmp rax, 0\n";
-			*os << "  je .L.end." << c << "\n";
+			*os << "  je " << node->_brk_label << "\n";
 		}
 		generate_statement(node->_then.get());
 		/* 加算処理 */
@@ -662,7 +662,7 @@ void CodeGen::generate_statement(Node *node)
 			generate_expression(node->_inc.get());
 		}
 		*os << "  jmp .L.begin." << c << "\n";
-		*os << ".L.end." << c << ":\n";
+		*os << node->_brk_label << ":\n";
 		return;
 	}
 

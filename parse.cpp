@@ -29,6 +29,9 @@ static Object *current_function = nullptr;
 static Node *gotos = nullptr;
 static Node *labels = nullptr;
 
+/* 現在のループのを抜けるラベル */
+static std::string brk_label = "";
+
 /**************/
 /* Node Class */
 /**************/
@@ -343,6 +346,12 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		/* for文のブロックスコープに入る */
 		Object::enter_scope();
 
+		/* forを抜けるラベルを設定 */
+		brk_label = new_unique_name();
+		node->_brk_label = brk_label;
+		/* for文が入れ子になっている場合に備えてlabelを保存 */
+		auto brk = brk_label;
+
 		/* 型指定子がきたら変数が定義されている */
 		if (Token::is_typename(current_token))
 		{
@@ -371,6 +380,9 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		node->_then = statement(next_token, current_token);
 		/* for文のブロックスコープを抜ける */
 		Object::leave_scope();
+
+		/* for文の入れ子でラベルが変わっているかもしれないので保存していた値を代入 */
+		brk_label = brk;
 		return node;
 	}
 
@@ -385,7 +397,17 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 
 		/* 条件文のは')'がくる */
 		current_token = Token::skip(current_token, ")");
+
+		/* while文を抜けるラベルを設定 */
+		brk_label = new_unique_name();
+		node->_brk_label = brk_label;
+		auto brk = brk_label;
+
+		/* while文の中身 */
 		node->_then = statement(next_token, current_token);
+
+		/* ラベルを設定しなおす */
+		brk_label = brk;
 		return node;
 	}
 
@@ -400,6 +422,19 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		gotos = node.get();
 
 		*next_token = Token::skip(current_token->_next->_next.get(), ";");
+		return node;
+	}
+
+	/* break */
+	if (current_token->is_equal("break"))
+	{
+		if (brk_label.empty())
+		{
+			error_token("無効なbreak文です", current_token);
+		}
+		auto node = std::make_unique<Node>(NodeKind::ND_GOTO, current_token);
+		node->_unique_label = brk_label;
+		*next_token = Token::skip(current_token->_next.get(), ";");
 		return node;
 	}
 

@@ -297,7 +297,7 @@ bool Token::is_keyword(Token *&token)
 	static const std::unordered_set<string> kws = {
 		"return", "if", "else", "for", "while", "int", "sizeof", "char",
 		"struct", "union", "short", "long", "void", "typedef", "_Bool",
-		"enum", "static", "goto"};
+		"enum", "static", "goto", "break"};
 
 	return kws.count(token->_str) > 0;
 }
