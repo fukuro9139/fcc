@@ -112,8 +112,9 @@ public:
 	/* 変数 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
-	/* break */
-	std::string _brk_label = ""; /*!< forの終わりにつけるアセンブリ内で使う一意なラベル名 */
+	/* break, continue */
+	std::string _brk_label = "";  /*!< breakにつけるアセンブリ内で一意なラベル名 */
+	std::string _cont_label = ""; /*!< continueにつけるアセンブリ内で一意なラベル名 */
 
 	/* goto */
 	std::string _label = "";		/*!< ラベル */

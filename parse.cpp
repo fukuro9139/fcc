@@ -29,8 +29,11 @@ static Object *current_function = nullptr;
 static Node *gotos = nullptr;
 static Node *labels = nullptr;
 
-/* 現在のループのを抜けるラベル */
+/** breakでjumpに利用するためのラベル名 */
 static std::string brk_label = "";
+
+/** continueでjumpに利用するためのラベル名 */
+static std::string cont_label = "";
 
 /**************/
 /* Node Class */
@@ -287,6 +290,7 @@ unique_ptr<Object> Node::parse(Token *token)
  * 			 | "for" "(" expression-statement expression? ";" expression? ")" statement @n
  * 			 | "while" "(" expression ")" statement @n
  * 			 | "goto" ident ";" @n
+ * 			 | "continue" ";" @n
  * 			 |  ident ":" statement @n
  * 			 | "{" compound-statement @n
  * 			 | expression-statement
@@ -348,9 +352,10 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 
 		/* 現在のラベルを保存 */
 		auto brk = brk_label;
+		auto cont = cont_label;
 		/* forを抜けるラベルを設定 */
-		brk_label = new_unique_name();
-		node->_brk_label = brk_label;
+		node->_brk_label = brk_label = new_unique_name();
+		node->_cont_label = cont_label = new_unique_name();
 
 		/* 型指定子がきたら変数が定義されている */
 		if (Token::is_typename(current_token))
@@ -383,6 +388,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 
 		/* 保存していた値を代入してfor文に入る前のラベルに戻す */
 		brk_label = brk;
+		cont_label = cont;
 		return node;
 	}
 
@@ -398,16 +404,20 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		/* 条件文のは')'がくる */
 		current_token = Token::skip(current_token, ")");
 
-		/* while文を抜けるラベルを設定 */
+		/* 現在のラベルを保存 */
 		auto brk = brk_label;
-		brk_label = new_unique_name();
-		node->_brk_label = brk_label;
+		auto cont = cont_label;
+
+		/* while文を抜けるラベルを設定 */
+		node->_brk_label = brk_label = new_unique_name();
+		node->_cont_label = cont_label = new_unique_name();
 
 		/* while文の中身 */
 		node->_then = statement(next_token, current_token);
 
 		/* ラベルを設定しなおす */
 		brk_label = brk;
+		cont_label = cont;
 		return node;
 	}
 
@@ -430,10 +440,23 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 	{
 		if (brk_label.empty())
 		{
-			error_token("無効なbreak文です", current_token);
+			error_token("break文はループの中でしか使えません", current_token);
 		}
 		auto node = std::make_unique<Node>(NodeKind::ND_GOTO, current_token);
 		node->_unique_label = brk_label;
+		*next_token = Token::skip(current_token->_next.get(), ";");
+		return node;
+	}
+
+	/* continue */
+	if (current_token->is_equal("continue"))
+	{
+		if (cont_label.empty())
+		{
+			error_token("continue文はループの中でしか使えません", current_token);
+		}
+		auto node = std::make_unique<Node>(NodeKind::ND_GOTO, current_token);
+		node->_unique_label = cont_label;
 		*next_token = Token::skip(current_token->_next.get(), ";");
 		return node;
 	}

@@ -295,9 +295,27 @@ bool Token::is_keyword(Token *&token)
 {
 	/* 識別子一覧 */
 	static const std::unordered_set<string> kws = {
-		"return", "if", "else", "for", "while", "int", "sizeof", "char",
-		"struct", "union", "short", "long", "void", "typedef", "_Bool",
-		"enum", "static", "goto", "break"};
+		"return",
+		"if",
+		"else",
+		"for",
+		"while",
+		"int",
+		"sizeof",
+		"char",
+		"struct",
+		"union",
+		"short",
+		"long",
+		"void",
+		"typedef",
+		"_Bool",
+		"enum",
+		"static",
+		"goto",
+		"break",
+		"continue",
+	};
 
 	return kws.count(token->_str) > 0;
 }
@@ -552,13 +570,14 @@ bool Token::is_equal(const std::string &op) const
  * @return true 型を表す識別子である
  * @return false 型を表す識別子ではない
  */
-bool Token::is_typename(const Token * token)
+bool Token::is_typename(const Token *token)
 {
 	static const std::unordered_set<string> kws = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
-											"typedef", "enum", "static"};
-	
+												   "typedef", "enum", "static"};
+
 	/* 標準の型指定子 */
-	if(kws.count(token->_str)){
+	if (kws.count(token->_str))
+	{
 		return true;
 	}
 
@@ -629,10 +648,25 @@ bool Token::start_with(const std::string &str, const std::string &op)
 size_t Token::read_punct(std::string &&str)
 {
 	static const std::vector<string> kws =
-	{
-		"==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=", "++", "--",
-	 	"%=", "&=", "|=", "^=", "&&", "||",
-	};
+		{
+			"==",
+			"!=",
+			"<=",
+			">=",
+			"->",
+			"+=",
+			"-=",
+			"*=",
+			"/=",
+			"++",
+			"--",
+			"%=",
+			"&=",
+			"|=",
+			"^=",
+			"&&",
+			"||",
+		};
 
 	for (auto &kw : kws)
 	{

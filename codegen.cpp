@@ -655,7 +655,12 @@ void CodeGen::generate_statement(Node *node)
 			*os << "  cmp rax, 0\n";
 			*os << "  je " << node->_brk_label << "\n";
 		}
+		/* forの中身 */
 		generate_statement(node->_then.get());
+		
+		/* continue */
+		*os << node->_cont_label << ":\n";
+
 		/* 加算処理 */
 		if (node->_inc)
 		{
