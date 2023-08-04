@@ -487,7 +487,7 @@ void CodeGen::generate_expression(Node *node)
 	string ax, di;
 
 	/* long型およびポインタに対しては64ビットレジスタを使う */
-	if (node->_lhs->_ty->_kind == TypeKind::TY_LONG || node->_lhs->_ty->_base)
+	if (TypeKind::TY_LONG == node->_lhs->_ty->_kind || node->_lhs->_ty->_base)
 	{
 		ax = "rax";
 		di = "rdi";
@@ -575,6 +575,19 @@ void CodeGen::generate_expression(Node *node)
 		}
 		*os << "  movzb rax, al\n";
 		return;
+
+	case NodeKind::ND_SHL:
+		/* 右辺の値をrdiからrcxに転送 */
+		*os << "  mov rcx, rdi\n";
+		*os << "  shl " << ax << ", cl\n";
+		return;
+
+	case NodeKind::ND_SHR:
+		/* 右辺の値をrdiからrcxに転送 */
+		*os << "  mov rcx, rdi\n";
+		*os << "  sar " << ax << ", cl\n";
+		return;
+
 	default:
 		break;
 	}

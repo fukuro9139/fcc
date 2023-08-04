@@ -396,8 +396,10 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 	}
 
 	/* default */
-	if(current_token->is_equal("default")){
-		if(!current_switch){
+	if (current_token->is_equal("default"))
+	{
+		if (!current_switch)
+		{
 			error_token("default文はswitch文の中でしか使えません", current_token);
 		}
 		auto node = std::make_unique<Node>(NodeKind::ND_CASE, current_token);
@@ -1429,7 +1431,7 @@ unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
  * assign = logor (assign-op assign)? @n
- * assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "%="
+ * assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>="
  */
 unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 {
@@ -1439,7 +1441,10 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 		{"%=", NodeKind::ND_MOD},
 		{"&=", NodeKind::ND_BITAND},
 		{"|=", NodeKind::ND_BITOR},
-		{"^=", NodeKind::ND_BITXOR}};
+		{"^=", NodeKind::ND_BITXOR},
+		{"<<=", NodeKind::ND_SHL},
+		{">>=", NodeKind::ND_SHR},
+	};
 
 	auto node = log_or(&current_token, current_token);
 
@@ -1614,11 +1619,11 @@ unique_ptr<Node> Node::equality(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+ * @details 下記のEBNF規則に従う。 @n relational = shift ("<" shift | "<=" shift | ">" shift | ">=" shift)*
  */
 unique_ptr<Node> Node::relational(Token **next_token, Token *current_token)
 {
-	auto node = add(&current_token, current_token);
+	auto node = shift(&current_token, current_token);
 
 	while (true)
 	{
@@ -1626,31 +1631,69 @@ unique_ptr<Node> Node::relational(Token **next_token, Token *current_token)
 
 		if (current_token->is_equal("<"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LT, std::move(node), add(&current_token, current_token->_next.get()), start);
+			node = std::make_unique<Node>(NodeKind::ND_LT, std::move(node), shift(&current_token, current_token->_next.get()), start);
 			continue;
 		}
 
 		if (current_token->is_equal("<="))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LE, std::move(node), add(&current_token, current_token->_next.get()), start);
+			node = std::make_unique<Node>(NodeKind::ND_LE, std::move(node), shift(&current_token, current_token->_next.get()), start);
 			continue;
 		}
 
 		/* lhs > rhs は rhs < lhs と読み替える */
 		if (current_token->is_equal(">"))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LT, add(&current_token, current_token->_next.get()), std::move(node), start);
+			node = std::make_unique<Node>(NodeKind::ND_LT, shift(&current_token, current_token->_next.get()), std::move(node), start);
 			continue;
 		}
 
 		/* lhs >= rhs は rhs <= lhs と読み替える */
 		if (current_token->is_equal(">="))
 		{
-			node = std::make_unique<Node>(NodeKind::ND_LE, add(&current_token, current_token->_next.get()), std::move(node), start);
+			node = std::make_unique<Node>(NodeKind::ND_LE, shift(&current_token, current_token->_next.get()), std::move(node), start);
 			continue;
 		}
 
 		/* 比較演算子が出てこなくなったらループを抜ける */
+		*next_token = current_token;
+		return node;
+	}
+}
+
+/**
+ * @brief シフト演算子を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n shift = add ("<<" add | ">>" add)*
+ */
+unique_ptr<Node> Node::shift(Token **next_token, Token *current_token)
+{
+	auto node = add(&current_token, current_token);
+
+	for (;;)
+	{
+		auto start = current_token;
+
+		if (current_token->is_equal("<<"))
+		{
+			node = std::make_unique<Node>(NodeKind::ND_SHL,
+										  std::move(node),
+										  add(&current_token, current_token->_next.get()),
+										  start);
+			continue;
+		}
+
+		if (current_token->is_equal(">>"))
+		{
+			node = std::make_unique<Node>(NodeKind::ND_SHR,
+										  std::move(node),
+										  add(&current_token, current_token->_next.get()),
+										  start);
+			continue;
+		}
 		*next_token = current_token;
 		return node;
 	}

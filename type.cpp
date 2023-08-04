@@ -154,6 +154,8 @@ void Type::add_type(Node *node)
 		return;
 
 	case NodeKind::ND_BITNOT:
+	case NodeKind::ND_SHL:
+	case NodeKind::ND_SHR:
 		node->_ty = node->_lhs->_ty;
 		return;
 

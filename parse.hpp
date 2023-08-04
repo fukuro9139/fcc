@@ -63,6 +63,8 @@ enum class NodeKind
 	ND_BITAND,	  /*!< & */
 	ND_BITOR,	  /*!< | */
 	ND_BITXOR,	  /*!< ^ */
+	ND_SHL,		  /*!< << */
+	ND_SHR,		  /*!< >> */
 	ND_EQ,		  /*!< == */
 	ND_NE,		  /*!< != */
 	ND_LT,		  /*!< < */
@@ -185,6 +187,7 @@ private:
 	static std::unique_ptr<Node> bit_and(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> equality(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> relational(Token **next_token, Token *current_token);
+	static std::unique_ptr<Node> shift(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> add(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> cast(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> mul(Token **next_token, Token *current_token);
