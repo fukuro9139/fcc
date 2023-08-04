@@ -346,11 +346,11 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		/* for文のブロックスコープに入る */
 		Object::enter_scope();
 
+		/* 現在のラベルを保存 */
+		auto brk = brk_label;
 		/* forを抜けるラベルを設定 */
 		brk_label = new_unique_name();
 		node->_brk_label = brk_label;
-		/* for文が入れ子になっている場合に備えてlabelを保存 */
-		auto brk = brk_label;
 
 		/* 型指定子がきたら変数が定義されている */
 		if (Token::is_typename(current_token))
@@ -381,7 +381,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		/* for文のブロックスコープを抜ける */
 		Object::leave_scope();
 
-		/* for文の入れ子でラベルが変わっているかもしれないので保存していた値を代入 */
+		/* 保存していた値を代入してfor文に入る前のラベルに戻す */
 		brk_label = brk;
 		return node;
 	}
@@ -399,9 +399,9 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		current_token = Token::skip(current_token, ")");
 
 		/* while文を抜けるラベルを設定 */
+		auto brk = brk_label;
 		brk_label = new_unique_name();
 		node->_brk_label = brk_label;
-		auto brk = brk_label;
 
 		/* while文の中身 */
 		node->_then = statement(next_token, current_token);
