@@ -593,6 +593,13 @@ void CodeGen::generate_statement(Node *node)
 
 	switch (node->_kind)
 	{
+	case NodeKind::ND_GOTO:
+		*os << "  jmp " << node->_unique_label << "\n";
+		return;
+	case NodeKind::ND_LABEL:
+		*os << node->_unique_label << ":\n";
+		generate_statement(node->_lhs.get());
+		return;
 	case NodeKind::ND_RETURN:
 		/* return の後の式を評価 */
 		generate_expression(node->_lhs.get());

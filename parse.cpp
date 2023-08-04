@@ -25,6 +25,10 @@ using std::unique_ptr;
 /** 現在パースしている関数 */
 static Object *current_function = nullptr;
 
+/** 現在の関数で出てくるgoto文とラベルのリスト */
+static Node *gotos = nullptr;
+static Node *labels = nullptr;
+
 /**************/
 /* Node Class */
 /**************/
@@ -279,6 +283,8 @@ unique_ptr<Object> Node::parse(Token *token)
  * 			 | "if" "(" expression ")" statement ("else" statement)? @n
  * 			 | "for" "(" expression-statement expression? ";" expression? ")" statement @n
  * 			 | "while" "(" expression ")" statement @n
+ * 			 | "goto" ident ";" @n
+ * 			 |  ident ":" statement @n
  * 			 | "{" compound-statement @n
  * 			 | expression-statement
  */
@@ -380,6 +386,33 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		/* 条件文のは')'がくる */
 		current_token = Token::skip(current_token, ")");
 		node->_then = statement(next_token, current_token);
+		return node;
+	}
+
+	/* goto */
+	if (current_token->is_equal("goto"))
+	{
+		auto node = std::make_unique<Node>(NodeKind::ND_GOTO, current_token);
+		/* ソース内に書かれている名前 */
+		node->_label = current_token->_next->_str;
+		/* リストの先頭に追加 */
+		node->_goto_next = gotos;
+		gotos = node.get();
+
+		*next_token = Token::skip(current_token->_next->_next.get(), ";");
+		return node;
+	}
+
+	/* ラベル */
+	if (TokenKind::TK_IDENT == current_token->_kind && current_token->_next->is_equal(":"))
+	{
+		auto node = std::make_unique<Node>(NodeKind::ND_LABEL, current_token);
+		node->_label = current_token->_str;
+		node->_unique_label = new_unique_name();
+		node->_lhs = statement(next_token, current_token->_next->_next.get());
+		/* リストの先頭に繋ぐ */
+		node->_goto_next = labels;
+		labels = node.get();
 		return node;
 	}
 
@@ -502,6 +535,9 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 
 	/* 関数のブロックスコープを抜ける */
 	Object::leave_scope();
+
+	/* gotoとラベルの紐づけ */
+	resolve_goto_label();
 
 	current_function = nullptr;
 
@@ -2022,4 +2058,33 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base)
 	}
 
 	return token;
+}
+
+/**
+ * @brief goto文とラベルの対応を解決する
+ *
+ * @details goto文では現在の位置よりも後に出てくるラベルに
+ * ジャンプすることが可能なため、関数全体をパースした後でなければ
+ * ラベルとの対応を解決できない。
+ */
+void Node::resolve_goto_label()
+{
+	for (auto x = gotos; x; x = x->_goto_next)
+	{
+		for (auto y = labels; y; y = y->_goto_next)
+		{
+			if (x->_label == y->_label)
+			{
+				x->_unique_label = y->_unique_label;
+				break;
+			}
+		}
+		if (x->_unique_label.empty())
+		{
+			error_token("ラベルが定義されていません", x->_token->_next.get());
+		}
+	}
+
+	gotos = nullptr;
+	labels = nullptr;
 }

@@ -54,6 +54,8 @@ enum class NodeKind
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/
 	ND_BLOCK,	  /*!< {...} */
+	ND_GOTO,	  /*!< goto */
+	ND_LABEL,	  /*!< ラベル */
 	ND_FUNCALL,	  /*!< 関数呼び出し */
 	ND_MOD,		  /*!< % */
 	ND_BITAND,	  /*!< & */
@@ -104,9 +106,18 @@ public:
 	std::shared_ptr<Type> _func_ty; /*!< 関数の型 */
 	std::unique_ptr<Node> _args;	/*!< 引数  */
 
-	int64_t _val = 0;			  /*!< kindがND_NUMの場合のみ使う、数値の値 */
+	/* 数値 */
+	int64_t _val = 0; /*!< kindがND_NUMの場合のみ使う、数値の値 */
+
+	/* 変数 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
+	/* goto */
+	std::string _label = "";		/*!< ラベル */
+	std::string _unique_label = ""; /*!< アセンブリ内で使う一意なラベル名 */
+	Node *_goto_next;				/*!< gotoをまとめたリストで次のノード */
+
+	/* エラー報告用 */
 	Token *_token = nullptr; /* ノードと対応するトークン */
 
 	/* コンストラクタ */
@@ -175,6 +186,6 @@ private:
 	static std::shared_ptr<Type> type_name(Token **next_token, Token *current_token);
 	static std::unique_ptr<Node> function_call(Token **next_token, Token *current_token);
 	static Token *global_variable(Token *token, std::shared_ptr<Type> &&base);
-
+	static void resolve_goto_label();
 	static bool is_function(Token *token);
 };
