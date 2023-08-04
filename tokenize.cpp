@@ -315,6 +315,9 @@ bool Token::is_keyword(Token *&token)
 		"goto",
 		"break",
 		"continue",
+		"switch",
+		"case",
+		"default",
 	};
 
 	return kws.count(token->_str) > 0;

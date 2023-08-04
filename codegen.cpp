@@ -657,7 +657,7 @@ void CodeGen::generate_statement(Node *node)
 		}
 		/* forの中身 */
 		generate_statement(node->_then.get());
-		
+
 		/* continue */
 		*os << node->_cont_label << ":\n";
 
@@ -670,6 +670,37 @@ void CodeGen::generate_statement(Node *node)
 		*os << node->_brk_label << ":\n";
 		return;
 	}
+
+	case NodeKind::ND_SWITCH:
+	{
+		generate_expression(node->_condition.get());
+
+		auto reg = (8 == node->_condition->_ty->_size) ? "rax" : "eax";
+
+		/* 各ケースの条件の値と一致すればラベルにjump */
+		for (auto n = node->case_next; n; n = n->case_next)
+		{
+			*os << "  cmp " << reg << ", " << n->_val << "\n";
+			*os << "  je " << n->_label << "\n";
+		}
+		/* defaultがあればdefaultにjump */
+		if (node->default_case)
+		{
+			*os << "  jmp " << node->default_case->_label << "\n";
+		}
+		/* 一致する数値がなければ抜ける */
+		*os << "  jmp " << node->_brk_label << "\n";
+
+		/* 各ケース */
+		generate_statement(node->_then.get());
+		*os << node->_brk_label << ":\n";
+		return;
+	}
+
+	case NodeKind::ND_CASE:
+		*os << node->_label << ":\n";
+		generate_statement(node->_lhs.get());
+		return;
 
 	case NodeKind::ND_BLOCK:
 	{

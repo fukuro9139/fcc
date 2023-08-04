@@ -53,6 +53,8 @@ enum class NodeKind
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/
+	ND_SWITCH,	  /*!< switch文 */
+	ND_CASE,	  /*!< case */
 	ND_BLOCK,	  /*!< {...} */
 	ND_GOTO,	  /*!< goto */
 	ND_LABEL,	  /*!< ラベル */
@@ -120,6 +122,10 @@ public:
 	std::string _label = "";		/*!< ラベル */
 	std::string _unique_label = ""; /*!< アセンブリ内で使う一意なラベル名 */
 	Node *_goto_next;				/*!< gotoをまとめたリストで次のノード */
+
+	/* switch-case */
+	Node *case_next = nullptr;	  /*!< switch文の各ケースのリスト */
+	Node *default_case = nullptr; /*!< switch文のdefault */
 
 	/* エラー報告用 */
 	Token *_token = nullptr; /* ノードと対応するトークン */

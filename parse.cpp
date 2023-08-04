@@ -35,6 +35,9 @@ static std::string brk_label = "";
 /** continueでjumpに利用するためのラベル名 */
 static std::string cont_label = "";
 
+/** 現在しているswitch文のノードへのポインタ、それ以外の場合はnullptr */
+static Node *current_switch = nullptr;
+
 /**************/
 /* Node Class */
 /**************/
@@ -287,6 +290,9 @@ unique_ptr<Object> Node::parse(Token *token)
  * @details 下記のEBNF規則に従う。 @n
  * statement = "return" expression ";" @n
  * 			 | "if" "(" expression ")" statement ("else" statement)? @n
+ *      	 | "switch" "(" expression ")" statement @n
+ *  	     | "case" num ":" statement @n
+ * 	     	 | "default" ":" statement @n
  * 			 | "for" "(" expression-statement expression? ";" expression? ")" statement @n
  * 			 | "while" "(" expression ")" statement @n
  * 			 | "goto" ident ";" @n
@@ -336,6 +342,74 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 			node->_else = statement(&current_token, current_token->_next.get());
 		}
 		*next_token = current_token;
+		return node;
+	}
+
+	/* switch */
+	if (current_token->is_equal("switch"))
+	{
+		auto node = std::make_unique<Node>(NodeKind::ND_SWITCH, current_token);
+		current_token = Token::skip(current_token->_next.get(), "(");
+		/* switchの条件式 */
+		node->_condition = expression(&current_token, current_token);
+		current_token = Token::skip(current_token, ")");
+
+		/* 現在のswを保存 */
+		auto sw = current_switch;
+		current_switch = node.get();
+
+		/* breakラベルの設定 */
+		auto brk = brk_label;
+		brk_label = node->_brk_label = new_unique_name();
+
+		/* 各ケース文 */
+		node->_then = statement(next_token, current_token);
+
+		current_switch = sw;
+		brk_label = brk;
+		return node;
+	}
+
+	/* case */
+	if (current_token->is_equal("case"))
+	{
+		if (!current_switch)
+		{
+			error_token("case文はswitch文の中でしか使えません", current_token);
+		}
+
+		auto val = current_token->_next->get_number();
+
+		auto node = std::make_unique<Node>(NodeKind::ND_CASE, current_token);
+		current_token = Token::skip(current_token->_next->_next.get(), ":");
+
+		/* ユニークなラベル名を設定 */
+		node->_label = new_unique_name();
+
+		node->_lhs = statement(next_token, current_token);
+		node->_val = val;
+
+		/* リストの先頭に追加 */
+		node->case_next = current_switch->case_next;
+		current_switch->case_next = node.get();
+		return node;
+	}
+
+	/* default */
+	if(current_token->is_equal("default")){
+		if(!current_switch){
+			error_token("default文はswitch文の中でしか使えません", current_token);
+		}
+		auto node = std::make_unique<Node>(NodeKind::ND_CASE, current_token);
+		current_token = Token::skip(current_token->_next.get(), ":");
+
+		/* ユニークなラベル名を設定 */
+		node->_label = new_unique_name();
+
+		node->_lhs = statement(next_token, current_token);
+
+		/* リストの先頭にデフォルトのノードへの参照を追加 */
+		current_switch->default_case = node.get();
 		return node;
 	}
 
