@@ -539,7 +539,8 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 		/* 変数の最終的な型を決定 */
 		auto ty = declarator(&current_token, current_token, base);
 
-		if(ty->_size < 0){
+		if (ty->_size < 0)
+		{
 			error_token("変数が不完全な型で宣言されています", current_token);
 		}
 
@@ -599,10 +600,21 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 			/* 2個目以降の引数では","区切りが必要 */
 			current_token = Token::skip(current_token, ",");
 		}
-		auto base = declspec(&current_token, current_token, nullptr);
-		cur->_next = std::make_shared<Type>(*(declarator(&current_token, current_token, base)));
+		/* 引数の型を決定 */
+		auto ty2 = declspec(&current_token, current_token, nullptr);
+		ty2 = declarator(&current_token, current_token, ty2);
+
+		/* 関数の引数では、T型の配列はT型へのポインタとして解釈する。例： *argv[] は **argv に変換される */
+		if (TypeKind::TY_ARRAY == ty2->_kind)
+		{
+			auto token = ty2->_token;
+			ty2 = Type::pointer_to(ty2->_base);
+			ty2->_token = token;
+		}
+		cur->_next = std::make_shared<Type>(*ty2);
 		cur = cur->_next.get();
 	}
+
 	ty = Type::func_type(ty);
 	ty->_params = std::move(head->_next);
 	*next_token = current_token->_next.get();
