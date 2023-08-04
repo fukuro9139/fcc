@@ -539,6 +539,10 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 		/* 変数の最終的な型を決定 */
 		auto ty = declarator(&current_token, current_token, base);
 
+		if(ty->_size < 0){
+			error_token("変数が不完全な型で宣言されています", current_token);
+		}
+
 		/* 変数がvoid型で宣言されていたらエラー */
 		if (TypeKind::TY_VOID == ty->_kind)
 		{
@@ -606,6 +610,31 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 }
 
 /**
+ * @brief 配列の宣言の要素数部分を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 宣言されている型
+ * @return 配列の型
+ * @details
+ * 次のEBNF規則に従う。 @n array-dimensions = num? "]" type-suffix
+ */
+shared_ptr<Type> Node::array_dimensions(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
+{
+	/* 要素数の指定がない場合は長さを-1にする */
+	if (current_token->is_equal("]"))
+	{
+		ty = type_suffix(next_token, current_token->_next.get(), std::move(ty));
+		return Type::array_of(ty, -1);
+	}
+
+	int sz = current_token->get_number();
+	current_token = Token::skip(current_token->_next.get(), "]");
+	ty = type_suffix(next_token, current_token, std::move(ty));
+	return Type::array_of(ty, sz);
+}
+
+/**
  * @brief 宣言を変数 or 関数か判断し結果の型を返す
  *
  * @param next_token 残りのトークンを返すための参照
@@ -614,7 +643,7 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
  * @return 変数 or 関数の型
  * @details
  * 次のEBNF規則に従う。 @n
- * type-suffix = "(" function-parameters | "[" number"]" type-suffix | ε @n
+ * type-suffix = "(" function-parameters | "[" array-dimension | ε @n
  * function-parameters = parameter ("," parameter)* @n
  * parameter = declspec declarator
  */
@@ -629,10 +658,7 @@ shared_ptr<Type> Node::type_suffix(Token **next_token, Token *current_token, sha
 	/* 識別子名の後に"["があれば配列 */
 	if (current_token->is_equal("["))
 	{
-		int sz = current_token->_next->get_number();
-		current_token = Token::skip(current_token->_next->_next.get(), "]");
-		ty = type_suffix(next_token, current_token, std::move(ty));
-		return Type::array_of(ty, sz);
+		return array_dimensions(next_token, current_token->_next.get(), std::move(ty));
 	}
 
 	/* そうでなければ普通の変数 */

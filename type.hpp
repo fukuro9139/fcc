@@ -31,7 +31,7 @@ enum class TypeKind
 	TY_UNION,  /*!< 共用体 */
 };
 
-/* Node, Tokenクラスを使いたいので先に宣言 */
+/* 先に宣言 */
 class Node;
 class Token;
 class Member;
