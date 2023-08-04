@@ -141,6 +141,25 @@ shared_ptr<Type> Object::find_tag(const Token *token)
 	return nullptr;
 }
 
+
+/**
+ * @brief 最も内側のスコープ内で構造体のタグを名前で検索する。見つからなかった場合はnullptrを返す。
+ *
+ * @param token 検索対象のトークン
+ * @return 既出の構造体であればその型へのポインタ
+ */
+shared_ptr<Type> Object::find_tag_in_internal_scope(const Token * token)
+{
+	for(auto sc = scope->_tags.get(); sc; sc = sc->_next.get()){
+		if(token->is_equal(sc->_name)){
+			return sc->_ty;
+		}
+	}
+	return nullptr;
+}
+
+
+
 /**
  * @brief 'n'を切り上げて最も近い'align'の倍数にする。
  *

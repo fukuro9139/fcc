@@ -750,23 +750,36 @@ shared_ptr<Type> Node::struct_union_decl(Token **next_token, Token *current_toke
 	if (tag && !current_token->is_equal("{"))
 	{
 		auto ty = Object::find_tag(tag);
-		/* タグが見つからなかったらエラー */
-		if (!ty)
-		{
-			error_token("未定義の構造体です", tag);
-		}
 		*next_token = current_token;
+		/* タグが登録済みならばタグの型をそのまま返す */
+		if (ty)
+		{
+			return ty;
+		}
+		/* タグが未登録の場合はサイズ-1の構造体を作成して登録する */
+		ty = Type::struct_type();
+		ty->_size = -1;
+		Object::push_tag_scope(tag, ty);
 		return ty;
 	}
 
-	/* 構造体の情報を読み込む */
-	auto ty = std::make_shared<Type>(TypeKind::TY_STRUCT);
-	struct_members(next_token, current_token->_next.get(), ty.get());
-	ty->_align = 1;
+	current_token = Token::skip(current_token, "{");
 
-	/* タグが存在するならば現在のスコープに登録する */
+	/* 構造体の情報を読み込む */
+	auto ty = Type::struct_type();
+	struct_members(next_token, current_token, ty.get());
+
 	if (tag)
 	{
+		auto ty2 = Object::find_tag_in_internal_scope(tag);
+
+		/* タグが現在のスコープに存在している場合は上書きする。 */
+		if (ty2)
+		{
+			*ty2 = *ty;
+			return ty2;
+		}
+		/* 存在しない場合は現在のスコープに登録 */
 		Object::push_tag_scope(tag, ty);
 	}
 
@@ -786,6 +799,12 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 	/* 構造体の情報を読み込む */
 	auto ty = struct_union_decl(next_token, current_token);
 	ty->_kind = TypeKind::TY_STRUCT;
+
+	/* 宣言のみならば型情報だけ返す */
+	if (ty->_size < 0)
+	{
+		return ty;
+	}
 
 	/* 構造体のメンバのオフセットを計算する */
 	int offset = 0;
@@ -815,6 +834,12 @@ shared_ptr<Type> Node::union_decl(Token **next_token, Token *current_token)
 {
 	auto ty = struct_union_decl(next_token, current_token);
 	ty->_kind = TypeKind::TY_UNION;
+
+	/* 宣言のみならば型情報だけ返す */
+	if (ty->_size < 0)
+	{
+		return ty;
+	}
 
 	/* 共用体の場合、全てのoffsetは0で共通である。 */
 	/* アライメントと全体のサイズの計算だけ行う */

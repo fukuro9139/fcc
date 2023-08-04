@@ -89,6 +89,7 @@ public:
 	static std::shared_ptr<Type> array_of(std::shared_ptr<Type> base, int length);
 	static std::shared_ptr<Type> func_type(const std::shared_ptr<Type> &return_ty);
 	static std::shared_ptr<Type> enum_type();
+	static std::shared_ptr<Type> struct_type();
 	static void usual_arith_conv(std::unique_ptr<Node> &lhs, std::unique_ptr<Node> &rhs);
 
 	/* 静的メンバ変数 (public) */

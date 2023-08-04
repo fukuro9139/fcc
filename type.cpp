@@ -299,9 +299,19 @@ void Type::usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs)
 /**
  * @brief enum型の型を返す
  *
- * @return shared_ptr<Type>
+ * @return enum型の型
  */
 shared_ptr<Type> Type::enum_type()
 {
 	return std::make_shared<Type>(TypeKind::TY_ENUM, 4, 4);
+}
+
+/**
+ * @brief 構造体型の型を返す
+ *
+ * @return 構造体型の型
+ */
+shared_ptr<Type> Type::struct_type()
+{
+	return std::make_shared<Type>(TypeKind::TY_STRUCT, 0, 1);
 }
