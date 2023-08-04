@@ -449,7 +449,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 	while (!current_token->is_equal("}"))
 	{
 		/* 変数宣言、定義 */
-		if (Token::is_typename(current_token))
+		if (Token::is_typename(current_token) && !current_token->_next->is_equal(":"))
 		{
 			/* 型指定子を読み取る */
 			VarAttr attr = {};
