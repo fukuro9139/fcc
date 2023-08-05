@@ -12,19 +12,16 @@
 #include "type.hpp"
 #include "parse.hpp"
 
-using std::shared_ptr;
-using std::unique_ptr;
-
 /**************/
 /* Type Class */
 /**************/
 
-const shared_ptr<Type> Type::VOID_BASE = std::make_shared<Type>(TypeKind::TY_VOID, 1, 1);
-const shared_ptr<Type> Type::SHORT_BASE = std::make_shared<Type>(TypeKind::TY_SHORT, 2, 2);
-const shared_ptr<Type> Type::INT_BASE = std::make_shared<Type>(TypeKind::TY_INT, 4, 4);
-const shared_ptr<Type> Type::LONG_BASE = std::make_shared<Type>(TypeKind::TY_LONG, 8, 8);
-const shared_ptr<Type> Type::CHAR_BASE = std::make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
-const shared_ptr<Type> Type::BOOL_BASE = std::make_shared<Type>(TypeKind::TY_BOOL, 1, 1);
+const shared_ptr<Type> Type::VOID_BASE = make_shared<Type>(TypeKind::TY_VOID, 1, 1);
+const shared_ptr<Type> Type::SHORT_BASE = make_shared<Type>(TypeKind::TY_SHORT, 2, 2);
+const shared_ptr<Type> Type::INT_BASE = make_shared<Type>(TypeKind::TY_INT, 4, 4);
+const shared_ptr<Type> Type::LONG_BASE = make_shared<Type>(TypeKind::TY_LONG, 8, 8);
+const shared_ptr<Type> Type::CHAR_BASE = make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
+const shared_ptr<Type> Type::BOOL_BASE = make_shared<Type>(TypeKind::TY_BOOL, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
 
@@ -44,7 +41,7 @@ Type::Type(Token *token, const shared_ptr<Type> &return_ty)
  * @param ty2 右辺の型
  * @return 共通の型
  */
-std::shared_ptr<Type> Type::get_common_type(const Type *ty1, const Type *ty2)
+shared_ptr<Type> Type::get_common_type(const Type *ty1, const Type *ty2)
 {
 	/* 左辺がポインタなら同じ型へのポインタを返す。 */
 	if (ty1->_base)
@@ -115,7 +112,7 @@ void Type::add_type(Node *node)
 	case NodeKind::ND_NEG:
 	{
 		auto ty = get_common_type(INT_BASE.get(), node->_lhs->_ty.get());
-		node->_lhs = Node::new_cast(std::move(node->_lhs), ty);
+		node->_lhs = Node::new_cast(move(node->_lhs), ty);
 		node->_ty = ty;
 		return;
 	}
@@ -128,7 +125,7 @@ void Type::add_type(Node *node)
 		/* 左辺に合わせてキャストする */
 		if (TypeKind::TY_STRUCT != node->_lhs->_ty->_kind)
 		{
-			node->_rhs = Node::new_cast(std::move(node->_rhs), node->_lhs->_ty);
+			node->_rhs = Node::new_cast(move(node->_rhs), node->_lhs->_ty);
 		}
 		node->_ty = node->_lhs->_ty;
 		return;
@@ -252,7 +249,7 @@ bool Type::is_integer() const
  */
 shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
 {
-	return std::make_shared<Type>(base, 8, 8);
+	return make_shared<Type>(base, 8, 8);
 }
 
 /**
@@ -263,7 +260,7 @@ shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
  */
 shared_ptr<Type> Type::func_type(const shared_ptr<Type> &return_ty)
 {
-	return std::make_shared<Type>(return_ty->_token, return_ty);
+	return make_shared<Type>(return_ty->_token, return_ty);
 }
 
 /**
@@ -275,7 +272,7 @@ shared_ptr<Type> Type::func_type(const shared_ptr<Type> &return_ty)
  */
 shared_ptr<Type> Type::array_of(shared_ptr<Type> base, int length)
 {
-	auto ret = std::make_shared<Type>(TypeKind::TY_ARRAY, base->_size * length, base->_align);
+	auto ret = make_shared<Type>(TypeKind::TY_ARRAY, base->_size * length, base->_align);
 	ret->_base = base;
 	ret->_array_length = length;
 	return ret;
@@ -294,8 +291,8 @@ shared_ptr<Type> Type::array_of(shared_ptr<Type> base, int length)
 void Type::usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs)
 {
 	auto ty = Type::get_common_type(lhs->_ty.get(), rhs->_ty.get());
-	lhs = Node::new_cast(std::move(lhs), ty);
-	rhs = Node::new_cast(std::move(rhs), ty);
+	lhs = Node::new_cast(move(lhs), ty);
+	rhs = Node::new_cast(move(rhs), ty);
 }
 
 /**
@@ -305,7 +302,7 @@ void Type::usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs)
  */
 shared_ptr<Type> Type::enum_type()
 {
-	return std::make_shared<Type>(TypeKind::TY_ENUM, 4, 4);
+	return make_shared<Type>(TypeKind::TY_ENUM, 4, 4);
 }
 
 /**
@@ -315,5 +312,5 @@ shared_ptr<Type> Type::enum_type()
  */
 shared_ptr<Type> Type::struct_type()
 {
-	return std::make_shared<Type>(TypeKind::TY_STRUCT, 0, 1);
+	return make_shared<Type>(TypeKind::TY_STRUCT, 0, 1);
 }

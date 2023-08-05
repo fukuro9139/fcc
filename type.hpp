@@ -11,8 +11,7 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
+#include "common.hpp"
 
 /* 型の種類 */
 enum class TypeKind
@@ -55,7 +54,7 @@ public:
 	 * ポインタと配列の二重性を表すために同じメンバを使う。
 	 * "kind"の代わりに"base"を調べることで型がポインタかどうか判断する。
 	 */
-	std::shared_ptr<Type> _base;
+	shared_ptr<Type> _base;
 
 	Token *_token = nullptr; /*!< 変数に対応するトークン */
 
@@ -63,19 +62,19 @@ public:
 	int _array_length = 0; /*!< 配列の長さ */
 
 	/* 構造体 */
-	std::shared_ptr<Member> _members; /*!< 構造体のメンバ */
+	shared_ptr<Member> _members; /*!< 構造体のメンバ */
 
 	/* 関数 */
-	std::shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */
-	std::shared_ptr<Type> _params;	  /*!< 引数の型  */
-	std::shared_ptr<Type> _next;	  /*!< リストの次の型 */
+	shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */
+	shared_ptr<Type> _params;	  /*!< 引数の型  */
+	shared_ptr<Type> _next;	  /*!< リストの次の型 */
 
 	/* コンストラクタ */
 	Type();
 	Type(const TypeKind &kind, const int &size, const int &align);
 	Type(const TypeKind &kind);
-	Type(const std::shared_ptr<Type> &base, const int &size, const int &align);
-	Type(Token *token, const std::shared_ptr<Type> &return_ty);
+	Type(const shared_ptr<Type> &base, const int &size, const int &align);
+	Type(Token *token, const shared_ptr<Type> &return_ty);
 
 	/* メンバ関数 (public) */
 
@@ -84,20 +83,20 @@ public:
 	/* 静的メンバ関数 (public) */
 
 	static void add_type(Node *node);
-	static std::shared_ptr<Type> get_common_type(const Type *ty1, const Type *ty2);
-	static std::shared_ptr<Type> pointer_to(const std::shared_ptr<Type> &base);
-	static std::shared_ptr<Type> array_of(std::shared_ptr<Type> base, int length);
-	static std::shared_ptr<Type> func_type(const std::shared_ptr<Type> &return_ty);
-	static std::shared_ptr<Type> enum_type();
-	static std::shared_ptr<Type> struct_type();
-	static void usual_arith_conv(std::unique_ptr<Node> &lhs, std::unique_ptr<Node> &rhs);
+	static shared_ptr<Type> get_common_type(const Type *ty1, const Type *ty2);
+	static shared_ptr<Type> pointer_to(const shared_ptr<Type> &base);
+	static shared_ptr<Type> array_of(shared_ptr<Type> base, int length);
+	static shared_ptr<Type> func_type(const shared_ptr<Type> &return_ty);
+	static shared_ptr<Type> enum_type();
+	static shared_ptr<Type> struct_type();
+	static void usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs);
 
 	/* 静的メンバ変数 (public) */
 
-	static const std::shared_ptr<Type> VOID_BASE;  /*!< void型 */
-	static const std::shared_ptr<Type> BOOL_BASE;  /*!< bool型 */
-	static const std::shared_ptr<Type> INT_BASE;   /*!< int型 */
-	static const std::shared_ptr<Type> LONG_BASE;  /*!< long型 */
-	static const std::shared_ptr<Type> CHAR_BASE;  /*!< char型 */
-	static const std::shared_ptr<Type> SHORT_BASE; /*!< short型 */
+	static const shared_ptr<Type> VOID_BASE;  /*!< void型 */
+	static const shared_ptr<Type> BOOL_BASE;  /*!< bool型 */
+	static const shared_ptr<Type> INT_BASE;   /*!< int型 */
+	static const shared_ptr<Type> LONG_BASE;  /*!< long型 */
+	static const shared_ptr<Type> CHAR_BASE;  /*!< char型 */
+	static const shared_ptr<Type> SHORT_BASE; /*!< short型 */
 };
