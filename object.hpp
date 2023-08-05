@@ -11,10 +11,9 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
 #include "type.hpp"
 #include "tokenize.hpp"
+#include "common.hpp"
 
 /* 先に宣言 */
 struct Scope;
@@ -30,9 +29,9 @@ public:
 	/* メンバ変数 (public) */
 	/* 共通 */
 
-	std::unique_ptr<Object> _next; /*!< 次のオブジェクト */
-	std::string _name = "";		   /*!< 名前 */
-	std::shared_ptr<Type> _ty;	   /* 型 */
+	unique_ptr<Object> _next; /*!< 次のオブジェクト */
+	string _name = "";		   /*!< 名前 */
+	shared_ptr<Type> _ty;	   /* 型 */
 	bool is_local = false;		   /*!< ローカル変数であるか */
 
 	/* ローカル変数用 */
@@ -45,53 +44,53 @@ public:
 	bool is_static = false;		/*!< ファイルスコープか */
 
 	/* グローバル変数 */
-	std::string _init_data = ""; /*!< 文字列リテラル */
+	string _init_data = ""; /*!< 文字列リテラル */
 	bool is_str_literal = false; /*!< 文字列リテラルか*/
 
 	/* 関数用 */
 
-	std::unique_ptr<Object> _params; /*!< 引数 */
-	std::unique_ptr<Node> _body;	 /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
-	std::unique_ptr<Object> _locals; /*!< 関数内で使うローカル変数 */
+	unique_ptr<Object> _params; /*!< 引数 */
+	unique_ptr<Node> _body;	 /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
+	unique_ptr<Object> _locals; /*!< 関数内で使うローカル変数 */
 	int _stack_size = 0;			 /*!< 使用するスタックの深さ */
 
 	/* コンストラクタ */
 
 	Object();
-	Object(const std::string &name);
-	Object(const std::string &name, std::shared_ptr<Type> &&ty);
-	Object(std::unique_ptr<Node> &&body, std::unique_ptr<Object> &&locs);
+	Object(const string &name);
+	Object(const string &name, shared_ptr<Type> &&ty);
+	Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs);
 
 	/* 静的メンバ関数 (public) */
 
-	static Object *new_lvar(const std::string &name, std::shared_ptr<Type> &&ty);
-	static Object *new_gvar(const std::string &name, std::shared_ptr<Type> &&ty);
+	static Object *new_lvar(const string &name, shared_ptr<Type> &&ty);
+	static Object *new_gvar(const string &name, shared_ptr<Type> &&ty);
 	static VarScope *find_var(const Token *token);
-	static std::shared_ptr<Type> find_typedef(const Token *token);
-	static std::shared_ptr<Type> find_tag(const Token *token);
-	static std::shared_ptr<Type> find_tag_in_internal_scope(const Token *token);
+	static shared_ptr<Type> find_typedef(const Token *token);
+	static shared_ptr<Type> find_tag(const Token *token);
+	static shared_ptr<Type> find_tag_in_internal_scope(const Token *token);
 	static int align_to(const int &n, const int &align);
-	static void assign_lvar_offsets(const std::unique_ptr<Object> &prog);
-	static void create_params_lvars(std::shared_ptr<Type> &&param);
+	static void assign_lvar_offsets(const unique_ptr<Object> &prog);
+	static void create_params_lvars(shared_ptr<Type> &&param);
 	static void enter_scope();
 	static void leave_scope();
-	static VarScope *push_scope(const std::string &name);
-	static void push_tag_scope(Token *token, const std::shared_ptr<Type> &ty);
+	static VarScope *push_scope(const string &name);
+	static void push_tag_scope(Token *token, const shared_ptr<Type> &ty);
 
 	/* 静的メンバ変数 */
 
 	/** ローカル変数オブジェクトのリスト。パース中に生成される全てのローカル変数はこのリストに連結される。 */
-	static std::unique_ptr<Object> locals;
+	static unique_ptr<Object> locals;
 	/** グローバル変数オブジェクトのリスト。パース中に生成される全てのグローバル変数はこのリストに連結される。 */
-	static std::unique_ptr<Object> globals;
+	static unique_ptr<Object> globals;
 
 private:
 	/* 静的メンバ関数 (private) */
 
-	static std::unique_ptr<Object> new_var(const std::string &name, std::shared_ptr<Type> &&ty);
+	static unique_ptr<Object> new_var(const string &name, shared_ptr<Type> &&ty);
 
 	/** 変数のスコープ */
-	static std::unique_ptr<Scope> scope;
+	static unique_ptr<Scope> scope;
 };
 
 /**
@@ -100,11 +99,11 @@ private:
  */
 struct TagScope
 {
-	std::unique_ptr<TagScope> _next; /*!< スコープ内の次のタグ */
-	std::string _name = "";			 /*!< 構造体の名前 */
-	std::shared_ptr<Type> _ty;		 /*!< 構造体の型 */
+	unique_ptr<TagScope> _next; /*!< スコープ内の次のタグ */
+	string _name = "";			 /*!< 構造体の名前 */
+	shared_ptr<Type> _ty;		 /*!< 構造体の型 */
 
-	TagScope(const std::string &name, const std::shared_ptr<Type> &ty, std::unique_ptr<TagScope> &&next) : _name(name), _ty(ty), _next(std::move(next)) {}
+	TagScope(const string &name, const shared_ptr<Type> &ty, unique_ptr<TagScope> &&next) : _name(name), _ty(ty), _next(std::move(next)) {}
 };
 
 /**
@@ -113,14 +112,14 @@ struct TagScope
  */
 struct VarScope
 {
-	std::unique_ptr<VarScope> _next; /*!< 次の変数  */
-	const std::string _name = "";	 /*!< 変数名 */
+	unique_ptr<VarScope> _next; /*!< 次の変数  */
+	const string _name = "";	 /*!< 変数名 */
 	const Object *_var = nullptr;	 /*!< 対応する変数のオブジェクト */
-	std::shared_ptr<Type> type_def;	 /*!< typedefされた型  */
-	std::shared_ptr<Type> enum_ty;	 /*!< 列挙型の型 */
+	shared_ptr<Type> type_def;	 /*!< typedefされた型  */
+	shared_ptr<Type> enum_ty;	 /*!< 列挙型の型 */
 	int enum_val = 0;				 /*!< 列挙型が表す数値 */
 
-	VarScope(std::unique_ptr<VarScope> &&next, const std::string &name) : _next(std::move(next)), _name(name) {}
+	VarScope(unique_ptr<VarScope> &&next, const string &name) : _next(std::move(next)), _name(name) {}
 };
 
 /**
@@ -129,12 +128,12 @@ struct VarScope
  */
 struct Scope
 {
-	std::unique_ptr<Scope> _next;	 /*!< 次のスコープ  */
-	std::unique_ptr<VarScope> _vars; /*!< 変数のスコープ */
-	std::unique_ptr<TagScope> _tags; /*!< 構造体のタグのスコープ */
+	unique_ptr<Scope> _next;	 /*!< 次のスコープ  */
+	unique_ptr<VarScope> _vars; /*!< 変数のスコープ */
+	unique_ptr<TagScope> _tags; /*!< 構造体のタグのスコープ */
 
 	Scope() {}
-	Scope(std::unique_ptr<Scope> &&next) : _next(std::move(next)) {}
+	Scope(unique_ptr<Scope> &&next) : _next(std::move(next)) {}
 };
 
 /**

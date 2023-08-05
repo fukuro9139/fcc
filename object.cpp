@@ -12,25 +12,22 @@
 #include "object.hpp"
 #include "parse.hpp"
 
-using std::shared_ptr;
-using std::unique_ptr;
-
 /* 静的メンバ変数 */
 
-std::unique_ptr<Object> Object::locals = nullptr;
-std::unique_ptr<Object> Object::globals = nullptr;
-std::unique_ptr<Scope> Object::scope = std::make_unique<Scope>();
+unique_ptr<Object> Object::locals = nullptr;
+unique_ptr<Object> Object::globals = nullptr;
+unique_ptr<Scope> Object::scope = make_unique<Scope>();
 
 /* コンストラクタ */
 
 Object::Object() = default;
 
-Object::Object(const std::string &name) : _name(name) {}
+Object::Object(const string &name) : _name(name) {}
 
-Object::Object(const std::string &name, shared_ptr<Type> &&ty)
-	: _name(name), _ty(std::move(ty)) {}
+Object::Object(const string &name, shared_ptr<Type> &&ty)
+	: _name(name), _ty(move(ty)) {}
 
-Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(std::move(body)), _locals(std::move(locs)) {}
+Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(move(body)), _locals(move(locs)) {}
 
 /* メンバ関数 */
 
@@ -41,9 +38,9 @@ Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(std::
  * @param ty 変数の型
  * @return 作成したオブジェクトのポインタ
  */
-unique_ptr<Object> Object::new_var(const std::string &name, shared_ptr<Type> &&ty)
+unique_ptr<Object> Object::new_var(const string &name, shared_ptr<Type> &&ty)
 {
-	auto var = std::make_unique<Object>(name, std::move(ty));
+	auto var = make_unique<Object>(name, move(ty));
 	push_scope(name)->_var = var.get();
 	return var;
 }
@@ -54,12 +51,12 @@ unique_ptr<Object> Object::new_var(const std::string &name, shared_ptr<Type> &&t
  * @param  オブジェクトの型
  * @return 生成した変数へのポインタ
  */
-Object *Object::new_lvar(const std::string &name, shared_ptr<Type> &&ty)
+Object *Object::new_lvar(const string &name, shared_ptr<Type> &&ty)
 {
-	auto var = new_var(name, std::move(ty));
+	auto var = new_var(name, move(ty));
 	var->is_local = true;
-	var->_next = std::move(locals);
-	locals = std::move(var);
+	var->_next = move(locals);
+	locals = move(var);
 	return locals.get();
 }
 
@@ -69,11 +66,11 @@ Object *Object::new_lvar(const std::string &name, shared_ptr<Type> &&ty)
  * @param  ty オブジェクトの型
  * @return 生成した変数へのポインタ
  */
-Object *Object::new_gvar(const std::string &name, shared_ptr<Type> &&ty)
+Object *Object::new_gvar(const string &name, shared_ptr<Type> &&ty)
 {
-	auto var = new_var(name, std::move(ty));
-	var->_next = std::move(globals);
-	globals = std::move(var);
+	auto var = new_var(name, move(ty));
+	var->_next = move(globals);
+	globals = move(var);
 	return globals.get();
 }
 
@@ -203,7 +200,7 @@ void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
 			var->_offset = offset;
 		}
 		/* スタックサイズが16の倍数になるようにアライメントする */
-		fn->_stack_size = align_to(std::move(offset), 16);
+		fn->_stack_size = align_to(move(offset), 16);
 	}
 }
 
@@ -216,8 +213,8 @@ void Object::create_params_lvars(shared_ptr<Type> &&param)
 {
 	if (param)
 	{
-		create_params_lvars(std::move(param->_next));
-		new_lvar(param->_token->_str, std::move(param));
+		create_params_lvars(move(param->_next));
+		new_lvar(param->_token->_str, move(param));
 	}
 }
 
@@ -227,7 +224,7 @@ void Object::create_params_lvars(shared_ptr<Type> &&param)
  */
 void Object::enter_scope()
 {
-	scope = std::make_unique<Scope>(std::move(scope));
+	scope = make_unique<Scope>(move(scope));
 }
 
 /**
@@ -236,7 +233,7 @@ void Object::enter_scope()
  */
 void Object::leave_scope()
 {
-	scope = std::move(scope->_next);
+	scope = move(scope->_next);
 }
 
 /**
@@ -245,9 +242,9 @@ void Object::leave_scope()
  * @param name 追加する変数の名前
  * @param obj 追加する変数のオブジェクト
  */
-VarScope *Object::push_scope(const std::string &name)
+VarScope *Object::push_scope(const string &name)
 {
-	scope->_vars = std::make_unique<VarScope>(std::move(scope->_vars), name);
+	scope->_vars = make_unique<VarScope>(move(scope->_vars), name);
 	return scope->_vars.get();
 }
 
@@ -257,7 +254,7 @@ VarScope *Object::push_scope(const std::string &name)
  * @param token 追加する構造体のトークン
  * @param ty 追加する構造体の型
  */
-void Object::push_tag_scope(Token *token, const std::shared_ptr<Type> &ty)
+void Object::push_tag_scope(Token *token, const shared_ptr<Type> &ty)
 {
-	scope->_tags = std::make_unique<TagScope>(token->_str, ty, std::move(scope->_tags));
+	scope->_tags = make_unique<TagScope>(token->_str, ty, move(scope->_tags));
 }
