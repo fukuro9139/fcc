@@ -757,6 +757,7 @@ void Token::add_line_number(Token *token)
 		{
 			token->_line_no = n;
 			token = token->_next.get();
+			continue;
 		}
 		if (current_input[pos] == '\n')
 		{
