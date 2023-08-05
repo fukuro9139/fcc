@@ -385,6 +385,23 @@ void CodeGen::generate_expression(Node *node)
 		generate_expression(node->_rhs.get());
 		return;
 
+	case NodeKind::ND_COND:
+	{
+		const int c = label_count();
+		/* 条件 */
+		generate_expression(node->_condition.get());
+		*os << "  cmp rax, 0\n";
+		*os << "  je .L.else." << c << "\n";
+		/* 条件が真のとき */
+		generate_expression(node->_then.get());
+		*os << "  jmp .L.end." << c << "\n";
+		/* 条件が偽の時 */
+		*os << ".L.else." << c << ":\n";
+		generate_expression(node->_else.get());
+		*os << ".L.end." << c << ":\n";
+		return;
+	}
+
 	/* ! */
 	case NodeKind::ND_NOT:
 		generate_expression(node->_lhs.get());
@@ -404,7 +421,7 @@ void CodeGen::generate_expression(Node *node)
 	/* && */
 	case NodeKind::ND_LOGAND:
 	{
-		int c = label_count();
+		const int c = label_count();
 		generate_expression(node->_lhs.get());
 		*os << "  cmp rax, 0\n";
 		/* 短絡評価、前半がfalseなら後半は評価しない */
@@ -422,7 +439,7 @@ void CodeGen::generate_expression(Node *node)
 
 	case NodeKind::ND_LOGOR:
 	{
-		int c = label_count();
+		const int c = label_count();
 		generate_expression(node->_lhs.get());
 		*os << "  cmp rax, 0\n";
 		/* 短絡評価、前半がtrueなら後半は評価しない */

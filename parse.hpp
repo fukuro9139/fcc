@@ -23,9 +23,9 @@
 struct Member
 {
 	shared_ptr<Member> _next; /*!< 次のメンバ */
-	shared_ptr<Type> _ty;	   /*!< 型情報 e.g. int or pointer to int */
-	Token *_token = nullptr;	   /*!< 対応するトークン */
-	int _offset = 0;			   /*!< RBPからのオフセット  */
+	shared_ptr<Type> _ty;	  /*!< 型情報 e.g. int or pointer to int */
+	Token *_token = nullptr;  /*!< 対応するトークン */
+	int _offset = 0;		  /*!< RBPからのオフセット  */
 };
 
 /**
@@ -40,6 +40,7 @@ enum class NodeKind
 	ND_DIV,		  /*!< / */
 	ND_NEG,		  /*!< 負の単項 */
 	ND_ASSIGN,	  /*!< = */
+	ND_COND,	  /*!< 三項演算子 */
 	ND_COMMA,	  /*!< , */
 	ND_MEMBER,	  /*!< 構造体のメンバ  */
 	ND_ADDR,	  /* 単項 & */
@@ -84,18 +85,18 @@ public:
 	/* メンバ変数 (public) */
 
 	NodeKind _kind = NodeKind::ND_EXPR_STMT; /*!< ノードの種類*/
-	unique_ptr<Node> _next;			 /*!< ノードが木のrootである場合、次の木のrootノード */
-	shared_ptr<Type> _ty;				 /*!< 型情報 e.g. int or pointer to int */
+	unique_ptr<Node> _next;					 /*!< ノードが木のrootである場合、次の木のrootノード */
+	shared_ptr<Type> _ty;					 /*!< 型情報 e.g. int or pointer to int */
 
 	unique_ptr<Node> _lhs; /*!< 左辺 */
 	unique_ptr<Node> _rhs; /*!< 右辺 */
 
 	/* if or for */
 	unique_ptr<Node> _condition; /*!< if文の条件 */
-	unique_ptr<Node> _then;	  /*!< trueのときに行う式 */
-	unique_ptr<Node> _else;	  /*!< falseのとき行う式 */
-	unique_ptr<Node> _init;	  /*!< 初期化処理 */
-	unique_ptr<Node> _inc;		  /*!< 加算処理 */
+	unique_ptr<Node> _then;		 /*!< trueのときに行う式 */
+	unique_ptr<Node> _else;		 /*!< falseのとき行う式 */
+	unique_ptr<Node> _init;		 /*!< 初期化処理 */
+	unique_ptr<Node> _inc;		 /*!< 加算処理 */
 
 	/* ブロック */
 	unique_ptr<Node> _body; /*!< ブロック内{...}またはステートメント式({...})には複数の式を入れられる */
@@ -104,9 +105,9 @@ public:
 	shared_ptr<Member> _member; /*!< 構造体メンバー */
 
 	/* 関数呼び出し */
-	string _func_name = "";	/*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
+	string _func_name = "";	   /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	shared_ptr<Type> _func_ty; /*!< 関数の型 */
-	unique_ptr<Node> _args;	/*!< 引数  */
+	unique_ptr<Node> _args;	   /*!< 引数  */
 
 	/* 数値 */
 	int64_t _val = 0; /*!< kindがND_NUMの場合のみ使う、数値の値 */
@@ -115,13 +116,13 @@ public:
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/
 
 	/* break, continue */
-	string _brk_label = "";  /*!< breakにつけるアセンブリ内で一意なラベル名 */
+	string _brk_label = "";	 /*!< breakにつけるアセンブリ内で一意なラベル名 */
 	string _cont_label = ""; /*!< continueにつけるアセンブリ内で一意なラベル名 */
 
 	/* goto */
-	string _label = "";		/*!< ラベル */
+	string _label = "";		   /*!< ラベル */
 	string _unique_label = ""; /*!< アセンブリ内で使う一意なラベル名 */
-	Node *_goto_next;				/*!< gotoをまとめたリストで次のノード */
+	Node *_goto_next;		   /*!< gotoをまとめたリストで次のノード */
 
 	/* switch-case */
 	Node *case_next = nullptr;	  /*!< switch文の各ケースのリスト */
@@ -178,6 +179,7 @@ private:
 	static unique_ptr<Node> expression_statement(Token **next_token, Token *current_token);
 	static unique_ptr<Node> to_assign(unique_ptr<Node> &&binary);
 	static unique_ptr<Node> log_or(Token **next_token, Token *current_token);
+	static unique_ptr<Node> conditional(Token **next_token, Token *current_token);
 	static unique_ptr<Node> log_and(Token **next_token, Token *current_token);
 	static unique_ptr<Node> assign(Token **next_token, Token *current_token);
 	static unique_ptr<Node> bit_or(Token **next_token, Token *current_token);

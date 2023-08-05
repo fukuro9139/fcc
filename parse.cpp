@@ -1404,18 +1404,18 @@ unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
 
 	/* tmp = &A */
 	auto expr1 = make_unique<Node>(NodeKind::ND_ASSIGN,
-										make_unique<Node>(var, token),
-										make_unique<Node>(NodeKind::ND_ADDR, move(binary->_lhs), token),
-										token);
+								   make_unique<Node>(var, token),
+								   make_unique<Node>(NodeKind::ND_ADDR, move(binary->_lhs), token),
+								   token);
 
 	/* *tmp = *tmp op B */
 	auto expr2 = make_unique<Node>(NodeKind::ND_ASSIGN,
-										make_unique<Node>(NodeKind::ND_DEREF, make_unique<Node>(var, token), token),
-										make_unique<Node>(move(binary->_kind),
-															   make_unique<Node>(NodeKind::ND_DEREF, make_unique<Node>(var, token), token),
-															   move(binary->_rhs),
-															   token),
-										token);
+								   make_unique<Node>(NodeKind::ND_DEREF, make_unique<Node>(var, token), token),
+								   make_unique<Node>(move(binary->_kind),
+													 make_unique<Node>(NodeKind::ND_DEREF, make_unique<Node>(var, token), token),
+													 move(binary->_rhs),
+													 token),
+								   token);
 
 	return make_unique<Node>(NodeKind::ND_COMMA, move(expr1), move(expr2), token);
 }
@@ -1427,7 +1427,7 @@ unique_ptr<Node> Node::to_assign(unique_ptr<Node> &&binary)
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * assign = logor (assign-op assign)? @n
+ * assign = conditional (assign-op assign)? @n
  * assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>="
  */
 unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
@@ -1443,7 +1443,7 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 		{">>=", NodeKind::ND_SHR},
 	};
 
-	auto node = log_or(&current_token, current_token);
+	auto node = conditional(&current_token, current_token);
 
 	if (current_token->is_equal("="))
 	{
@@ -1466,6 +1466,33 @@ unique_ptr<Node> Node::assign(Token **next_token, Token *current_token)
 	}
 
 	*next_token = current_token;
+	return node;
+}
+
+/**
+ * @brief 3項演算子を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 対応するASTノード
+ * @details 下記のEBNF規則に従う。 @n conditional = logor ( "?" expr ":" conditional )?
+ */
+unique_ptr<Node> Node::conditional(Token **next_token, Token *current_token)
+{
+	auto cond = log_or(&current_token, current_token);
+
+	/* 3項演算子を含まない */
+	if (!current_token->is_equal("?"))
+	{
+		*next_token = current_token;
+		return cond;
+	}
+
+	auto node = make_unique<Node>(NodeKind::ND_COND, current_token);
+	node->_condition = move(cond);
+	node->_then = expression(&current_token, current_token->_next.get());
+	current_token = Token::skip(current_token, ":");
+	node->_else = expression(next_token, current_token);
 	return node;
 }
 
@@ -1677,18 +1704,18 @@ unique_ptr<Node> Node::shift(Token **next_token, Token *current_token)
 		if (current_token->is_equal("<<"))
 		{
 			node = make_unique<Node>(NodeKind::ND_SHL,
-										  move(node),
-										  add(&current_token, current_token->_next.get()),
-										  start);
+									 move(node),
+									 add(&current_token, current_token->_next.get()),
+									 start);
 			continue;
 		}
 
 		if (current_token->is_equal(">>"))
 		{
 			node = make_unique<Node>(NodeKind::ND_SHR,
-										  move(node),
-										  add(&current_token, current_token->_next.get()),
-										  start);
+									 move(node),
+									 add(&current_token, current_token->_next.get()),
+									 start);
 			continue;
 		}
 		*next_token = current_token;

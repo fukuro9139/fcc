@@ -161,6 +161,21 @@ void Type::add_type(Node *node)
 		node->_ty = node->_var->_ty;
 		return;
 
+	case NodeKind::ND_COND:
+		/* どちらかがvoid型の場合はvoid型 */
+		if (TypeKind::TY_VOID == node->_then->_ty->_kind ||
+			TypeKind::TY_VOID == node->_else->_ty->_kind)
+		{
+			node->_ty = Type::VOID_BASE;
+		}
+		/* 大きい方の型に合わせる */
+		else
+		{
+			usual_arith_conv(node->_then, node->_else);
+			node->_ty = node->_then->_ty;
+		}
+		return;
+
 	/* カンマ区切りの型は右辺に一致させる */
 	case NodeKind::ND_COMMA:
 		node->_ty = node->_rhs->_ty;
