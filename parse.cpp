@@ -288,7 +288,7 @@ unique_ptr<Object> Node::parse(Token *token)
  * statement = "return" expression ";" @n
  * 			 | "if" "(" expression ")" statement ("else" statement)? @n
  *      	 | "switch" "(" expression ")" statement @n
- *  	     | "case" num ":" statement @n
+ *  	     | "case" const-expr ":" statement @n
  * 	     	 | "default" ":" statement @n
  * 			 | "for" "(" expression-statement expression? ";" expression? ")" statement @n
  * 			 | "while" "(" expression ")" statement @n
@@ -375,10 +375,9 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 			error_token("case文はswitch文の中でしか使えません", current_token);
 		}
 
-		auto val = current_token->_next->get_number();
-
 		auto node = make_unique<Node>(NodeKind::ND_CASE, current_token);
-		current_token = Token::skip(current_token->_next->_next.get(), ":");
+		auto val = const_expr(&current_token, current_token->_next.get());
+		current_token = Token::skip(current_token, ":");
 
 		/* ユニークなラベル名を設定 */
 		node->_label = new_unique_name();
@@ -796,7 +795,7 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
  * @param ty 宣言されている型
  * @return 配列の型
  * @details
- * 次のEBNF規則に従う。 @n array-dimensions = num? "]" type-suffix
+ * 次のEBNF規則に従う。 @n array-dimensions = const-expr? "]" type-suffix
  */
 shared_ptr<Type> Node::array_dimensions(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
 {
@@ -807,8 +806,8 @@ shared_ptr<Type> Node::array_dimensions(Token **next_token, Token *current_token
 		return Type::array_of(ty, -1);
 	}
 
-	int sz = current_token->get_number();
-	current_token = Token::skip(current_token->_next.get(), "]");
+	int sz = const_expr(&current_token, current_token);
+	current_token = Token::skip(current_token, "]");
 	ty = type_suffix(next_token, current_token, move(ty));
 	return Type::array_of(ty, sz);
 }
@@ -1266,7 +1265,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
  * @return 対応する列挙型の型
  * @details 下記のEBNF規則に従う。 @n
  * enum-specifier = ident? "{" enum-list? "}" | ident ("{" enum-list? "}")? @n
- * enum-list = ident ("=" num)? ("," ident ("=" num)?)*
+ * enum-list = ident ("=" const-expr)? ("," ident ("=" const-expr)?)*
  *
  */
 shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
@@ -1319,8 +1318,7 @@ shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
 		/* 数値の指定がある場合 */
 		if (current_token->is_equal("="))
 		{
-			val = current_token->_next->get_number();
-			current_token = current_token->_next->_next.get();
+			val = const_expr(&current_token, current_token->_next.get());
 		}
 
 		/* スコープに登録する。次の変数には+1インクリメントされた数値が対応する */
@@ -1382,6 +1380,168 @@ unique_ptr<Node> Node::expression(Token **next_token, Token *current_token)
 	}
 	*next_token = current_token;
 	return node;
+}
+
+/**
+ * @brief ノードを定数式として評価
+ *
+ * @param node 評価するノード
+ * @return 評価結果の数値
+ */
+int64_t Node::eval(Node *node)
+{
+	static std::unordered_map<NodeKind, int64_t (*)(Node *)> eval_funcs = {
+		{NodeKind::ND_ADD, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) + eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_SUB, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) - eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_MUL, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) * eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_DIV, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) / eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_NEG, [](Node *node)
+		 {
+			 return -eval(node->_lhs.get());
+		 }},
+
+		{NodeKind::ND_MOD, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) % eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_BITAND, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) & eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_BITOR, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) | eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_BITXOR, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) ^ eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_SHL, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) << eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_SHR, [](Node *node)
+		 {
+			 return eval(node->_lhs.get()) >> eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_EQ, [](Node *node) -> int64_t
+		 {
+			 return eval(node->_lhs.get()) == eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_NE, [](Node *node) -> int64_t
+		 {
+			 return eval(node->_lhs.get()) != eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_LT, [](Node *node) -> int64_t
+		 {
+			 return eval(node->_lhs.get()) < eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_LE, [](Node *node) -> int64_t
+		 {
+			 return eval(node->_lhs.get()) <= eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_COND, [](Node *node)
+		 {
+			 return eval(node->_condition.get()) ? eval(node->_then.get()) : eval(node->_else.get());
+		 }},
+
+		{NodeKind::ND_COMMA, [](Node *node)
+		 {
+			 return eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_NOT, [](Node *node) -> int64_t
+		 {
+			 return !eval(node->_lhs.get());
+		 }},
+
+		{NodeKind::ND_BITNOT, [](Node *node)
+		 {
+			 return ~eval(node->_lhs.get());
+		 }},
+
+		{NodeKind::ND_LOGAND, [](Node *node) -> int64_t
+		 {
+			 return eval(node->_lhs.get()) && eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_LOGOR, [](Node *node) -> int64_t
+		 {
+			 return eval(node->_lhs.get()) || eval(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_CAST, [](Node *node) -> int64_t
+		 {
+			 uint64_t val = eval(node->_lhs.get());
+			 if (node->_ty->is_integer())
+			 {
+				 switch (node->_ty->_size)
+				 {
+				 case 1:
+					 return static_cast<uint8_t>(val);
+				 case 2:
+					 return static_cast<uint16_t>(val);
+				 case 4:
+					 return static_cast<uint32_t>(val);
+				 default:
+					 break;
+				 }
+			 }
+			 return val;
+		 }},
+
+		{NodeKind::ND_NUM, [](Node *node)
+		 {
+			 return node->_val;
+		 }},
+	};
+
+	auto it = eval_funcs.find(node->_kind);
+	if (eval_funcs.end() != it)
+	{
+		return it->second(node);
+	}
+	error_token("コンパイル時に定数ではありません", node->_token);
+	return 0;
+}
+
+/**
+ * @brief 定数式を読み取って評価する
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 評価結果の数値
+ */
+int64_t Node::const_expr(Token **next_token, Token *current_token)
+{
+	auto node = conditional(next_token, current_token);
+	return eval(node.get());
 }
 
 /**

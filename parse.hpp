@@ -177,6 +177,8 @@ private:
 	static shared_ptr<Type> type_suffix(Token **next_token, Token *current_token, shared_ptr<Type> &&ty);
 	static unique_ptr<Node> expression(Token **next_token, Token *current_token);
 	static unique_ptr<Node> expression_statement(Token **next_token, Token *current_token);
+	static int64_t const_expr(Token **next_token, Token *current_token);
+	static int64_t eval(Node *node);
 	static unique_ptr<Node> to_assign(unique_ptr<Node> &&binary);
 	static unique_ptr<Node> log_or(Token **next_token, Token *current_token);
 	static unique_ptr<Node> conditional(Token **next_token, Token *current_token);
