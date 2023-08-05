@@ -1652,7 +1652,7 @@ unique_ptr<Node> Node::conditional(Token **next_token, Token *current_token)
 	node->_condition = move(cond);
 	node->_then = expression(&current_token, current_token->_next.get());
 	current_token = Token::skip(current_token, ":");
-	node->_else = expression(next_token, current_token);
+	node->_else = conditional(next_token, current_token);
 	return node;
 }
 

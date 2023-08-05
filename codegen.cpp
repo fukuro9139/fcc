@@ -385,6 +385,7 @@ void CodeGen::generate_expression(Node *node)
 		generate_expression(node->_rhs.get());
 		return;
 
+	/* 3項演算子 */
 	case NodeKind::ND_COND:
 	{
 		const int c = label_count();
