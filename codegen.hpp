@@ -11,12 +11,8 @@
 
 #pragma once
 
-#include <iostream>
-#include <fstream>
-#include <cassert>
-#include <memory>
-#include <vector>
 #include "parse.hpp"
+#include "common.hpp"
 
 /* サイズにより型を分類したID */
 enum class TypeID
@@ -35,7 +31,7 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static void generate_code(const std::unique_ptr<Object> &program, const std::string &input_path, const std::string &output_path);
+	static void generate_code(const unique_ptr<Object> &program, const string &input_path, const string &output_path);
 
 private:
 	/* このクラスのインスタンス化は禁止 */
@@ -46,8 +42,8 @@ private:
 	/**************************/
 
 	static void push();
-	static void pop(std::string &&reg);
-	static void pop(const std::string &reg);
+	static void pop(string &&reg);
+	static void pop(const string &reg);
 	static void load(const Type *ty);
 	static void store(const Type *ty);
 	static void cmp_zero(const Type *ty);
@@ -55,8 +51,8 @@ private:
 	static void generate_expression(Node *node);
 	static void generate_statement(Node *node);
 	static void store_gp(const int &r, const int &offset, const int &sz);
-	static void emit_data(const std::unique_ptr<Object> &program);
-	static void emit_text(const std::unique_ptr<Object> &program);
+	static void emit_data(const unique_ptr<Object> &program);
+	static void emit_text(const unique_ptr<Object> &program);
 	static int label_count();
 	static void cast(Type *from, Type *to);
 	static TypeID get_TypeId(Type *ty);

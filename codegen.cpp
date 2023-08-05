@@ -15,24 +15,20 @@
 
 #define unreachable() error("エラー: " + string(__FILE__) + " : " + std::to_string(__LINE__))
 
-using std::endl;
-using std::string;
-using std::unique_ptr;
-
 /** スタックの深さ */
 static int depth = 0;
 
 /** 64ビット整数レジスタ、前から順に関数の引数を格納される */
-static const std::vector<string> arg_regs64 = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static const vector<string> arg_regs64 = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 /** 整数レジスタの下位32ビットのエイリアス、前から順に関数の引数を格納される */
-static const std::vector<string> arg_regs32 = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+static const vector<string> arg_regs32 = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 
 /** 整数レジスタの下位16ビットのエイリアス、前から順に関数の引数を格納される */
-static const std::vector<string> arg_regs16 = {"di", "si", "dx", "cx", "r8w", "r9w"};
+static const vector<string> arg_regs16 = {"di", "si", "dx", "cx", "r8w", "r9w"};
 
 /** 整数レジスタの下位8ビットのエイリアス、前から順に関数の引数を格納される */
-static const std::vector<string> arg_regs8 = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+static const vector<string> arg_regs8 = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
 /** 現在処理中の関数*/
 static Object *current_func = nullptr;
@@ -769,7 +765,7 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
  *
  * @param program 入力プログラム
  */
-void CodeGen::emit_text(const std::unique_ptr<Object> &program)
+void CodeGen::emit_text(const unique_ptr<Object> &program)
 {
 	for (auto fn = program.get(); fn; fn = fn->_next.get())
 	{

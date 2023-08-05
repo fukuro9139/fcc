@@ -13,9 +13,6 @@
 #include "object.hpp"
 #include "input.hpp"
 
-using std::string;
-using std::unique_ptr;
-
 /** 入力文字列 */
 static string current_input = "";
 
@@ -56,7 +53,7 @@ void error_at(string &&msg, const int &location)
 		}
 	}
 
-	verror_at(std::move(msg), location, line_no);
+	verror_at(move(msg), location, line_no);
 }
 
 /**
@@ -67,7 +64,7 @@ void error_at(string &&msg, const int &location)
  * @param location エラー箇所
  * @param line_no エラー箇所の行数
  */
-void verror_at(std::string &&msg, const int &location, const int &line_no)
+void verror_at(string &&msg, const int &location, const int &line_no)
 {
 	int line_start = location;
 	/* エラー箇所が含まれる行の先頭位置を探す */
@@ -91,7 +88,7 @@ void verror_at(std::string &&msg, const int &location, const int &line_no)
 	}
 
 	/* ファイル名 */
-	std::string filename = current_filename + ":" + std::to_string(line_no) + ": ";
+	string filename = current_filename + ":" + std::to_string(line_no) + ": ";
 	int indent = filename.size();
 	std::cerr << filename;
 
@@ -110,9 +107,9 @@ void verror_at(std::string &&msg, const int &location, const int &line_no)
  * @param msg エラーメッセージ
  * @param token エラー箇所を含むトークン
  */
-void error_token(std::string &&msg, Token *token)
+void error_token(string &&msg, Token *token)
 {
-	verror_at(std::move(msg), token->_location, token->_line_no);
+	verror_at(move(msg), token->_location, token->_line_no);
 }
 
 /***************/
@@ -123,8 +120,8 @@ void error_token(std::string &&msg, Token *token)
 
 Token::Token() = default;
 Token::Token(const TokenKind &kind, const int &location) : _kind(kind), _location(location) {}
-Token::Token(const int64_t &value, const int &location) : _kind(TokenKind::TK_NUM), _location(location), _value(std::move(value)) {}
-Token::Token(const TokenKind &kind, const int &location, std::string &&str) : _kind(kind), _location(location), _str(std::move(str)) {}
+Token::Token(const int64_t &value, const int &location) : _kind(TokenKind::TK_NUM), _location(location), _value(move(value)) {}
+Token::Token(const TokenKind &kind, const int &location, string &&str) : _kind(kind), _location(location), _str(move(str)) {}
 
 /**
  * @brief 入力されたパスにあるファイルを開いてトークナイズする
@@ -153,7 +150,7 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 	current_filename = filename;
 
 	/* スタート地点としてダミーのトークンを作る */
-	unique_ptr<Token> head = std::make_unique_for_overwrite<Token>();
+	unique_ptr<Token> head = make_unique_for_overwrite<Token>();
 	auto current_token = head.get();
 	auto itr = current_input.cbegin();
 	const auto first = current_input.cbegin();
@@ -239,17 +236,17 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 			} while (is_char_of_ident(*itr));
 
 			/* 新しいトークンを生成してcurに繋ぎcurを一つ進める */
-			current_token->_next = std::make_unique<Token>(TokenKind::TK_IDENT, start - first, std::string(start, itr));
+			current_token->_next = make_unique<Token>(TokenKind::TK_IDENT, start - first, string(start, itr));
 			current_token = current_token->_next.get();
 			continue;
 		}
 
 		/* パンクチュエータ:構文的に意味を持つ記号またはキーワードこの段階では区別しない */
-		size_t punct_len = read_punct(std::string(itr, last));
+		size_t punct_len = read_punct(string(itr, last));
 		if (punct_len)
 		{
 			/* 新しいトークンを生成してcurに繋ぎcurを一つ進める */
-			current_token->_next = std::make_unique<Token>(TokenKind::TK_PUNCT, itr - first, std::string(itr, itr + punct_len));
+			current_token->_next = make_unique<Token>(TokenKind::TK_PUNCT, itr - first, string(itr, itr + punct_len));
 			current_token = current_token->_next.get();
 			itr += punct_len;
 			continue;
@@ -259,13 +256,13 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 	}
 
 	/* 最後に終端トークンを作成して繋ぐ */
-	current_token->_next = std::make_unique<Token>(TokenKind::TK_EOF, last - first);
+	current_token->_next = make_unique<Token>(TokenKind::TK_EOF, last - first);
 	/* 行数をセットする */
 	add_line_number(head->_next.get());
 	/* キーワードトークンを識別子トークンから分離する */
 	Token::convert_keywords(head->_next.get());
 	/* ダミーの次のトークン以降を切り離して返す */
-	return std::move(head->_next);
+	return move(head->_next);
 }
 
 /**
@@ -383,7 +380,7 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 	}
 	itr = end + 1;
 
-	return std::make_unique<Token>(TokenKind::TK_STR, start - current_input.begin(), std::move(buf));
+	return make_unique<Token>(TokenKind::TK_STR, start - current_input.begin(), move(buf));
 }
 
 /**
@@ -500,7 +497,7 @@ unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
 	/* 入力イテレーターを進める */
 	start = itr;
 
-	return std::make_unique<Token>(val, start - current_input.begin());
+	return make_unique<Token>(val, start - current_input.begin());
 }
 
 /**
@@ -539,7 +536,7 @@ unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
 		error_at("文字リテラルが閉じられていません", start - current_input.begin());
 	}
 
-	auto token = std::make_unique<Token>(c, start - current_input.begin());
+	auto token = make_unique<Token>(c, start - current_input.begin());
 	token->_str = string(start, pos + 1);
 	return token;
 }
@@ -550,7 +547,7 @@ unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
  * @param op 比較する文字列
  * @return 一致:true, 不一致:false
  */
-bool Token::is_equal(std::string &&op) const
+bool Token::is_equal(string &&op) const
 {
 	return this->_str.size() == op.size() && std::equal(op.begin(), op.end(), this->_str.begin());
 }
@@ -561,7 +558,7 @@ bool Token::is_equal(std::string &&op) const
  * @param op 比較する文字列
  * @return 一致:true, 不一致:false
  */
-bool Token::is_equal(const std::string &op) const
+bool Token::is_equal(const string &op) const
 {
 	return this->_str.size() == op.size() && std::equal(op.begin(), op.end(), this->_str.begin());
 }
@@ -599,9 +596,9 @@ bool Token::is_typename(const Token *token)
  * @param op 比較する文字列
  * @return 次のトークン
  */
-Token *Token::skip(Token *token, std::string &&op)
+Token *Token::skip(Token *token, string &&op)
 {
-	if (!token->is_equal(std::move(op)))
+	if (!token->is_equal(move(op)))
 	{
 		error_token(op + "が必要です", token);
 	}
@@ -616,9 +613,9 @@ Token *Token::skip(Token *token, std::string &&op)
  * @param op 比較する文字列
  * @return 一致：true, 不一致：false
  */
-bool Token::consume(Token **next_token, Token *current_token, std::string &&str)
+bool Token::consume(Token **next_token, Token *current_token, string &&str)
 {
-	if (current_token->is_equal(std::move(str)))
+	if (current_token->is_equal(move(str)))
 	{
 		*next_token = current_token->_next.get();
 		return true;
@@ -635,7 +632,7 @@ bool Token::consume(Token **next_token, Token *current_token, std::string &&str)
  * @param op 比較する文字列
  * @return 一致:true, 不一致:false
  */
-bool Token::start_with(const std::string &str, const std::string &op)
+bool Token::start_with(const string &str, const string &op)
 {
 	return str.size() >= op.size() && std::equal(op.begin(), op.end(), str.begin());
 }
@@ -648,9 +645,9 @@ bool Token::start_with(const std::string &str, const std::string &op)
  * @param last 文字列の末端位置のイテレーター
  * @return パンクチュエーターの長さ
  */
-size_t Token::read_punct(std::string &&str)
+size_t Token::read_punct(string &&str)
 {
-	static const std::vector<string> kws =
+	static const vector<string> kws =
 		{
 			"<<=",
 			">>=",
@@ -675,7 +672,7 @@ size_t Token::read_punct(std::string &&str)
 			">>",
 		};
 
-	for (auto &kw : kws)
+	for (const auto &kw : kws)
 	{
 		if (start_with(str, kw))
 		{

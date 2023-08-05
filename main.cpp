@@ -23,7 +23,7 @@
 int main(int argc, char **argv)
 {
 	/* 入力をvectorに変換 */
-	std::vector<std::string> args(argv, argv + argc);
+	vector<string> args(argv, argv + argc);
 	/* 引数を解析してオプションを判断 */
 	Input::parse_args(args);
 

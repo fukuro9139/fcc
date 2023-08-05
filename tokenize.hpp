@@ -11,12 +11,7 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include <iostream>
-#include <locale>
-#include <vector>
-#include <unordered_set>
+#include "common.hpp"
 
 /** @brief トークンの種類 */
 enum class TokenKind
@@ -38,44 +33,43 @@ class Token
 public:
 	/* メンバ変数 (public) */
 
-	std::unique_ptr<Token> _next;		 /*!< 次のトークン */
+	unique_ptr<Token> _next;			 /*!< 次のトークン */
 	TokenKind _kind = TokenKind::TK_EOF; /*!< トークンの型 */
 	int64_t _value = 0;					 /*!< kindがTK_NUMの場合、その数値 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
-	std::string _str = "";				 /*!< トークンが表す文字列 */
+	string _str = "";					 /*!< トークンが表す文字列 */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 
 	/* コンストラクタ */
 	Token();
 	Token(const TokenKind &kind, const int &location);
 	Token(const int64_t &value, const int &location);
-	Token(const TokenKind &kind, const int &location, std::string &&str);
+	Token(const TokenKind &kind, const int &location, string &&str);
 
 	/* メンバ関数 */
 
-	bool is_equal(std::string &&op) const;
-	bool is_equal(const std::string &op) const;
+	bool is_equal(string &&op) const;
+	bool is_equal(const string &op) const;
 	int64_t get_number() const;
-	
 
 	/* 静的メンバ関数 (public) */
 
-	static std::unique_ptr<Token> tokenize(const std::string &filename, std::string &&input);
-	static std::unique_ptr<Token> tokenize_file(const std::string &filepath);
-	static Token *skip(Token *token, std::string &&op);
-	static bool consume(Token **next_token, Token *current_token, std::string &&str);
+	static unique_ptr<Token> tokenize(const string &filename, string &&input);
+	static unique_ptr<Token> tokenize_file(const string &filepath);
+	static Token *skip(Token *token, string &&op);
+	static bool consume(Token **next_token, Token *current_token, string &&str);
 	static bool is_typename(const Token *token);
 
 private:
 	/* 静的メンバ関数 (private) */
 
-	static bool start_with(const std::string &str, const std::string &op);
-	static std::unique_ptr<Token> read_int_literal(std::string::const_iterator &start);
-	static std::unique_ptr<Token> read_char_literal(std::string::const_iterator &start);
-	static size_t read_punct(std::string &&str);
-	static char read_escaped_char(std::string::const_iterator &new_pos, std::string::const_iterator &&pos);
-	static std::unique_ptr<Token> read_string_literal(std::string::const_iterator &itr);
-	static std::string::const_iterator string_literal_end(std::string::const_iterator itr);
+	static bool start_with(const string &str, const string &op);
+	static unique_ptr<Token> read_int_literal(string::const_iterator &start);
+	static unique_ptr<Token> read_char_literal(string::const_iterator &start);
+	static size_t read_punct(string &&str);
+	static char read_escaped_char(string::const_iterator &new_pos, string::const_iterator &&pos);
+	static unique_ptr<Token> read_string_literal(string::const_iterator &itr);
+	static string::const_iterator string_literal_end(string::const_iterator itr);
 	static bool is_first_char_of_ident(const char &c);
 	static bool is_char_of_ident(const char &c);
 	static void convert_keywords(Token *token);
@@ -87,7 +81,7 @@ private:
 
 /* 汎用関数 */
 
-void error(std::string &&msg);
-void error_at(std::string &&msg, const int &location);
-void verror_at(std::string &&msg, const int &location, const int &line_no);
-void error_token(std::string &&msg, Token *token);
+void error(string &&msg);
+void error_at(string &&msg, const int &location);
+void verror_at(string &&msg, const int &location, const int &line_no);
+void error_token(string &&msg, Token *token);
