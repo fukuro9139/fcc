@@ -1,5 +1,3 @@
-#include "header.h"
-
 /** TRUE, FALSEの定義 */
 typedef enum
 {
@@ -13,7 +11,7 @@ typedef enum
 	OP_PLUS,  // '+'
 	OP_MINUS, // '-'
 	OP_DIV,	  // '/'
-	OP_MUL,	  // '*'
+	OP_MUL	  // '*'
 } OperatorType;
 
 /** 演算子を表現する構造体 */
@@ -57,14 +55,17 @@ void report_error();
 void signal_handler(int signum);
 
 /* ヘッダをインクルードできないので標準ライブラリの関数の宣言 */
-// int printf(char * str);
-// int fgets(char *str, int size, );
-// int strlen(char *str);
-// int isdigit(char c);
+int printf(char * str);
+int fgets(char *str, int size);
+int strlen(char *str);
+int isdigit(char c);
+void exit(int r);
+void (*signal(int sig, void (* func)(int signum)))(int signum);
+void receive_input(char *str);
 
 int main()
 {
-	signal(SIGINT, signal_handler);
+	signal(2, signal_handler);
 
 	while (1)
 	{
