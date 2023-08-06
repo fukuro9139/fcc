@@ -10,7 +10,8 @@
  */
 
 /* FCCはヘッダをインクルードできないので標準ライブラリの関数を宣言しておく */
-int printf();
+//int printf();
+#include "header.h"
 
 /* 発見した買いの総数 */
 static int count;
@@ -124,6 +125,9 @@ int main()
 	set_queen(queen_position, board, 0);
 
 	printf("%d solutions were found.\n", count);
+
+	printf("Press the Key to exit.");
+	getchar();
 
 	return 0;
 }
