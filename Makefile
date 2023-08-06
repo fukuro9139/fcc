@@ -1,12 +1,21 @@
 #Windowsでビルドするときは1に設定する
 WINDOWS = 0
+#最適化
+DEBUG = 0
+
+ifeq ($(DEBUG), 0)
+OPT = -O2
+else
+OPT = -g
+endif
+
 CXX = g++
 CC = gcc
 
 ifeq ($(WINDOWS), 0)
-CFLAGS = -std=c++20 -g -fno-common -MMD -MP O2
+CFLAGS = -std=c++20 -MMD -MP $(OPT)
 else
-CFLAGS = -std=c++20 -g -fno-common -MMD -MP -fexec-charset=cp932 -O2
+CFLAGS = -std=c++20 -MMD -MP -fexec-charset=cp932 $(OPT)
 endif
 
 #プログラム名とオブジェクトファイル名
