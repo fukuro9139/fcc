@@ -219,13 +219,19 @@ bool parse_input()
 
 		/**
 		 * +演算子、-演算子については符号を表す単項演算子の場合もある。
-		 * 直前に文字が存在しないまたは演算子または'('の場合、単項演算子と解釈して0を演算子の前に補完する。
+		 * 直前の文字が存在しないまたは'('の場合、単項演算子と解釈して0を演算子の前に補完する。
 		 * 例: 1 + (-2) -> 1 + 0 - 2
 		 */
 
 		/* +演算子 */
 		if (c == '+')
 		{
+			/* 直前が数字または'('または')'ではないときも存在しないため無効な数式 */
+			if (i != 0 && !isdigit(input_str[i - 1]) && input_str[i - 1] != '(' && input_str[i - 1] != ')')
+			{
+				error_pos = i;
+				return FALSE;
+			}
 			setOP(OP_PLUS, tmp, i);
 			tmp = 0;
 			continue;
@@ -234,6 +240,12 @@ bool parse_input()
 		/* -演算子 */
 		if (c == '-')
 		{
+			/* 直前が数字または'('または')'ではないときも存在しないため無効な数式 */
+			if (i != 0 && !isdigit(input_str[i - 1]) && input_str[i - 1] != '(' && input_str[i - 1] != ')')
+			{
+				error_pos = i;
+				return FALSE;
+			}
 			setOP(OP_MINUS, tmp, i);
 			tmp = 0;
 			continue;
@@ -348,7 +360,7 @@ int find_highest_priority_op()
 	int ret = 0;
 	for (int i = 1; i < opSize; i++)
 	{
-		if (ops[i].priority >= ops[ret].priority)
+		if (ops[i].priority > ops[ret].priority)
 		{
 			ret = i;
 		}
