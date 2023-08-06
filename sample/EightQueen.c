@@ -27,7 +27,7 @@ void init_board(int board[8][8])
 /* 盤面を出力する */
 void print_board(int queen_position[8])
 {
-	printf("%d個目の解\n", count);
+	printf("No.%d\n", count);
 	for (int i = 0; i < 8; i++)
 	{
 		for (int j = 0; j < 8; j++)
@@ -45,6 +45,7 @@ void print_board(int queen_position[8])
 		}
 		printf("\n");
 	}
+	printf("\n");
 }
 
 /* クイーンが(row, col)の位置にいるとしてクイーンが動ける範囲のボードの値を
