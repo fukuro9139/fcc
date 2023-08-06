@@ -807,7 +807,7 @@ unique_ptr<Node> Node::init_desg_expr(InitDesg *desg, Token *token)
 
 	auto lhs = init_desg_expr(desg->_next, token);
 	auto rhs = make_unique<Node>(desg->_idx, token);
-	return make_unique<Node>(NodeKind::ND_DEREF, move(lhs), move(rhs), token);
+	return make_unique<Node>(NodeKind::ND_DEREF, new_add(move(lhs), move(rhs), token), token);
 }
 
 /**
