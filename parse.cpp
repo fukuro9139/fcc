@@ -193,13 +193,14 @@ Object *Node::new_anonymous_gvar(shared_ptr<Type> &&ty)
 Object *Node::new_string_literal(const string &str)
 {
 	/* 文字列リテラルの型はchar型配列で長さは文字数+'\0'終端 */
-	auto ty = Type::array_of(Type::CHAR_BASE, str.size() + 1);
+	/* 文字列リテラルは前後に'"'がついているので取り除く */
+	auto ty = Type::array_of(Type::CHAR_BASE, str.size() - 1);
 
 	/* 仮名を使ってオブジェクトを生成 */
 	auto obj = new_anonymous_gvar(move(ty));
 
 	/* init_dataに文字列を入れて'\0'終端を追加 */
-	obj->_init_data = str;
+	obj->_init_data = str.substr(1, str.size()-2);
 	obj->_init_data.push_back('\0');
 	obj->is_str_literal = true;
 	return obj;

@@ -8,19 +8,12 @@
  * @copyright Copyright (c) 2023
  *
  */
-
-#include <stdio.h>
+int printf();
 
 /* 発見した買いの総数 */
-static int count = 0;
+static int count;
 
-/* 現在のボードの状態 */
-int board[8][8];
-
-/* クイーンが動ける方向 */
-int delta[8][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
-
-void init_board()
+void init_board(int board[8][8])
 {
 	for (int i = 0; i < 8; i++)
 	{
@@ -31,68 +24,66 @@ void init_board()
 	}
 }
 
+/* 盤面を出力する */
+void print_board(int queen_position[8])
+{
+	printf("%d個目の解\n", count);
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			/* 位置(i, j)にクイーンが置いてある */
+			if (j == queen_position[i])
+			{
+				printf("Q");
+			}
+			/* 位置(i, j)にクイーンが置いてない */
+			else
+			{
+				printf("*");
+			}
+		}
+		printf("\n");
+	}
+}
+
 /* クイーンが(row, col)の位置にいるとしてクイーンが動ける範囲のボードの値を
  * +d する。
  */
-void change_board(int row, int col, int d)
+void change_board(int board[8][8], int row, int col, int d)
 {
-	/* 縦と横 */
+	/* クイーンが動ける方向 */
+	int delta[8][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+
 	for (int i = 0; i < 8; i++)
 	{
-		board[row][i] += d;
-		board[i][col] += d;
-	}
+		for (int k = 1; k < 8; k++)
+		{
+			int next_row = row + k * delta[i][0];
+			int next_col = col + k * delta[i][1];
 
-	i = row;
-	j = col;
-	while (i < 8 && j < 8)
-	{
-		board[i][j] += d;
-		i++;
-		j++;
-	}
+			if (next_row < 0 || next_row >= 8 || next_col < 0 || next_col >= 8)
+				continue;
 
-	i = row;
-	j = col;
-	while (i >= 0 && j >= 0)
-	{
-		board[i][j] += d;
-		i--;
-		j--;
-	}
-
-	i = row;
-	j = col;
-	while (i < 8 && j >= 0)
-	{
-		board[i][j] += d;
-		i++;
-		j--;
-	}
-
-	i = row;
-	j = col;
-	while (i >= 0 && j < 8)
-	{
-		board[i][j] += d;
-		i--;
-		j++;
+			board[next_row][next_col] += d;
+		}
 	}
 }
 
 void set_queen(int queen_position[8], int board[8][8], int row)
 {
-	int col;
-
+	/* 全てのクイーンを置き終わった */
 	if (row == 8)
 	{
 		count++;
+		print_board(queen_position);
 		return;
 	}
 
-	/* チェスの盤上に座布団を重ねていくようなイメージ、三次元的な処理 */
-	for (col = 0; col < 8; col++)
+	/* 新しいクイーンを置く場所を決める */
+	for (int col = 0; col < 8; col++)
 	{
+		/* board[row][col]の位置に配置可能 */
 		if (board[row][col] == 0)
 		{
 			/* board[row][col]の位置にクイーンを配置 */
@@ -109,12 +100,25 @@ void set_queen(int queen_position[8], int board[8][8], int row)
 
 int main(void)
 {
-	int queen_position[8];
-	int board[8][8];
-	init_board(board);
-	set_queen(queen_position, board, 0);
+	/* 発見した個数の初期化 */
+	count = 0;
 
-	printf("%d\n", count);
+	/* クイーンの位置 */
+	/* 解となる配置ではクイーンは必ず各列に1個ずつ存在する。なぜならばクイーンが同じ列に
+	 * 複数存在すればお互いに相手を取ることが可能なため条件を満たさない。
+	 * したがって、各列に存在するクイーンの数は1個以下であり、クイーンをおかない列が存在すると
+	 * ８個のクイーンを置ききることができない。
+	 */
+	int queen_position[8];
+
+	/* 現在のボードの状態 */
+	int board[8][8];
+
+	/* ボードを初期化する */
+	init_board(board);
+
+	/* クイーンの配置を決めて出力する */
+	set_queen(queen_position, board, 0);
 
 	return 0;
 }
