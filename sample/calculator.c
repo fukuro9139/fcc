@@ -178,6 +178,13 @@ bool parse_input()
 		/* 数字 */
 		if (isdigit(c))
 		{
+			/* 直前が')'なら無効な数式 */
+			if (i != 0 && input_str[i - 1] == ')')
+			{
+				error_pos = i;
+				return FALSE;
+			}
+
 			/* 数値に変換 */
 			int n = c - '0';
 			tmp = 10 * tmp + n;
