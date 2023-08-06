@@ -3,7 +3,7 @@
  * @author K.Fukunaga
  * @brief 文字列をトークンに変換するトークナイザの定義
  * @version 0.1
- * @date 2023-07-22
+ * @date 2023-07-02
  *
  * @copyright Copyright (c) 2023 MIT License
  *

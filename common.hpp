@@ -1,3 +1,14 @@
+/**
+ * @file common.hpp
+ * @author K.Fukunaga
+ * @brief 共通のインクルード、using宣言
+ * @version 0.1
+ * @date 2023-07-30
+ * 
+ * @copyright Copyright (c) 2023　MIT License
+ * 
+ */
+
 #pragma once
 
 #include <iostream>

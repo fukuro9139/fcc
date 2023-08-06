@@ -3,7 +3,7 @@
  * @author K.Fukunaga
  * @brief 型を表現するためのクラス
  * @version 0.1
- * @date 2023-08-01
+ * @date 2023-07-11
  *
  * @copyright Copyright (c) 2023 MIT License
  *

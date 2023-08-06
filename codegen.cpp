@@ -5,7 +5,7 @@
  *
  * x86-64用のアセンブリをIntel記法で出力する。
  * @version 0.1
- * @date 2023-07-22
+ * @date 2023-07-02
  *
  * @copyright Copyright (c) 2023 MIT License
  *

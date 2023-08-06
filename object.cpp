@@ -3,7 +3,7 @@
  * @author K.Fukunaga
  * @brief 関数や変数を表すクラス
  * @version 0.1
- * @date 2023-08-01
+ * @date 2023-07-02
  *
  * @copyright Copyright (c) 2023 MIT License
  *
