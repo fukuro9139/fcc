@@ -4,9 +4,9 @@ CXX = g++
 CC = gcc
 
 ifeq ($(WINDOWS), 0)
-CFLAGS = -std=c++20 -g -fno-common -MMD -MP
+CFLAGS = -std=c++20 -g -fno-common -MMD -MP O2
 else
-CFLAGS = -std=c++20 -g -fno-common -MMD -MP -fexec-charset=cp932
+CFLAGS = -std=c++20 -g -fno-common -MMD -MP -fexec-charset=cp932 -O2
 endif
 
 #プログラム名とオブジェクトファイル名
