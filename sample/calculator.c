@@ -60,13 +60,10 @@ int fgets(char *str, int size);
 int strlen(char *str);
 int isdigit(char c);
 void exit(int r);
-void (*signal(int sig, void (* func)(int signum)))(int signum);
 char* receive_input(char *str);
 
 int main()
 {
-	signal(2, signal_handler);
-
 	while (1)
 	{
 		/* 初期化 */
@@ -79,7 +76,6 @@ int main()
 		if(receive_input(input_str) == (void *)0){
 			break;
 		}
-
 
 		/* スペースを削除 */
 		remove_space(input_str);
@@ -432,15 +428,4 @@ void report_error()
 	printf("%*s", error_pos, "");
 	printf("^");
 	printf(" Invalid expression. Please try again.\n\n");
-}
-
-/**
- * @brief Ctrl+Cが押されたときのハンドラ
- *
- * @param signum シグナルのID Ctrl+cはSIGINT=2
- */
-void signal_handler(int signum)
-{
-	printf("\nThank you!\n");
-	exit(0);
 }
