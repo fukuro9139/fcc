@@ -18,6 +18,7 @@
 /* 先に宣言 */
 struct Scope;
 struct VarScope;
+struct Initializer;
 
 /**
  * @brief 変数または関数を表す。各オブジェクトは名前によって区別する
@@ -30,9 +31,9 @@ public:
 	/* 共通 */
 
 	unique_ptr<Object> _next; /*!< 次のオブジェクト */
-	string _name = "";		   /*!< 名前 */
-	shared_ptr<Type> _ty;	   /* 型 */
-	bool is_local = false;		   /*!< ローカル変数であるか */
+	string _name = "";		  /*!< 名前 */
+	shared_ptr<Type> _ty;	  /* 型 */
+	bool is_local = false;	  /*!< ローカル変数であるか */
 
 	/* ローカル変数用 */
 
@@ -44,15 +45,15 @@ public:
 	bool is_static = false;		/*!< ファイルスコープか */
 
 	/* グローバル変数 */
-	string _init_data = ""; /*!< 文字列リテラル */
+	string _init_data = "";		 /*!< 文字列リテラル */
 	bool is_str_literal = false; /*!< 文字列リテラルか*/
 
 	/* 関数用 */
 
 	unique_ptr<Object> _params; /*!< 引数 */
-	unique_ptr<Node> _body;	 /*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
+	unique_ptr<Node> _body;		/*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
 	unique_ptr<Object> _locals; /*!< 関数内で使うローカル変数 */
-	int _stack_size = 0;			 /*!< 使用するスタックの深さ */
+	int _stack_size = 0;		/*!< 使用するスタックの深さ */
 
 	/* コンストラクタ */
 
@@ -65,6 +66,7 @@ public:
 
 	static Object *new_lvar(const string &name, shared_ptr<Type> &&ty);
 	static Object *new_gvar(const string &name, shared_ptr<Type> &&ty);
+	static unique_ptr<Initializer> new_initializer(const Type *ty);
 	static VarScope *find_var(const Token *token);
 	static shared_ptr<Type> find_typedef(const Token *token);
 	static shared_ptr<Type> find_tag(const Token *token);
@@ -100,8 +102,8 @@ private:
 struct TagScope
 {
 	unique_ptr<TagScope> _next; /*!< スコープ内の次のタグ */
-	string _name = "";			 /*!< 構造体の名前 */
-	shared_ptr<Type> _ty;		 /*!< 構造体の型 */
+	string _name = "";			/*!< 構造体の名前 */
+	shared_ptr<Type> _ty;		/*!< 構造体の型 */
 
 	TagScope(const string &name, const shared_ptr<Type> &ty, unique_ptr<TagScope> &&next) : _name(name), _ty(ty), _next(std::move(next)) {}
 };
@@ -112,12 +114,12 @@ struct TagScope
  */
 struct VarScope
 {
-	unique_ptr<VarScope> _next; /*!< 次の変数  */
-	const string _name = "";	 /*!< 変数名 */
-	const Object *_var = nullptr;	 /*!< 対応する変数のオブジェクト */
-	shared_ptr<Type> type_def;	 /*!< typedefされた型  */
-	shared_ptr<Type> enum_ty;	 /*!< 列挙型の型 */
-	int enum_val = 0;				 /*!< 列挙型が表す数値 */
+	unique_ptr<VarScope> _next;	  /*!< 次の変数  */
+	const string _name = "";	  /*!< 変数名 */
+	const Object *_var = nullptr; /*!< 対応する変数のオブジェクト */
+	shared_ptr<Type> type_def;	  /*!< typedefされた型  */
+	shared_ptr<Type> enum_ty;	  /*!< 列挙型の型 */
+	int enum_val = 0;			  /*!< 列挙型が表す数値 */
 
 	VarScope(unique_ptr<VarScope> &&next, const string &name) : _next(std::move(next)), _name(name) {}
 };
@@ -128,7 +130,7 @@ struct VarScope
  */
 struct Scope
 {
-	unique_ptr<Scope> _next;	 /*!< 次のスコープ  */
+	unique_ptr<Scope> _next;	/*!< 次のスコープ  */
 	unique_ptr<VarScope> _vars; /*!< 変数のスコープ */
 	unique_ptr<TagScope> _tags; /*!< 構造体のタグのスコープ */
 
@@ -144,4 +146,38 @@ struct VarAttr
 {
 	bool is_typedef = false; /*!< typedefされた型か*/
 	bool is_static = false;	 /*!< ファイルスコープか */
+};
+
+/**
+ * @brief 変数の初期化を表す。初期化は入れ子になる
+ * ことがあるため（例：x[2][2] ={{1,1},{2,2}};）
+ * この構造体は木構造を形成する
+ *
+ */
+struct Initializer
+{
+	Initializer();
+	Initializer(const Type *ty);
+
+	unique_ptr<Initializer> _next; /*!< 次の初期化式 */
+	const Type *_ty = nullptr;		   /*!< 初期化式の型 */
+	Token *_token = nullptr;	   /*!< エラー報告用 */
+
+	/** ネストした初期化式でなければ初期化式の内容の式 */
+	unique_ptr<Node> _expr;
+
+	/** ネストしている場合、各要素の初期化式 */
+	unique_ptr<unique_ptr<Initializer>[]> _children;
+};
+
+/**
+ * @brief 配列型の変数の場合,初期化式において配列を構成する
+ * 各要素を表す。そうでなければ変数そのものを表す。
+ *
+ */
+struct InitDesg
+{
+	InitDesg *_next;		/*!< 自身が配列の場合、親の要素 */
+	int _idx = 0;			/*!< 自身を表す配列のインデックス */
+	const Object *_var = nullptr; /*!< 変数を表すオブジェクト */
 };

@@ -318,6 +318,10 @@ void CodeGen::generate_expression(Node *node)
 	*os << "  .loc 1 " << node->_token->_line_no << "\n";
 	switch (node->_kind)
 	{
+	/* NULL */
+	case NodeKind::ND_NULL_EXPR:
+		return;
+
 	/* 数値 */
 	case NodeKind::ND_NUM:
 		/* 数値を'rax'に格納 */

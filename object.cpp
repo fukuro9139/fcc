@@ -12,6 +12,12 @@
 #include "object.hpp"
 #include "parse.hpp"
 
+/* Initializerクラス */
+Initializer::Initializer() = default;
+Initializer::Initializer(const Type *ty) : _ty(ty){};
+
+/* Objectクラス */
+
 /* 静的メンバ変数 */
 
 unique_ptr<Object> Object::locals = nullptr;
@@ -72,6 +78,28 @@ Object *Object::new_gvar(const string &name, shared_ptr<Type> &&ty)
 	var->_next = move(globals);
 	globals = move(var);
 	return globals.get();
+}
+
+/**
+ * @brief 新しい初期化式を作成する
+ *
+ * @param 初期化式の型
+ * @return 作成した初期化式
+ */
+unique_ptr<Initializer> Object::new_initializer(const Type *ty)
+{
+	auto init = make_unique<Initializer>(ty);
+
+	if (TypeKind::TY_ARRAY == ty->_kind)
+	{
+		int len = ty->_array_length;
+		init->_children = make_unique<unique_ptr<Initializer>[]>(len);
+		for (int i = 0; i < len; ++i)
+		{
+			init->_children[i] = new_initializer(ty->_base.get());
+		}
+	}
+	return init;
 }
 
 /**
@@ -138,24 +166,23 @@ shared_ptr<Type> Object::find_tag(const Token *token)
 	return nullptr;
 }
 
-
 /**
  * @brief 最も内側のスコープ内で構造体のタグを名前で検索する。見つからなかった場合はnullptrを返す。
  *
  * @param token 検索対象のトークン
  * @return 既出の構造体であればその型へのポインタ
  */
-shared_ptr<Type> Object::find_tag_in_internal_scope(const Token * token)
+shared_ptr<Type> Object::find_tag_in_internal_scope(const Token *token)
 {
-	for(auto sc = scope->_tags.get(); sc; sc = sc->_next.get()){
-		if(token->is_equal(sc->_name)){
+	for (auto sc = scope->_tags.get(); sc; sc = sc->_next.get())
+	{
+		if (token->is_equal(sc->_name))
+		{
 			return sc->_ty;
 		}
 	}
 	return nullptr;
 }
-
-
 
 /**
  * @brief 'n'を切り上げて最も近い'align'の倍数にする。

@@ -718,28 +718,138 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 
 		const auto var = Object::new_lvar(ty->_token->_str, move(ty));
 
-		/* 宣言の後に初期化式がない場合は次のループへ */
-		if (!current_token->is_equal("="))
+		/* 宣言の後に初期化式をもつ場合 */
+		if (current_token->is_equal("="))
 		{
-			continue;
+			auto expr = lvar_initializer(&current_token, current_token->_next.get(), var);
+			/* ノードリストの末尾に単文ノードとして追加 */
+			cur->_next = make_unique<Node>(NodeKind::ND_EXPR_STMT, move(expr), current_token);
+			/* ノードリストの末尾を更新 */
+			cur = cur->_next.get();
 		};
-
-		/* 変数を表すノードを生成 */
-		auto lhs = make_unique<Node>(var, var->_ty->_token);
-		/* 変数の初期化値を表すノードを生成 */
-		auto rhs = assign(&current_token, current_token->_next.get());
-		/* 初期化を代入式として表すノードを生成 */
-		auto node = make_unique<Node>(NodeKind::ND_ASSIGN, move(lhs), move(rhs), current_token);
-		/* ノードリストの末尾に単文ノードとして追加 */
-		cur->_next = make_unique<Node>(NodeKind::ND_EXPR_STMT, move(node), current_token);
-		/* ノードリストの末尾を更新 */
-		cur = cur->_next.get();
 	}
 	auto node = make_unique<Node>(NodeKind::ND_BLOCK, current_token);
 	/* ヘッダの次のノード以降を切り離してnodeのbodyに繋ぐ */
 	node->_body = move(head->_next);
 	*next_token = current_token->_next.get();
 	return node;
+}
+
+/**
+ * @brief 変数の初期化式を読み取って生成する
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 変数の型
+ * @return 生成した初期化式
+ */
+unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_token, const Type *ty)
+{
+	auto init = Object::new_initializer(ty);
+	initializer2(next_token, current_token, init.get());
+	return init;
+}
+
+/**
+ * @brief 最適的に初期化式の中身を読み取っていく
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param 現在、処理している初期化式
+ * @details 以下のEBNF規則に従う。 @n
+ * initializer = "{" initializer ("," initializer)* "}" | assign
+ */
+void Node::initializer2(Token **next_token, Token *current_token, Initializer *init)
+{
+	/* 配列型の場合、各要素について再帰的にinitializer2を呼び出す */
+	if (TypeKind::TY_ARRAY == init->_ty->_kind)
+	{
+		/* 配列の初期化式は"{"で始まる */
+		current_token = Token::skip(current_token, "{");
+
+		auto len = init->_ty->_array_length;
+		/* 各要素について再帰的に初期化式を構成していく */
+		for (int i = 0; i < len; i++)
+		{
+			/* 2個目以降は","区切りに必要 */
+			if (i > 0)
+			{
+				current_token = Token::skip(current_token, ",");
+			}
+			initializer2(&current_token, current_token, init->_children[i].get());
+		}
+		/* 配列の初期化式は"}"で終わる*/
+		*next_token = Token::skip(current_token, "}");
+		return;
+	}
+
+	init->_expr = assign(next_token, current_token);
+}
+
+/**
+ * @brief 初期化式の代入先を再帰的に構成する
+ *
+ * @details 例 x[2][2] ={{..},{..}};という初期化式は
+ * *(*(x+i)+j) = v;(i =0,1, j=0,1)という形に変換される。
+ * このときの左辺の代入先を表すノードを生成して返す
+ *
+ * @param desg 変数の中で現在ノードを作成している位置
+ * @param token ノードと対応するトークン
+ * @return 生成したノード
+ */
+unique_ptr<Node> Node::init_desg_expr(InitDesg *desg, Token *token)
+{
+	/* 配列ではない変数なら変数を表すノードを生成して返す */
+	if (desg->_var)
+	{
+		return make_unique<Node>(desg->_var, token);
+	}
+
+	auto lhs = init_desg_expr(desg->_next, token);
+	auto rhs = make_unique<Node>(desg->_idx, token);
+	return make_unique<Node>(NodeKind::ND_DEREF, move(lhs), move(rhs), token);
+}
+
+/**
+ * @brief ローカル変数を初期化するノードを構成する。
+ *
+ * @param init 初期化式
+ * @param ty 変数の型
+ * @param desg  変数の中で現在ノードを作成している位置
+ * @param token ノードと対応するトークン
+ * @return 生成したノード
+ */
+unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *desg, Token *token)
+{
+	if (TypeKind::TY_ARRAY == ty->_kind)
+	{
+		auto node = make_unique<Node>(NodeKind::ND_NULL_EXPR, token);
+		auto len = ty->_array_length;
+		for (int i = 0; i < len; ++i)
+		{
+			InitDesg desg2 = {desg, i};
+			auto rhs = create_lvar_init(init->_children[i].get(), ty->_base.get(), &desg2, token);
+			node = make_unique<Node>(NodeKind::ND_COMMA, move(node), move(rhs), token);
+		}
+		return node;
+	}
+	auto lhs = init_desg_expr(desg, token);
+	auto rhs = move(init->_expr);
+	return make_unique<Node>(NodeKind::ND_ASSIGN, move(lhs), move(rhs), token);
+}
+
+/**
+ * @brief ローカル変数の初期化式を読み取って生成する
+ * 
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param obj 変数を表すオブジェクト
+ * @return 対応するASTノード
+ */
+unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, const Object *var){
+	auto init = initializer(next_token, current_token, var->_ty.get());
+	InitDesg desg = {nullptr, 0, var};
+	return create_lvar_init(init.get(), var->_ty.get(), &desg, current_token);
 }
 
 /**
