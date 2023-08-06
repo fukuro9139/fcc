@@ -121,5 +121,7 @@ int main()
 	/* クイーンの配置を決めて出力する */
 	set_queen(queen_position, board, 0);
 
+	printf("%d solutions were found.\n", count);
+
 	return 0;
 }
