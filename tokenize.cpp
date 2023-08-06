@@ -362,7 +362,7 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 {
 	auto start = itr + 1;
 	auto end = string_literal_end(itr + 1);
-	string buf = """";
+	string buf = "\"";
 
 	for (auto p = start; p != end;)
 	{
