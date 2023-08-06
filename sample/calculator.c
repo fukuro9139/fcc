@@ -519,8 +519,8 @@ void report_error()
  */
 bool check_add(int a, int b)
 {
-	int max = (1 << 31) - 1;
-	int min = -(1 << 31);
+	int max = 2147483647;
+	int min = -2147483648;
 
 	/* aが非負のとき */
 	if (a >= 0)
@@ -542,7 +542,7 @@ bool check_add(int a, int b)
  */
 bool check_sub(int a, int b)
 {
-	int min = -(1 << 31);
+	int min = -2147483648;
 	/* bが最小値であるとき-bは最大値を超えることに注意 */
 	if (b == min)
 	{
@@ -574,8 +574,8 @@ bool check_div(int a, int b)
  */
 bool check_mul(int a, int b)
 {
-	int max = (1 << 31) - 1;
-	int min = -(1 << 31);
+	int max = 2147483647;
+	int min = -2147483648;
 
 	/* どちらかが0なら問題なし */
 	if (a == 0 || b == 0)
