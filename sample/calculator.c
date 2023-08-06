@@ -1,4 +1,4 @@
-#include "header"
+#include "header.h"
 
 /** TRUE, FALSEの定義 */
 typedef enum
@@ -25,7 +25,7 @@ typedef struct
 } Operator;
 
 /** 入力文字列 */
-char strInput[128];
+char input_str[128];
 
 /** 数式内の数値 */
 int nums[128];
@@ -52,18 +52,15 @@ bool parse_input();
 int find_highest_priority_op();
 bool perform_calculation();
 bool calc(int idx);
-// int printf();
-// int scanf_s();
-// int strlen();
-// int isdigit();
 void setOP(OperatorType type, int val, int pos);
 void report_error();
+void signal_handler(int signum);
 
-void signal_handler(int signum)
-{
-	printf("\nThank you\n");
-    exit(0);
-}
+/* ヘッダをインクルードできないので標準ライブラリの関数の宣言 */
+// int printf(char * str);
+// int fgets(char *str, int size, );
+// int strlen(char *str);
+// int isdigit(char c);
 
 int main()
 {
@@ -78,16 +75,16 @@ int main()
 		printf("Enter the formula to be calculated.\n");
 		printf("Press Ctrl+C to exit.\n");
 		printf("Input: ");
-		if (fgets(strInput, 128, stdin) == NULL)
-		{
+		if(receive_input(input_str) == (void *)0){
 			break;
 		}
 
+
 		/* スペースを削除 */
-		remove_space(strInput);
+		remove_space(input_str);
 
 		/* 入力が空文字列の場合、次のループへ */
-		if (strlen(strInput) == 0)
+		if (strlen(input_str) == 0)
 		{
 			printf("\n");
 			continue;
@@ -120,34 +117,36 @@ int main()
  */
 void initialize()
 {
-	strInput[0] = '\0';
+	input_str[0] = '\0';
 	numSize = 0;
 	opSize = 0;
 	priorityBase = 0;
 	error_pos = 0;
 }
 
-void remove_space(char *str){
+void remove_space(char *str)
+{
 	/* 読み込み用ポインタ */
 	char *read_ptr = str;
 	/* 書き込み用ポインタ */
 	char *write_ptr = str;
 
-    /* 読み取り用ポインタがNULL文字に到達するまで繰り返す */
-    while (*read_ptr) {
-        /* 読み取り用ポインタがスペースでない場合、書き込み用ポインタに書き込む */
-        if (*read_ptr != ' ' && *read_ptr != '\n') {
-            *write_ptr = *read_ptr;
-            write_ptr++;
-        }
-        /* 読み取り用ポインタを次に進める */
-        read_ptr++;
-    }
+	/* 読み取り用ポインタがNULL文字に到達するまで繰り返す */
+	while (*read_ptr)
+	{
+		/* 読み取り用ポインタがスペースでない場合、書き込み用ポインタに書き込む */
+		if (*read_ptr != ' ' && *read_ptr != '\n')
+		{
+			*write_ptr = *read_ptr;
+			write_ptr++;
+		}
+		/* 読み取り用ポインタを次に進める */
+		read_ptr++;
+	}
 
-    /* 書き込み用ポインタの位置にNULL文字を追加して、文字列を終了させる */
-    *write_ptr = '\0';
+	/* 書き込み用ポインタの位置にNULL文字を追加して、文字列を終了させる */
+	*write_ptr = '\0';
 }
-
 
 /**
  * @brief 入力文字列を字句解析する
@@ -158,11 +157,11 @@ void remove_space(char *str){
 bool parse_input()
 {
 	int tmp = 0;			   // 読み取った数値
-	int sz = strlen(strInput); // 入力文字列の長さ
+	int sz = strlen(input_str); // 入力文字列の長さ
 
 	for (int i = 0; i < sz; i++)
 	{
-		char c = strInput[i];
+		char c = input_str[i];
 
 		/* 数字 */
 		if (isdigit(c))
@@ -238,7 +237,7 @@ bool parse_input()
 				return FALSE;
 			}
 			/* 直前が数字または')'ではないときも存在しないため無効な数式 */
-			if (!isdigit(strInput[i - 1]) && strInput[i - 1] != ')')
+			if (!isdigit(input_str[i - 1]) && input_str[i - 1] != ')')
 			{
 				error_pos = i;
 				return FALSE;
@@ -262,7 +261,7 @@ bool parse_input()
 				return FALSE;
 			}
 			/* 直前が数字または')'ではないときも存在しないため無効な数式 */
-			if (!isdigit(strInput[i - 1]) && strInput[i - 1] != ')')
+			if (!isdigit(input_str[i - 1]) && input_str[i - 1] != ')')
 			{
 				error_pos = i;
 				return FALSE;
@@ -328,7 +327,7 @@ void setOP(OperatorType type, int val, int pos)
 }
 
 /**
- * @brief 最も左にあって最も優先度が高い演算子を探す
+ * @brief 最も右にあって最も優先度が高い演算子を探す
  *
  * @return 最も優先度の高い演算子のインデックス
  */
@@ -337,7 +336,7 @@ int find_highest_priority_op()
 	int ret = 0;
 	for (int i = 1; i < opSize; i++)
 	{
-		if (ops[i].priority > ops[ret].priority)
+		if (ops[i].priority >= ops[ret].priority)
 		{
 			ret = i;
 		}
@@ -428,8 +427,19 @@ bool calc(int idx)
  */
 void report_error()
 {
-	printf("%s\n", strInput);
+	printf("%s\n", input_str);
 	printf("%*s", error_pos, "");
 	printf("^");
 	printf(" Invalid expression. Please try again.\n\n");
+}
+
+/**
+ * @brief Ctrl+Cが押されたときのハンドラ
+ *
+ * @param signum シグナルのID Ctrl+cはSIGINT=2
+ */
+void signal_handler(int signum)
+{
+	printf("\nThank you!\n");
+	exit(0);
 }
