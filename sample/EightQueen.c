@@ -77,7 +77,7 @@ void set_queen(int queen_position[8], int board[8][8], int row)
 	{
 		count++;
 		print_board(queen_position);
-		return;
+		return 0;
 	}
 
 	/* 新しいクイーンを置く場所を決める */
@@ -98,7 +98,7 @@ void set_queen(int queen_position[8], int board[8][8], int row)
 	}
 }
 
-int main(void)
+int main()
 {
 	/* 発見した個数の初期化 */
 	count = 0;
