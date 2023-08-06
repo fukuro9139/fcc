@@ -1,6 +1,6 @@
 #Windowsでビルドするときは1に設定する
 WINDOWS = 0
-#最適化
+#デバッグ用
 DEBUG = 0
 
 ifeq ($(DEBUG), 0)
