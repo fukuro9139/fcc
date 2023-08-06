@@ -2477,26 +2477,13 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
  */
 bool Node::is_function(Token *token)
 {
-	/* 識別子にたどり着くまで辿り続ける */
-	while (token->is_equal("*"))
-	{
-		token = token->_next.get();
+	if(token->is_equal(";")){
+		return false;
 	}
 
-	/* 識別子が来なければエラー */
-	if (TokenKind::TK_IDENT != token->_kind)
-	{
-		error_token("識別子ではありません", token);
-	}
-
-	/* 識別子の次に来るのが"("なら関数 */
-	if (token->_next->is_equal("("))
-	{
-		return true;
-	}
-
-	/* そうでないなら変数 */
-	return false;
+	auto dummy = make_shared<Type>();
+	auto ty = declarator(&token, token, dummy);
+	return TypeKind::TY_FUNC == ty->_kind;
 }
 
 /**
