@@ -194,6 +194,13 @@ bool parse_input()
 		/* 括弧開き */
 		if (c == '(')
 		{
+			/* 直前の文字が数字または')'の場合無効な数式 */
+			if (i != 0 && (isdigit(input_str[i - 1]) || input_str[i - 1] == ')'))
+			{
+				error_pos = i;
+				return FALSE;
+			}
+
 			priorityBase += 10;
 			continue;
 		}
@@ -201,18 +208,26 @@ bool parse_input()
 		if (c == ')')
 		{
 			priorityBase -= 10;
-			/* 数式の末尾なら現在の数字を格納 */
-			if (i == sz - 1)
-			{
-				nums[numSize] = tmp;
-				numSize++;
-			}
 
 			/* ')'の数がこれまでに出てきた'('の数より多い場合閉じられない括弧が存在する */
 			if (priorityBase < 0)
 			{
 				error_pos = i;
 				return FALSE;
+			}
+
+			/* 直前が数字または')'でないなら無効な数式 */
+			if (!isdigit(input_str[i - 1]) && input_str[i - 1] != ')')
+			{
+				error_pos = i;
+				return FALSE;
+			}
+
+			/* 数式の末尾なら現在の数字を格納 */
+			if (i == sz - 1)
+			{
+				nums[numSize] = tmp;
+				numSize++;
 			}
 			continue;
 		}
