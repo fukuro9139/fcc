@@ -1,3 +1,13 @@
+/**
+ * @file EightQueen.c
+ * @author Kengo Fukunaga
+ * @brief 四則演算ができる電卓
+ * @version 0.1
+ * @date 2023-08-05
+ *
+ * @copyright Copyright (c) 2023
+ */
+
 /** TRUE, FALSEの定義 */
 typedef enum
 {
@@ -51,16 +61,20 @@ int find_highest_priority_op();
 bool perform_calculation();
 bool calc(int idx);
 void setOP(OperatorType type, int val, int pos);
-void report_error();
-void signal_handler(int signum);
+bool check_add(int a, int b);
+bool check_sub(int a, int b);
+bool check_div(int a, int b);
+bool check_mul(int a, int b);
 
-/* ヘッダをインクルードできないので標準ライブラリの関数の宣言 */
-int printf(char * str);
-int fgets(char *str, int size);
+void report_error();
+
+/* FCCはヘッダをインクルードできないので標準ライブラリの関数を宣言しておく */
+int printf(char *str);
 int strlen(char *str);
 int isdigit(char c);
-void exit(int r);
-char* receive_input(char *str);
+
+/* FCCはファイルポインタがまだ実装できていないのでfgets()をラッピング */
+char *receive_input(char *str);
 
 int main()
 {
@@ -73,7 +87,8 @@ int main()
 		printf("Enter the formula to be calculated.\n");
 		printf("Press Ctrl+C to exit.\n");
 		printf("Input: ");
-		if(receive_input(input_str) == (void *)0){
+		if (receive_input(input_str) == (void *)0)
+		{
 			break;
 		}
 
@@ -153,7 +168,7 @@ void remove_space(char *str)
  */
 bool parse_input()
 {
-	int tmp = 0;			   // 読み取った数値
+	int tmp = 0;				// 読み取った数値
 	int sz = strlen(input_str); // 入力文字列の長さ
 
 	for (int i = 0; i < sz; i++)
@@ -384,34 +399,64 @@ bool perform_calculation()
  */
 bool calc(int idx)
 {
+	int lhs = nums[idx];
+	int rhs = nums[idx + 1];
 	switch (ops[idx].kind)
 	{
 	/* plus */
 	case OP_PLUS:
-		nums[idx] = nums[idx] + nums[idx + 1];
-		break;
-	/* minus */
-	case OP_MINUS:
-		nums[idx] = nums[idx] - nums[idx + 1];
-		break;
-	/* divide */
-	case OP_DIV:
-		/* ゼロ割チェック */
-		if (nums[idx + 1] == 0)
+		if (check_add(lhs, rhs))
+		{
+			nums[idx] = lhs + rhs;
+			break;
+		}
+		else
 		{
 			error_pos = ops[idx].pos;
 			return FALSE;
 		}
-		nums[idx] = nums[idx] / nums[idx + 1];
-		break;
+
+	/* minus */
+	case OP_MINUS:
+		if (check_sub(lhs, rhs))
+		{
+			nums[idx] = lhs - rhs;
+			break;
+		}
+		else
+		{
+			error_pos = ops[idx].pos;
+			return FALSE;
+		}
+
+	/* divide */
+	case OP_DIV:
+		if (check_div(lhs, rhs))
+		{
+			nums[idx] = lhs / rhs;
+			break;
+		}
+		else
+		{
+			error_pos = ops[idx].pos;
+			return FALSE;
+		}
+
 	/* multiple */
 	case OP_MUL:
-		nums[idx] = nums[idx] * nums[idx + 1];
-		break;
+		if (check_mul(lhs, rhs))
+		{
+			nums[idx] = lhs * rhs;
+			break;
+		}
+		else
+		{
+			error_pos = ops[idx].pos;
+			return FALSE;
+		}
 	default:
-		/* 演算子以外が入力されたらエラーとして異常終了 */
-		printf("internal error\n");
-		exit(1);
+		/* 演算子以外が入力されたらエラー */
+		return FALSE;
 	}
 	return TRUE;
 }
@@ -428,4 +473,118 @@ void report_error()
 	printf("%*s", error_pos, "");
 	printf("^");
 	printf(" Invalid expression. Please try again.\n\n");
+}
+
+/**
+ * @brief a+bがオーバーフローしないかチェック
+ *
+ * @param a
+ * @param b
+ * @return true オーバーフローしない
+ * @return false オーバーフローする
+ */
+bool check_add(int a, int b)
+{
+	int max = (1 << 31) - 1;
+	int min = -(1 << 31);
+
+	/* aが非負のとき */
+	if (a >= 0)
+	{
+		return b <= max - a; // 最小値側に超えることはないので最大値以下であることをチェック
+	}
+
+	/* aが負のとき */
+	return b >= min - a; // 最大値側に超えることはないので最小値以上であることをチェック
+}
+
+/**
+ * @brief a-bがオーバーフローしないかチェック
+ *
+ * @param a
+ * @param b
+ * @return true オーバーフローしない
+ * @return false オーバーフローする
+ */
+bool check_sub(int a, int b)
+{
+	int min = -(1 << 31);
+	/* bが最小値であるとき-bは最大値を超えることに注意 */
+	if (b == min)
+	{
+		return a < 0;
+	}
+	return check_add(a, -b);
+}
+
+/**
+ * @brief a/bがオーバーフローしないかチェック
+ *
+ * @param a
+ * @param b
+ * @return true オーバーフローしない
+ * @return false オーバーフローする
+ */
+bool check_div(int a, int b)
+{
+	/* 割り算はbが０でなければ問題なし */
+	return b != 0;
+}
+/**
+ * @brief a*bがオーバーフローしないかチェック
+ *
+ * @param a
+ * @param b
+ * @return true オーバーフローしない
+ * @return false オーバーフローする
+ */
+bool check_mul(int a, int b)
+{
+	int max = (1 << 31) - 1;
+	int min = -(1 << 31);
+
+	/* どちらかが0なら問題なし */
+	if (a == 0 || b == 0)
+	{
+		return TRUE;
+	}
+
+	/* ともに正 */
+	if (a > 0 && b > 0)
+	{
+		return b <= max / a;
+	}
+
+	/* ともに負 */
+	if (a < 0 && b < 0)
+	{
+		/* どちらかが最小値ならオーバーフロー */
+		if (a == min || b == min)
+		{
+			return FALSE;
+		}
+		return -b <= max / (-a);
+	}
+	/* a,bの符号が異なる */
+	/* 片方が最小値のときは相手が1でなければオーバーフロー */
+	if (a == min)
+	{
+		return b == 1;
+	}
+	if (b == min)
+	{
+		return a == 1;
+	}
+	/* 最小値でなければ符号を反転させることができる */
+	if (a < 0)
+	{
+		a *= -1;
+	}
+
+	if (b < 0)
+	{
+		b *= -1;
+	}
+
+	return b <= max / a;
 }
