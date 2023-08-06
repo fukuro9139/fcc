@@ -3,7 +3,7 @@
  * @author Kengo Fukunaga
  * @brief エイトクイーン問題をバックトラック法で解くソルバー
  * @version 0.1
- * @date 2023-08-03
+ * @date 2023-08-05
  *
  * @copyright Copyright (c) 2023
  *

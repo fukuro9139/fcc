@@ -1,5 +1,5 @@
 #Windowsでビルドするときは1に設定する
-WINDOWS = 0
+WINDOWS = 1
 CXX = g++
 CC = gcc
 
