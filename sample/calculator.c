@@ -61,7 +61,7 @@ int strlen(char *str);
 int isdigit(char c);
 void exit(int r);
 void (*signal(int sig, void (* func)(int signum)))(int signum);
-void receive_input(char *str);
+char* receive_input(char *str);
 
 int main()
 {
