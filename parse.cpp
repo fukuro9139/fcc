@@ -789,10 +789,14 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
  */
 void Node::string_initializer(Token **next_token, Token *current_token, Initializer *init)
 {
-	int len = std::min(init->_ty->_array_length, static_cast<int>(current_token->_str.size() - 2));
+	/* 前後の'"'を削除 */
+	auto str = current_token->_str.substr(1);
+	str.pop_back();
+
+	int len = std::min(init->_ty->_array_length, static_cast<int>(str.size()));
 	for (int i = 0; i < len; ++i)
 	{
-		init->_children[i]->_expr = make_unique<Node>(static_cast<int64_t>(current_token->_str[i]), current_token);
+		init->_children[i]->_expr = make_unique<Node>(static_cast<int64_t>(str[i]), current_token);
 	}
 	*next_token = current_token->_next.get();
 }
