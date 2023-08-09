@@ -200,7 +200,7 @@ Object *Node::new_string_literal(const string &str)
 	auto obj = new_anonymous_gvar(move(ty));
 
 	/* init_dataに文字列を入れて'\0'終端を追加 */
-	obj->_init_data = str.substr(1, str.size()-2);
+	obj->_init_data = str.substr(1, str.size() - 2);
 	obj->_init_data.push_back('\0');
 	obj->is_str_literal = true;
 	return obj;
@@ -770,14 +770,21 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 
 		auto len = init->_ty->_array_length;
 		/* 各要素について再帰的に初期化式を構成していく */
-		for (int i = 0; i < len && !current_token->is_equal("}"); i++)
+		for (int i = 0; !Token::consume(next_token, current_token, "}"); i++)
 		{
 			/* 2個目以降は","区切りに必要 */
 			if (i > 0)
 			{
 				current_token = Token::skip(current_token, ",");
 			}
-			initializer2(&current_token, current_token, init->_children[i].get());
+			if (i < len)
+			{
+				initializer2(&current_token, current_token, init->_children[i].get());
+			}
+			else
+			{
+				current_token = skip_excess_element(current_token);
+			}
 		}
 		/* 配列の初期化式は"}"で終わる*/
 		*next_token = Token::skip(current_token, "}");
@@ -785,6 +792,23 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 	}
 
 	init->_expr = assign(next_token, current_token);
+}
+
+/**
+ * @brief 余分な初期値を無視する。
+ *
+ * @param token 現在のトークン
+ * @return 次のトークン
+ */
+Token *Node::skip_excess_element(Token *token)
+{
+	if (token->is_equal("{"))
+	{
+		token = skip_excess_element(token->_next.get());
+		return Token::skip(token, "}");
+	}
+	assign(&token, token);
+	return token;
 }
 
 /**
@@ -836,7 +860,8 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 	}
 
 	/* 初期化式が与えられない場合はなにもしない（変数は最初に0クリアされる） */
-	if(!init->_expr){
+	if (!init->_expr)
+	{
 		return make_unique<Node>(NodeKind::ND_NULL_EXPR, token);
 	}
 	auto lhs = init_desg_expr(desg, token);
@@ -846,7 +871,7 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 
 /**
  * @brief ローカル変数の初期化式を読み取って生成する
- * 
+ *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param obj 変数を表すオブジェクト
@@ -856,7 +881,8 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
  * 最初に変数に与えられたメモリ領域全体を0クリアしてその後に
  * ユーザーが指定した初期値があれば設定する。
  */
-unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, const Object *var){
+unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, const Object *var)
+{
 	auto init = initializer(next_token, current_token, var->_ty.get());
 	InitDesg desg = {nullptr, 0, var};
 
@@ -2490,7 +2516,8 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
  */
 bool Node::is_function(Token *token)
 {
-	if(token->is_equal(";")){
+	if (token->is_equal(";"))
+	{
 		return false;
 	}
 
