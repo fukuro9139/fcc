@@ -389,6 +389,18 @@ void CodeGen::generate_expression(Node *node)
 		generate_expression(node->_rhs.get());
 		return;
 
+	
+	case NodeKind::ND_MEMZERO:
+		/* 変数が使うメモリサイズ */
+		*os << "  mov rcx, " << node->_var->_ty->_size << "\n";
+		/* 変数のアドレス */
+		*os << "  lea rdi, [rbp - " << node->_var->_offset << "]\n";
+		/* alに0をセット */
+		*os << "  mov al, 0\n";
+		/* 0クリア */
+		*os << "  rep stosb\n";
+		return;
+
 	/* 3項演算子 */
 	case NodeKind::ND_COND:
 	{

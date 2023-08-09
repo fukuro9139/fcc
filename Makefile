@@ -68,7 +68,7 @@ clean:
 ifeq ($(WINDOWS), 0)
 	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.s test/tmp*
 else
-	del /s fcc.exe $(OBJS) *.d *.s tmp_*
+	del fcc.exe $(OBJS) *.d test\*.s test\tmp*
 endif
 
 #ヘッダフィルの依存関係

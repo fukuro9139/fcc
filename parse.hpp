@@ -74,6 +74,7 @@ enum class NodeKind
 	ND_STMT_EXPR, /*!< ステートメント式  */
 	ND_VAR,		  /*!< 変数 */
 	ND_CAST,	  /*!< 型キャスト */
+	ND_MEMZERO,	  /*!< スタック上の変数のゼロクリア */
 };
 
 /**

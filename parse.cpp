@@ -770,7 +770,7 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 
 		auto len = init->_ty->_array_length;
 		/* 各要素について再帰的に初期化式を構成していく */
-		for (int i = 0; i < len; i++)
+		for (int i = 0; i < len && !current_token->is_equal("}"); i++)
 		{
 			/* 2個目以降は","区切りに必要 */
 			if (i > 0)
@@ -834,9 +834,14 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 		}
 		return node;
 	}
+
+	/* 初期化式が与えられない場合はなにもしない（変数は最初に0クリアされる） */
+	if(!init->_expr){
+		return make_unique<Node>(NodeKind::ND_NULL_EXPR, token);
+	}
 	auto lhs = init_desg_expr(desg, token);
-	auto rhs = move(init->_expr);
-	return make_unique<Node>(NodeKind::ND_ASSIGN, move(lhs), move(rhs), token);
+
+	return make_unique<Node>(NodeKind::ND_ASSIGN, move(lhs), move(init->_expr), token);
 }
 
 /**
@@ -846,11 +851,19 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
  * @param current_token 現在処理しているトークン
  * @param obj 変数を表すオブジェクト
  * @return 対応するASTノード
+ * @details
+ * 初期化式が与えられなかった場合、各要素は0にセットする。
+ * 最初に変数に与えられたメモリ領域全体を0クリアしてその後に
+ * ユーザーが指定した初期値があれば設定する。
  */
 unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, const Object *var){
 	auto init = initializer(next_token, current_token, var->_ty.get());
 	InitDesg desg = {nullptr, 0, var};
-	return create_lvar_init(init.get(), var->_ty.get(), &desg, current_token);
+
+	auto lhs = make_unique<Node>(NodeKind::ND_MEMZERO, current_token);
+	lhs->_var = var;
+	auto rhs = create_lvar_init(init.get(), var->_ty.get(), &desg, current_token);
+	return make_unique<Node>(NodeKind::ND_COMMA, move(lhs), move(rhs), current_token);
 }
 
 /**
