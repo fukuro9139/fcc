@@ -162,15 +162,15 @@ private:
 	static unique_ptr<Node> new_long(const int64_t &val, Token *token);
 	static unique_ptr<Node> new_inc_dec(unique_ptr<Node> &&node, Token *token, int addend);
 	static unique_ptr<Node> statement(Token **next_token, Token *current_token);
-	static unique_ptr<Initializer> initializer(Token **next_token, Token *current_token, const Type *ty);
-	
+	static unique_ptr<Initializer> initializer(Token **next_token, Token *current_token, shared_ptr<Type> ty, shared_ptr<Type> &new_ty);
 	static void string_initializer(Token **next_token, Token *current_token, Initializer *init);
+	static int count_array_init_element(Token *token, const Type *ty);
 	static void array_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static void initializer2(Token **next_token, Token *current_token, Initializer *init);
 	static Token *skip_excess_element(Token *token);
 	static unique_ptr<Node> init_desg_expr(InitDesg *desg, Token *token);
 	static unique_ptr<Node> create_lvar_init(Initializer *init, Type *ty, InitDesg *desg, Token *token);
-	static unique_ptr<Node> lvar_initializer(Token **next_token, Token *current_token, const Object *var);
+	static unique_ptr<Node> lvar_initializer(Token **next_token, Token *current_token, Object *var);
 	static unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
 	static Token *function_definition(Token *token, shared_ptr<Type> &&base, VarAttr *attr);
 	static shared_ptr<Type> struct_decl(Token **next_token, Token *current_token);

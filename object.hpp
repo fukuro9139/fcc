@@ -66,7 +66,7 @@ public:
 
 	static Object *new_lvar(const string &name, shared_ptr<Type> &&ty);
 	static Object *new_gvar(const string &name, shared_ptr<Type> &&ty);
-	static unique_ptr<Initializer> new_initializer(const Type *ty);
+	static unique_ptr<Initializer> new_initializer(const shared_ptr<Type> &ty, bool is_flexible);
 	static VarScope *find_var(const Token *token);
 	static shared_ptr<Type> find_typedef(const Token *token);
 	static shared_ptr<Type> find_tag(const Token *token);
@@ -157,11 +157,12 @@ struct VarAttr
 struct Initializer
 {
 	Initializer();
-	Initializer(const Type *ty);
+	Initializer(const shared_ptr<Type> &ty);
 
 	unique_ptr<Initializer> _next; /*!< 次の初期化式 */
-	const Type *_ty = nullptr;		   /*!< 初期化式の型 */
+	shared_ptr<Type> _ty;		   /*!< 初期化式の型 */
 	Token *_token = nullptr;	   /*!< エラー報告用 */
+	bool _is_flexible = false;	   /*!< 要素数が指定されているか */
 
 	/** ネストした初期化式でなければ初期化式の内容の式 */
 	unique_ptr<Node> _expr;
@@ -177,7 +178,7 @@ struct Initializer
  */
 struct InitDesg
 {
-	InitDesg *_next;		/*!< 自身が配列の場合、親の要素 */
-	int _idx = 0;			/*!< 自身を表す配列のインデックス */
+	InitDesg *_next;			  /*!< 自身が配列の場合、親の要素 */
+	int _idx = 0;				  /*!< 自身を表す配列のインデックス */
 	const Object *_var = nullptr; /*!< 変数を表すオブジェクト */
 };

@@ -14,7 +14,7 @@
 
 /* Initializerクラス */
 Initializer::Initializer() = default;
-Initializer::Initializer(const Type *ty) : _ty(ty){};
+Initializer::Initializer(const shared_ptr<Type> &ty) : _ty(ty){}
 
 /* Objectクラス */
 
@@ -86,17 +86,23 @@ Object *Object::new_gvar(const string &name, shared_ptr<Type> &&ty)
  * @param 初期化式の型
  * @return 作成した初期化式
  */
-unique_ptr<Initializer> Object::new_initializer(const Type *ty)
+unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool is_flexible)
 {
 	auto init = make_unique<Initializer>(ty);
 
 	if (TypeKind::TY_ARRAY == ty->_kind)
 	{
+		/* 要素数が指定されていない */
+		if(is_flexible && ty->_size <0){
+			init->_is_flexible = true;
+			return init;
+		}
+
 		int len = ty->_array_length;
 		init->_children = make_unique<unique_ptr<Initializer>[]>(len);
 		for (int i = 0; i < len; ++i)
 		{
-			init->_children[i] = new_initializer(ty->_base.get());
+			init->_children[i] = new_initializer(ty->_base, false);
 		}
 	}
 	return init;

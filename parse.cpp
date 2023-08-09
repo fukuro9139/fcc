@@ -706,11 +706,6 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 		/* 変数の最終的な型を決定 */
 		auto ty = declarator(&current_token, current_token, base);
 
-		if (ty->_size < 0)
-		{
-			error_token("変数が不完全な型で宣言されています", current_token);
-		}
-
 		/* 変数がvoid型で宣言されていたらエラー */
 		if (TypeKind::TY_VOID == ty->_kind)
 		{
@@ -727,6 +722,17 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 			cur->_next = make_unique<Node>(NodeKind::ND_EXPR_STMT, move(expr), current_token);
 			/* ノードリストの末尾を更新 */
 			cur = cur->_next.get();
+
+			/* 変数の型が不完全 */
+			if (var->_ty->_size < 0)
+			{
+				error_token("変数の型が不完全です", ty->_token);
+			}
+
+			if (TypeKind::TY_VOID == var->_ty->_kind)
+			{
+				error_token("変数がvoid型で宣言されています", ty->_token);
+			}
 		};
 	}
 	auto node = make_unique<Node>(NodeKind::ND_BLOCK, current_token);
@@ -742,12 +748,14 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param ty 変数の型
+ * @param new_ty 初期化式から補完した完全な型を返すための参照
  * @return 生成した初期化式
  */
-unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_token, const Type *ty)
+unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_token, shared_ptr<Type> ty, shared_ptr<Type> &new_ty)
 {
-	auto init = Object::new_initializer(ty);
+	auto init = Object::new_initializer(ty, true);
 	initializer2(next_token, current_token, init.get());
+	new_ty = init->_ty;
 	return init;
 }
 
@@ -770,7 +778,8 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 	}
 
 	/* 配列 */
-	if(TypeKind::TY_ARRAY == init->_ty->_kind){
+	if (TypeKind::TY_ARRAY == init->_ty->_kind)
+	{
 		array_initializer(next_token, current_token, init);
 		return;
 	}
@@ -789,9 +798,16 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
  */
 void Node::string_initializer(Token **next_token, Token *current_token, Initializer *init)
 {
+
 	/* 前後の'"'を削除 */
 	auto str = current_token->_str.substr(1);
 	str.pop_back();
+
+	if (init->_is_flexible)
+	{
+		/* initの実体を初期化式の文字列の長さ+1を持つ配列として書き換える */
+		*init = move(*Object::new_initializer(Type::array_of(init->_ty->_base, str.size() + 1), false));
+	}
 
 	int len = std::min(init->_ty->_array_length, static_cast<int>(str.size()));
 	for (int i = 0; i < len; ++i)
@@ -799,6 +815,30 @@ void Node::string_initializer(Token **next_token, Token *current_token, Initiali
 		init->_children[i]->_expr = make_unique<Node>(static_cast<int64_t>(str[i]), current_token);
 	}
 	*next_token = current_token->_next.get();
+}
+
+/**
+ * @brief 初期化式で与えられた配列の要素数を数える
+ *
+ * @param token 現在のトークン
+ * @param ty 配列の型
+ * @return 配列の要素数
+ */
+int Node::count_array_init_element(Token *token, const Type *ty)
+{
+	auto dummy = Object::new_initializer(ty->_base, false);
+	int cnt = 0;
+
+	for (; !token->is_equal("}"); ++cnt)
+	{
+		/* 2個目以降では','区切りが必要 */
+		if (cnt > 0)
+		{
+			token = Token::skip(token, ",");
+		}
+		initializer2(&token, token, dummy.get());
+	}
+	return cnt;
 }
 
 /**
@@ -815,7 +855,11 @@ void Node::array_initializer(Token **next_token, Token *current_token, Initializ
 	/* 配列の初期化式は"{"で始まる */
 	current_token = Token::skip(current_token, "{");
 
-	auto len = init->_ty->_array_length;
+	if(init->_is_flexible){
+		auto len = count_array_init_element(current_token, init->_ty.get());
+		*init = move(*Object::new_initializer(Type::array_of(init->_ty->_base, len), false));
+	}
+
 	/* 各要素について再帰的に初期化式を構成していく */
 	for (int i = 0; !Token::consume(next_token, current_token, "}"); i++)
 	{
@@ -824,7 +868,7 @@ void Node::array_initializer(Token **next_token, Token *current_token, Initializ
 		{
 			current_token = Token::skip(current_token, ",");
 		}
-		if (i < len)
+		if (i < init->_ty->_array_length)
 		{
 			initializer2(&current_token, current_token, init->_children[i].get());
 		}
@@ -922,9 +966,9 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
  * 最初に変数に与えられたメモリ領域全体を0クリアしてその後に
  * ユーザーが指定した初期値があれば設定する。
  */
-unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, const Object *var)
+unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, Object *var)
 {
-	auto init = initializer(next_token, current_token, var->_ty.get());
+	auto init = initializer(next_token, current_token, var->_ty, var->_ty);
 	InitDesg desg = {nullptr, 0, var};
 
 	auto lhs = make_unique<Node>(NodeKind::ND_MEMZERO, current_token);
