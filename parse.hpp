@@ -163,6 +163,9 @@ private:
 	static unique_ptr<Node> new_inc_dec(unique_ptr<Node> &&node, Token *token, int addend);
 	static unique_ptr<Node> statement(Token **next_token, Token *current_token);
 	static unique_ptr<Initializer> initializer(Token **next_token, Token *current_token, const Type *ty);
+	
+	static void string_initializer(Token **next_token, Token *current_token, Initializer *init);
+	static void array_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static void initializer2(Token **next_token, Token *current_token, Initializer *init);
 	static Token *skip_excess_element(Token *token);
 	static unique_ptr<Node> init_desg_expr(InitDesg *desg, Token *token);

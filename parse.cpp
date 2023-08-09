@@ -758,40 +758,77 @@ unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_tok
  * @param current_token 現在処理しているトークン
  * @param 現在、処理している初期化式
  * @details 以下のEBNF規則に従う。 @n
- * initializer = "{" initializer ("," initializer)* "}" | assign
+ * initializer = string-initialize | array-initializer | assign
  */
 void Node::initializer2(Token **next_token, Token *current_token, Initializer *init)
 {
-	/* 配列型の場合、各要素について再帰的にinitializer2を呼び出す */
-	if (TypeKind::TY_ARRAY == init->_ty->_kind)
+	/* 文字列 */
+	if (TypeKind::TY_ARRAY == init->_ty->_kind && TokenKind::TK_STR == current_token->_kind)
 	{
-		/* 配列の初期化式は"{"で始まる */
-		current_token = Token::skip(current_token, "{");
+		string_initializer(next_token, current_token, init);
+		return;
+	}
 
-		auto len = init->_ty->_array_length;
-		/* 各要素について再帰的に初期化式を構成していく */
-		for (int i = 0; !Token::consume(next_token, current_token, "}"); i++)
-		{
-			/* 2個目以降は","区切りに必要 */
-			if (i > 0)
-			{
-				current_token = Token::skip(current_token, ",");
-			}
-			if (i < len)
-			{
-				initializer2(&current_token, current_token, init->_children[i].get());
-			}
-			else
-			{
-				current_token = skip_excess_element(current_token);
-			}
-		}
-		/* 配列の初期化式は"}"で終わる*/
-		*next_token = Token::skip(current_token, "}");
+	/* 配列 */
+	if(TypeKind::TY_ARRAY == init->_ty->_kind){
+		array_initializer(next_token, current_token, init);
 		return;
 	}
 
 	init->_expr = assign(next_token, current_token);
+}
+
+/**
+ * @brief 文字列型の変数の初期化式を生成する
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param init 初期化式
+ * @details 以下のEBNF規則に従う。 @n
+ * string_initializer = string-literal
+ */
+void Node::string_initializer(Token **next_token, Token *current_token, Initializer *init)
+{
+	int len = std::min(init->_ty->_array_length, static_cast<int>(current_token->_str.size() - 2));
+	for (int i = 0; i < len; ++i)
+	{
+		init->_children[i]->_expr = make_unique<Node>(static_cast<int64_t>(current_token->_str[i]), current_token);
+	}
+	*next_token = current_token->_next.get();
+}
+
+/**
+ * @brief 配列の変数の初期化式を生成する
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param init 初期化式
+ * @details 以下のEBNF規則に従う。 @n
+ * array_initializer = "{" identifier ("," identifier)* "}"
+ */
+void Node::array_initializer(Token **next_token, Token *current_token, Initializer *init)
+{
+	/* 配列の初期化式は"{"で始まる */
+	current_token = Token::skip(current_token, "{");
+
+	auto len = init->_ty->_array_length;
+	/* 各要素について再帰的に初期化式を構成していく */
+	for (int i = 0; !Token::consume(next_token, current_token, "}"); i++)
+	{
+		/* 2個目以降は","区切りに必要 */
+		if (i > 0)
+		{
+			current_token = Token::skip(current_token, ",");
+		}
+		if (i < len)
+		{
+			initializer2(&current_token, current_token, init->_children[i].get());
+		}
+		else
+		{
+			current_token = skip_excess_element(current_token);
+		}
+	}
 }
 
 /**
