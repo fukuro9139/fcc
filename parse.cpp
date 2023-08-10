@@ -785,25 +785,35 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 	/* 配列 */
 	if (TypeKind::TY_ARRAY == init->_ty->_kind)
 	{
-		array_initializer(next_token, current_token, init);
+		if (current_token->is_equal("{"))
+		{
+			array_initializer1(next_token, current_token, init);
+		}
+		else
+		{
+			array_initializer2(next_token, current_token, init);
+		}
 		return;
 	}
 
 	/* 構造体 */
 	if (TypeKind::TY_STRUCT == init->_ty->_kind)
 	{
-		/* 構造体は他の構造体で初期化できる */
-		if (!current_token->is_equal("{"))
+		if (current_token->is_equal("{"))
 		{
-			auto expr = assign(next_token, current_token);
-			Type::add_type(expr.get());
-			if (TypeKind::TY_STRUCT == expr->_ty->_kind)
-			{
-				init->_expr = move(expr);
-				return;
-			}
+			struct_initializer1(next_token, current_token, init);
+			return;
 		}
-		struct_initializer(next_token, current_token, init);
+		/* 構造体は他の構造体で初期化できる */
+		auto expr = assign(next_token, current_token);
+		Type::add_type(expr.get());
+		if (TypeKind::TY_STRUCT == expr->_ty->_kind)
+		{
+			init->_expr = move(expr);
+			return;
+		}
+
+		struct_initializer2(next_token, current_token, init);
 		return;
 	}
 
@@ -872,15 +882,15 @@ int Node::count_array_init_element(Token *token, const Type *ty)
 }
 
 /**
- * @brief 配列の変数の初期化式を生成する
+ * @brief 配列の変数の初期化式（前後に'{}'を持つ）を読み取りを生成する
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param init 初期化式
  * @details 以下のEBNF規則に従う。 @n
- * array_initializer = "{" identifier ("," identifier)* "}"
+ * array_initializer1 = "{" identifier ("," identifier)* "}"
  */
-void Node::array_initializer(Token **next_token, Token *current_token, Initializer *init)
+void Node::array_initializer1(Token **next_token, Token *current_token, Initializer *init)
 {
 	/* 配列の初期化式は"{"で始まる */
 	current_token = Token::skip(current_token, "{");
@@ -911,15 +921,45 @@ void Node::array_initializer(Token **next_token, Token *current_token, Initializ
 }
 
 /**
+ * @brief 配列の変数の初期化式（前後に'{}'を持たない）を読み取り生成する
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param init 初期化式
+ * @details 以下のEBNF規則に従う。 @n
+ * array_initializer2 =  identifier ("," identifier)*
+ */
+void Node::array_initializer2(Token **next_token, Token *current_token, Initializer *init)
+{
+	if (init->_is_flexible)
+	{
+		auto len = count_array_init_element(current_token, init->_ty.get());
+		*init = move(*Object::new_initializer(Type::array_of(init->_ty->_base, len), false));
+	}
+
+	/* 各要素について再帰的に初期化式を構成していく */
+	for (int i = 0; i < init->_ty->_array_length && !current_token->is_equal("}"); i++)
+	{
+		/* 2個目以降は","区切りに必要 */
+		if (i > 0)
+		{
+			current_token = Token::skip(current_token, ",");
+		}
+		initializer2(&current_token, current_token, init->_children[i].get());
+	}
+	*next_token = current_token;
+}
+
+/**
  * @brief 構造体の変数の初期化式を生成する
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param init 初期化式
  * @details 以下のEBNF規則に従う。 @n
- * struct_initializer = "{" initializer ("," initializer)* "}"
+ * struct_initializer1 = "{" initializer ("," initializer)* "}"
  */
-void Node::struct_initializer(Token **next_token, Token *current_token, Initializer *init)
+void Node::struct_initializer1(Token **next_token, Token *current_token, Initializer *init)
 {
 	current_token = Token::skip(current_token, "{");
 
@@ -948,6 +988,30 @@ void Node::struct_initializer(Token **next_token, Token *current_token, Initiali
 }
 
 /**
+ * @brief 構造体の変数の初期化式(前後に'{}'を持たない)を読み取り生成する
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param init 初期化式
+ * @details 以下のEBNF規則に従う。 @n
+ * struct_initializer2 = initializer ("," initializer)*
+ */
+void Node::struct_initializer2(Token **next_token, Token *current_token, Initializer *init)
+{
+	bool first = true;
+	for (auto mem = init->_ty->_members.get(); mem; mem = mem->_next.get())
+	{
+		if (!first)
+		{
+			current_token = Token::skip(current_token, ",");
+		}
+		first = false;
+		initializer2(&current_token, current_token, init->_children[mem->_idx].get());
+	}
+	*next_token = current_token;
+}
+
+/**
  * @brief 共用体の変数の初期化式を生成する。共用体は1要素しか初期化式をもたない。
  *
  * @param next_token 残りのトークンを返すための参照
@@ -956,9 +1020,15 @@ void Node::struct_initializer(Token **next_token, Token *current_token, Initiali
  */
 void Node::union_initializer(Token **next_token, Token *current_token, Initializer *init)
 {
-	current_token = Token::skip(current_token, "{");
-	initializer2(&current_token, current_token, init->_children[0].get());
-	*next_token = Token::skip(current_token, "}");
+	if (current_token->is_equal("{"))
+	{
+		initializer2(&current_token, current_token->_next.get(), init->_children[0].get());
+		*next_token = Token::skip(current_token, "}");
+	}
+	else
+	{
+		initializer2(next_token, current_token, init->_children[0].get());
+	}
 }
 
 /**
@@ -1188,7 +1258,7 @@ void Node::gvar_initializer(Token **next_token, Token *current_token, Object *va
 	auto head = make_unique<Relocation>();
 
 	auto buf = make_unique<unsigned char[]>(var->_ty->_size);
-	write_gvar_data(head.get(),init.get(), var->_ty.get(), buf.get(), 0);
+	write_gvar_data(head.get(), init.get(), var->_ty.get(), buf.get(), 0);
 	var->_init_data = move(buf);
 	var->_rel = move(head->_next);
 }

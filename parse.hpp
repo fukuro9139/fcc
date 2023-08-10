@@ -166,8 +166,10 @@ private:
 	static unique_ptr<Initializer> initializer(Token **next_token, Token *current_token, shared_ptr<Type> ty, shared_ptr<Type> &new_ty);
 	static void string_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static int count_array_init_element(Token *token, const Type *ty);
-	static void array_initializer(Token **next_token, Token *current_token, Initializer *init);
-	static void struct_initializer(Token **next_token, Token *current_token, Initializer *init);
+	static void array_initializer1(Token **next_token, Token *current_token, Initializer *init);
+	static void array_initializer2(Token **next_token, Token *current_token, Initializer *init);
+	static void struct_initializer1(Token **next_token, Token *current_token, Initializer *init);
+	static void struct_initializer2(Token **next_token, Token *current_token, Initializer *init);
 	static void union_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static void initializer2(Token **next_token, Token *current_token, Initializer *init);
 	static Token *skip_excess_element(Token *token);
