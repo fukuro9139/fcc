@@ -597,6 +597,21 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 				current_token = parse_typedef(current_token, base);
 				continue;
 			}
+
+			/* 関数定義 */
+			if (is_function(current_token))
+			{
+				current_token = function_definition(current_token, move(base), &attr);
+				continue;
+			}
+
+			/* 外部宣言 */
+			if (attr._is_extern)
+			{
+				current_token = global_variable(current_token, move(base), &attr);
+				continue;
+			}
+
 			/* それ以外の場合は変数の定義または宣言 */
 			cur->_next = declaration(&current_token, current_token, base);
 		}
