@@ -174,9 +174,9 @@ private:
 	static unique_ptr<Node> init_desg_expr(InitDesg *desg, Token *token);
 	static unique_ptr<Node> create_lvar_init(Initializer *init, Type *ty, InitDesg *desg, Token *token);
 	static unique_ptr<Node> lvar_initializer(Token **next_token, Token *current_token, Object *var);
-	static unique_ptr<Node> gvar_initializer(Token **next_token, Token *current_token, Object *var);
-	static void write_buf(char *buf, uint64_t val, int sz);
-	static void write_gvar_data(Initializer *init, Type *ty, char *buf, int offset);
+	static void gvar_initializer(Token **next_token, Token *current_token, Object *var);
+	static void write_buf(unsigned char buf[], int64_t val, int sz, int offset);
+	static void write_gvar_data(Initializer *init, Type *ty, unsigned char buf[], int offset);
 	static unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
 	static Token *function_definition(Token *token, shared_ptr<Type> &&base, VarAttr *attr);
 	static shared_ptr<Type> struct_decl(Token **next_token, Token *current_token);

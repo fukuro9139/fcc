@@ -199,9 +199,10 @@ Object *Node::new_string_literal(const string &str)
 	auto obj = new_anonymous_gvar(move(ty));
 
 	/* init_dataに文字列を入れて'\0'終端を追加 */
-	obj->_init_data = make_unique<char[]>(str.size()+1);
+	obj->_init_data = make_unique<unsigned char[]>(str.size() + 1);
 
-	for(int i=0; i<str.size(); i++){
+	for (int i = 0; i < str.size(); i++)
+	{
 		obj->_init_data[i] = str[i];
 	}
 
@@ -1045,7 +1046,8 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 		return node;
 	}
 
-	if(TypeKind::TY_UNION == ty->_kind){
+	if (TypeKind::TY_UNION == ty->_kind)
+	{
 		InitDesg desg2 = {desg, 0, ty->_members};
 		return create_lvar_init(init->_children[0].get(), ty->_members->_ty.get(), &desg2, token);
 	}
@@ -1081,6 +1083,80 @@ unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token
 	lhs->_var = var;
 	auto rhs = create_lvar_init(init.get(), var->_ty.get(), &desg, current_token);
 	return make_unique<Node>(NodeKind::ND_COMMA, move(lhs), move(rhs), current_token);
+}
+
+/**
+ * @brief valの内部表現を1バイトずつbuf[offset]に書き込む
+ *
+ * @param buf データの書き込み先
+ * @param val 書き込む数値
+ * @param sz 書き込むサイズ（byte）
+ * @param offset 書き込むスタート地点のオフセット
+ */
+void Node::write_buf(unsigned char buf[], int64_t val, int sz, int offset)
+{
+	union Value
+	{
+		int64_t val;
+		unsigned char byte[8];
+	};
+
+	if (sz > 8)
+	{
+		unreachable();
+	}
+
+	Value v = {val};
+	for (int i = 0; i < sz; ++i)
+	{
+		buf[offset + i] = v.byte[i];
+	}
+}
+
+/**
+ * @brief グローバル変数の初期化データを生成する
+ *
+ * @param init 初期化式
+ * @param ty 書き込む型
+ * @param buf データの書き込み先
+ * @param offset オフセット
+ */
+void Node::write_gvar_data(Initializer *init, Type *ty, unsigned char buf[], int offset)
+{
+	if (TypeKind::TY_ARRAY == ty->_kind)
+	{
+		int sz = ty->_base->_size;
+		for (int i = 0; i < ty->_array_length; ++i)
+		{
+			write_gvar_data(init->_children[i].get(), ty->_base.get(), buf, offset + sz * i);
+		}
+		return;
+	}
+	if (init->_expr)
+	{
+		write_buf(buf, evaluate(init->_expr.get()), ty->_size, offset);
+	}
+}
+
+/**
+ * @brief グローバル変数の初期化式を生成する
+ *
+ * @details
+ * グローバル変数の初期化式はコンパイル時に評価され、.dataセクションに配置される。
+ * この関数では初期化式オブジェクトをバイト単位の配列に変換する。コンパイル時に
+ * 定数式ではない式を含む場合エラーとする。
+ * @param next_token
+ * @param current_token
+ * @param var
+ * @return unique_ptr<Node>
+ */
+void Node::gvar_initializer(Token **next_token, Token *current_token, Object *var)
+{
+	auto init = initializer(next_token, current_token, var->_ty, var->_ty);
+
+	auto buf = make_unique<unsigned char[]>(var->_ty->_size);
+	write_gvar_data(init.get(), var->_ty.get(), buf.get(), 0);
+	var->_init_data = move(buf);
 }
 
 /**
@@ -2471,7 +2547,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	if (TokenKind::TK_STR == current_token->_kind)
 	{
 		/* 前後の'"'を取り除く */
-		auto str = current_token->_str.substr(1, current_token->_str.size()-2);
+		auto str = current_token->_str.substr(1, current_token->_str.size() - 2);
 		auto var = new_string_literal(str);
 		*next_token = current_token->_next.get();
 		return make_unique<Node>(var, current_token);
@@ -2746,7 +2822,11 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base)
 
 		/* 最終的な型を決定する */
 		auto ty = declarator(&token, token, base);
-		Object::new_gvar(ty->_token->_str, move(ty));
+		auto var = Object::new_gvar(ty->_token->_str, move(ty));
+		if (token->is_equal("="))
+		{
+			gvar_initializer(&token, token->_next.get(), var);
+		}
 	}
 
 	return token;
