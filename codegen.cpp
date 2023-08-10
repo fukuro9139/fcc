@@ -772,8 +772,11 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 			continue;
 		}
 
-		/* グローバル変数のサイズだけ領域を確保する */
+		/* グローバル変数であることを宣言 */
 		*os << "  .globl " << var->_name << "\n";
+
+		/* アライメントの指定 */
+		*os << "  .align " << var->_ty->_align << "\n";
 
 		if (var->_init_data)
 		{
