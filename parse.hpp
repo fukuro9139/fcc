@@ -168,6 +168,7 @@ private:
 	static int count_array_init_element(Token *token, const Type *ty);
 	static void array_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static void struct_initializer(Token **next_token, Token *current_token, Initializer *init);
+	static void union_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static void initializer2(Token **next_token, Token *current_token, Initializer *init);
 	static Token *skip_excess_element(Token *token);
 	static unique_ptr<Node> init_desg_expr(InitDesg *desg, Token *token);

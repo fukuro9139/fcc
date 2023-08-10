@@ -766,7 +766,7 @@ unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_tok
  * @param current_token 現在処理しているトークン
  * @param 現在、処理している初期化式
  * @details 以下のEBNF規則に従う。 @n
- * initializer = string-initialize | array-initializer | struct-initializer | assign
+ * initializer = string-initialize | array-initializer | struct-initializer | union-initializer |assign
  */
 void Node::initializer2(Token **next_token, Token *current_token, Initializer *init)
 {
@@ -788,15 +788,24 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 	if (TypeKind::TY_STRUCT == init->_ty->_kind)
 	{
 		/* 構造体は他の構造体で初期化できる */
-		if(!current_token->is_equal("{")){
+		if (!current_token->is_equal("{"))
+		{
 			auto expr = assign(next_token, current_token);
 			Type::add_type(expr.get());
-			if(TypeKind::TY_STRUCT ==  expr->_ty->_kind){
+			if (TypeKind::TY_STRUCT == expr->_ty->_kind)
+			{
 				init->_expr = move(expr);
 				return;
 			}
 		}
 		struct_initializer(next_token, current_token, init);
+		return;
+	}
+
+	/* 共用体 */
+	if (TypeKind::TY_UNION == init->_ty->_kind)
+	{
+		union_initializer(next_token, current_token, init);
 		return;
 	}
 
@@ -934,6 +943,20 @@ void Node::struct_initializer(Token **next_token, Token *current_token, Initiali
 }
 
 /**
+ * @brief 共用体の変数の初期化式を生成する。共用体は1要素しか初期化式をもたない。
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param init 初期化式
+ */
+void Node::union_initializer(Token **next_token, Token *current_token, Initializer *init)
+{
+	current_token = Token::skip(current_token, "{");
+	initializer2(&current_token, current_token, init->_children[0].get());
+	*next_token = Token::skip(current_token, "}");
+}
+
+/**
  * @brief 余分な初期値を無視する。
  *
  * @param token 現在のトークン
@@ -1016,6 +1039,11 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 			node = make_unique<Node>(NodeKind::ND_COMMA, move(node), move(rhs), token);
 		}
 		return node;
+	}
+
+	if(TypeKind::TY_UNION == ty->_kind){
+		InitDesg desg2 = {desg, 0, ty->_members};
+		return create_lvar_init(init->_children[0].get(), ty->_members->_ty.get(), &desg2, token);
 	}
 
 	/* 初期化式が与えられない場合はなにもしない（変数は最初に0クリアされる） */

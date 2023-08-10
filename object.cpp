@@ -108,9 +108,9 @@ unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool
 		return init;
 	}
 
-	if (TypeKind::TY_STRUCT == ty->_kind)
+	if (TypeKind::TY_STRUCT == ty->_kind || TypeKind::TY_UNION == ty->_kind)
 	{
-		/* 構造体の要素数を数える */
+		/* 要素数を数える */
 		int len_struct = 0;
 		for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
 		{
