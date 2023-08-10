@@ -1427,6 +1427,7 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 	int offset = 0;
 	for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
 	{
+		offset = Object::align_to(offset, mem->_ty->_align);
 		mem->_offset = offset;
 		offset += mem->_ty->_size;
 		/* アライメントの基数はメンバの基数のうち最大値に合わせる */
