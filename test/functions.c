@@ -63,10 +63,10 @@ _Bool bool_fn_sub(_Bool x) { return x - 1; }
 
 int g1;
 
-int *g1_ptr() { return &g1; }
+int *g1_ptr(void) { return &g1; }
 char int_to_char(int x) { return x; }
 
-static int static_fn() { return 3; }
+static int static_fn(void) { return 3; }
 
 int param_decay(int x[]) { return x[0]; }
 

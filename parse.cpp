@@ -1303,11 +1303,17 @@ void Node::gvar_initializer(Token **next_token, Token *current_token, Object *va
  * @param ty 宣言されている型
  * @return 引数の情報を含む関数の型
  * @details 以下のEBNF規則に従う。 @n
- * function-parameters = (parameters ("," parameters)*)? ")" @n
+ * function-parameters = ( "void" | parameters ("," parameters)*)? ")" @n
  * parameters = declspec declarator
  */
 shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
 {
+	if (current_token->is_equal("void") && current_token->_next->is_equal(")"))
+	{
+		*next_token = current_token->_next->_next.get();
+		return Type::func_type(ty);
+	}
+
 	auto head = make_unique_for_overwrite<Type>();
 	auto cur = head.get();
 
