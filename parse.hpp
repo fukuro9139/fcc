@@ -224,4 +224,7 @@ private:
 	static Token *global_variable(Token *token, shared_ptr<Type> &&base);
 	static void resolve_goto_label();
 	static bool is_function(Token *token);
+	static bool consume(Token **next_token, Token *current_token, string &&str);
+	static bool consume_end(Token **next_token, Token *current_token);
+	static Token *skip(Token *token, string &&op);
 };

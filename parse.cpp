@@ -314,7 +314,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		auto expr = expression(&current_token, current_token->_next.get());
 
 		/* 最後は';'で終わるはず */
-		*next_token = Token::skip(current_token, ";");
+		*next_token = skip(current_token, ";");
 
 		/* 式の型を決定する */
 		Type::add_type(expr.get());
@@ -330,13 +330,13 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		auto node = make_unique<Node>(NodeKind::ND_IF, current_token);
 
 		/* ifの次は'('がくる */
-		current_token = Token::skip(current_token->_next.get(), "(");
+		current_token = skip(current_token->_next.get(), "(");
 
 		/* 条件文 */
 		node->_condition = expression(&current_token, current_token);
 
 		/* 条件文のは')'がくる */
-		current_token = Token::skip(current_token, ")");
+		current_token = skip(current_token, ")");
 		node->_then = statement(&current_token, current_token);
 
 		/* else節が存在する */
@@ -352,10 +352,10 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 	if (current_token->is_equal("switch"))
 	{
 		auto node = make_unique<Node>(NodeKind::ND_SWITCH, current_token);
-		current_token = Token::skip(current_token->_next.get(), "(");
+		current_token = skip(current_token->_next.get(), "(");
 		/* switchの条件式 */
 		node->_condition = expression(&current_token, current_token);
-		current_token = Token::skip(current_token, ")");
+		current_token = skip(current_token, ")");
 
 		/* 現在のswを保存 */
 		auto sw = current_switch;
@@ -383,7 +383,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 
 		auto node = make_unique<Node>(NodeKind::ND_CASE, current_token);
 		auto val = const_expr(&current_token, current_token->_next.get());
-		current_token = Token::skip(current_token, ":");
+		current_token = skip(current_token, ":");
 
 		/* ユニークなラベル名を設定 */
 		node->_label = new_unique_name();
@@ -405,7 +405,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 			error_token("default文はswitch文の中でしか使えません", current_token);
 		}
 		auto node = make_unique<Node>(NodeKind::ND_CASE, current_token);
-		current_token = Token::skip(current_token->_next.get(), ":");
+		current_token = skip(current_token->_next.get(), ":");
 
 		/* ユニークなラベル名を設定 */
 		node->_label = new_unique_name();
@@ -423,7 +423,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		auto node = make_unique<Node>(NodeKind::ND_FOR, current_token);
 
 		/* forの次は'('がくる */
-		current_token = Token::skip(current_token->_next.get(), "(");
+		current_token = skip(current_token->_next.get(), "(");
 
 		/* for文のブロックスコープに入る */
 		Object::enter_scope();
@@ -436,7 +436,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		node->_cont_label = cont_label = new_unique_name();
 
 		/* 型指定子がきたら変数が定義されている */
-		if (Token::is_typename(current_token))
+		if (current_token->is_typename())
 		{
 			auto base = declspec(&current_token, current_token, nullptr);
 			node->_init = declaration(&current_token, current_token, base);
@@ -451,14 +451,14 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		{
 			node->_condition = expression(&current_token, current_token);
 		}
-		current_token = Token::skip(current_token, ";");
+		current_token = skip(current_token, ";");
 
 		/* 次のトークンが')'でなければ加算処理が存在する */
 		if (!current_token->is_equal(")"))
 		{
 			node->_inc = expression(&current_token, current_token);
 		}
-		current_token = Token::skip(current_token, ")");
+		current_token = skip(current_token, ")");
 		/* forの中の処理 */
 		node->_then = statement(next_token, current_token);
 		/* for文のブロックスコープを抜ける */
@@ -476,11 +476,11 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		auto node = make_unique<Node>(NodeKind::ND_FOR, current_token);
 
 		/* whileの次は'('がくる */
-		current_token = Token::skip(current_token->_next.get(), "(");
+		current_token = skip(current_token->_next.get(), "(");
 		node->_condition = expression(&current_token, current_token);
 
 		/* 条件文のは')'がくる */
-		current_token = Token::skip(current_token, ")");
+		current_token = skip(current_token, ")");
 
 		/* 現在のラベルを保存 */
 		auto brk = brk_label;
@@ -509,7 +509,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		node->_goto_next = gotos;
 		gotos = node.get();
 
-		*next_token = Token::skip(current_token->_next->_next.get(), ";");
+		*next_token = skip(current_token->_next->_next.get(), ";");
 		return node;
 	}
 
@@ -522,7 +522,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		}
 		auto node = make_unique<Node>(NodeKind::ND_GOTO, current_token);
 		node->_unique_label = brk_label;
-		*next_token = Token::skip(current_token->_next.get(), ";");
+		*next_token = skip(current_token->_next.get(), ";");
 		return node;
 	}
 
@@ -535,7 +535,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		}
 		auto node = make_unique<Node>(NodeKind::ND_GOTO, current_token);
 		node->_unique_label = cont_label;
-		*next_token = Token::skip(current_token->_next.get(), ";");
+		*next_token = skip(current_token->_next.get(), ";");
 		return node;
 	}
 
@@ -585,7 +585,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 	while (!current_token->is_equal("}"))
 	{
 		/* 変数宣言、定義 */
-		if (Token::is_typename(current_token) && !current_token->_next->is_equal(":"))
+		if (current_token->is_typename() && !current_token->_next->is_equal(":"))
 		{
 			/* 型指定子を読み取る */
 			VarAttr attr = {};
@@ -640,7 +640,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	fn->is_function = true;
 
 	/* 定義か宣言か、後ろに";"がくるなら宣言 */
-	fn->is_definition = !Token::consume(&token, token, ";");
+	fn->is_definition = !consume(&token, token, ";");
 
 	/* staticかどうか */
 	fn->is_static = attr->is_static;
@@ -661,7 +661,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	fn->_params = move(Object::locals);
 
 	/* 引数の次は"{"がくる */
-	token = Token::skip(token, "{");
+	token = skip(token, "{");
 
 	/* 関数の中身を読み取る */
 	fn->_body = compound_statement(&token, token);
@@ -703,7 +703,7 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 		/* 2個目以降の宣言には",""区切りが必要 */
 		if (!first)
 		{
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		/* 初回フラグを下げる */
 		first = false;
@@ -822,14 +822,14 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 		union_initializer(next_token, current_token, init);
 		return;
 	}
-	
+
 	/* スカラー値の初期化式は'{}'で囲むことができる。
 	 * 例: int x = {1};
 	 */
 	if (current_token->is_equal("{"))
 	{
 		initializer2(&current_token, current_token->_next.get(), init);
-		*next_token = Token::skip(current_token, "}");
+		*next_token = skip(current_token, "}");
 		return;
 	}
 
@@ -878,12 +878,12 @@ int Node::count_array_init_element(Token *token, const Type *ty)
 	auto dummy = Object::new_initializer(ty->_base, false);
 	int cnt = 0;
 
-	for (; !token->is_equal("}"); ++cnt)
+	for (; !consume_end(&token, token); ++cnt)
 	{
 		/* 2個目以降では','区切りが必要 */
 		if (cnt > 0)
 		{
-			token = Token::skip(token, ",");
+			token = skip(token, ",");
 		}
 		initializer2(&token, token, dummy.get());
 	}
@@ -897,12 +897,12 @@ int Node::count_array_init_element(Token *token, const Type *ty)
  * @param current_token 現在処理しているトークン
  * @param init 初期化式
  * @details 以下のEBNF規則に従う。 @n
- * array_initializer1 = "{" identifier ("," identifier)* "}"
+ * array_initializer1 = "{" identifier ("," identifier)*  ","? "}"
  */
 void Node::array_initializer1(Token **next_token, Token *current_token, Initializer *init)
 {
 	/* 配列の初期化式は"{"で始まる */
-	current_token = Token::skip(current_token, "{");
+	current_token = skip(current_token, "{");
 
 	if (init->_is_flexible)
 	{
@@ -911,12 +911,12 @@ void Node::array_initializer1(Token **next_token, Token *current_token, Initiali
 	}
 
 	/* 各要素について再帰的に初期化式を構成していく */
-	for (int i = 0; !Token::consume(next_token, current_token, "}"); i++)
+	for (int i = 0; !consume_end(next_token, current_token); ++i)
 	{
 		/* 2個目以降は","区切りに必要 */
 		if (i > 0)
 		{
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		if (i < init->_ty->_array_length)
 		{
@@ -947,12 +947,12 @@ void Node::array_initializer2(Token **next_token, Token *current_token, Initiali
 	}
 
 	/* 各要素について再帰的に初期化式を構成していく */
-	for (int i = 0; i < init->_ty->_array_length && !current_token->is_equal("}"); i++)
+	for (int i = 0; i < init->_ty->_array_length && !current_token->is_end(); i++)
 	{
 		/* 2個目以降は","区切りに必要 */
 		if (i > 0)
 		{
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		initializer2(&current_token, current_token, init->_children[i].get());
 	}
@@ -966,21 +966,21 @@ void Node::array_initializer2(Token **next_token, Token *current_token, Initiali
  * @param current_token 現在処理しているトークン
  * @param init 初期化式
  * @details 以下のEBNF規則に従う。 @n
- * struct_initializer1 = "{" initializer ("," initializer)* "}"
+ * struct_initializer1 = "{" initializer ("," initializer)* ","? "}"
  */
 void Node::struct_initializer1(Token **next_token, Token *current_token, Initializer *init)
 {
-	current_token = Token::skip(current_token, "{");
+	current_token = skip(current_token, "{");
 
 	auto mem = init->_ty->_members.get();
 
 	bool first = true;
-	while (!Token::consume(next_token, current_token, "}"))
+	while (!consume_end(next_token, current_token))
 	{
 		/* 2個目以降では','区切りが必要 */
 		if (!first)
 		{
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		first = false;
 
@@ -1008,11 +1008,11 @@ void Node::struct_initializer1(Token **next_token, Token *current_token, Initial
 void Node::struct_initializer2(Token **next_token, Token *current_token, Initializer *init)
 {
 	bool first = true;
-	for (auto mem = init->_ty->_members.get(); mem; mem = mem->_next.get())
+	for (auto mem = init->_ty->_members.get(); mem && !current_token->is_end(); mem = mem->_next.get())
 	{
 		if (!first)
 		{
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		first = false;
 		initializer2(&current_token, current_token, init->_children[mem->_idx].get());
@@ -1032,7 +1032,8 @@ void Node::union_initializer(Token **next_token, Token *current_token, Initializ
 	if (current_token->is_equal("{"))
 	{
 		initializer2(&current_token, current_token->_next.get(), init->_children[0].get());
-		*next_token = Token::skip(current_token, "}");
+		consume(&current_token, current_token, ",");
+		*next_token = skip(current_token, "}");
 	}
 	else
 	{
@@ -1051,7 +1052,7 @@ Token *Node::skip_excess_element(Token *token)
 	if (token->is_equal("{"))
 	{
 		token = skip_excess_element(token->_next.get());
-		return Token::skip(token, "}");
+		return skip(token, "}");
 	}
 	assign(&token, token);
 	return token;
@@ -1294,7 +1295,7 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 		if (head.get() != cur)
 		{
 			/* 2個目以降の引数では","区切りが必要 */
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		/* 引数の型を決定 */
 		auto ty2 = declspec(&current_token, current_token, nullptr);
@@ -1337,7 +1338,7 @@ shared_ptr<Type> Node::array_dimensions(Token **next_token, Token *current_token
 	}
 
 	int sz = const_expr(&current_token, current_token);
-	current_token = Token::skip(current_token, "]");
+	current_token = skip(current_token, "]");
 	ty = type_suffix(next_token, current_token, move(ty));
 	return Type::array_of(ty, sz);
 }
@@ -1389,7 +1390,7 @@ shared_ptr<Type> Node::type_suffix(Token **next_token, Token *current_token, sha
 shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shared_ptr<Type> ty)
 {
 	/* "*"の数だけ直前の型へのポインタになる */
-	while (Token::consume(&current_token, current_token, "*"))
+	while (consume(&current_token, current_token, "*"))
 	{
 		ty = Type::pointer_to(ty);
 	}
@@ -1401,7 +1402,7 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 		auto dummy = make_shared<Type>();
 		/* ネスト部分を飛ばす */
 		declarator(&current_token, start->_next.get(), dummy);
-		current_token = Token::skip(current_token, ")");
+		current_token = skip(current_token, ")");
 		/* ネストの外側の型を決める */
 		ty = type_suffix(next_token, current_token, move(ty));
 		/* 外側の型をベースの型としてネスト部分の型を決定する */
@@ -1459,7 +1460,7 @@ shared_ptr<Type> Node::struct_union_decl(Token **next_token, Token *current_toke
 		return ty;
 	}
 
-	current_token = Token::skip(current_token, "{");
+	current_token = skip(current_token, "{");
 
 	/* 構造体の情報を読み込む */
 	auto ty = Type::struct_type();
@@ -1577,12 +1578,12 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 		bool first = true;
 
 		/* ';'が出てくるまで読み込み続ける */
-		while (!Token::consume(&current_token, current_token, ";"))
+		while (!consume(&current_token, current_token, ";"))
 		{
 			if (!first)
 			{
 				/* 2個目以降はカンマ区切りが必要 */
-				current_token = Token::skip(current_token, ",");
+				current_token = skip(current_token, ",");
 			}
 			first = false;
 			auto mem = make_shared<Member>();
@@ -1706,7 +1707,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	int counter = 0;
 	auto ty = Type::INT_BASE;
 
-	while (Token::is_typename(current_token))
+	while (current_token->is_typename())
 	{
 		/* ストレージクラス指定子 */
 		if (current_token->is_equal("typedef") || current_token->is_equal("static"))
@@ -1798,7 +1799,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
  * @return 対応する列挙型の型
  * @details 下記のEBNF規則に従う。 @n
  * enum-specifier = ident? "{" enum-list? "}" | ident ("{" enum-list? "}")? @n
- * enum-list = ident ("=" const-expr)? ("," ident ("=" const-expr)?)*
+ * enum-list = ident ("=" const-expr)? ("," ident ("=" const-expr)?)* ","?
  *
  */
 shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
@@ -1829,19 +1830,19 @@ shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
 		return ty;
 	}
 
-	current_token = Token::skip(current_token, "{");
+	current_token = skip(current_token, "{");
 
 	/* 列挙型のリストを読む */
 	bool first = true;
 	int val = 0;
 
 	/* "}"が出てくるまで読み続ける */
-	while (!current_token->is_equal("}"))
+	while (!consume_end(next_token, current_token))
 	{
 		if (!first)
 		{
 			/* 2個目以降では","区切りが必要 */
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		first = false;
 		/* 列挙型の変数名 */
@@ -1859,8 +1860,6 @@ shared_ptr<Type> Node::enum_specifier(Token **next_token, Token *current_token)
 		sc->enum_ty = ty;
 		sc->enum_val = val++;
 	}
-
-	*next_token = current_token->_next.get();
 
 	/* タグが存在するならばタグスコープに追加する */
 	if (tag)
@@ -1890,7 +1889,7 @@ unique_ptr<Node> Node::expression_statement(Token **next_token, Token *current_t
 	node->_lhs = expression(&current_token, current_token);
 
 	/* expression-statementは';'で終わるはず */
-	*next_token = Token::skip(current_token, ";");
+	*next_token = skip(current_token, ";");
 	return node;
 }
 
@@ -2213,7 +2212,7 @@ unique_ptr<Node> Node::conditional(Token **next_token, Token *current_token)
 	auto node = make_unique<Node>(NodeKind::ND_COND, current_token);
 	node->_condition = move(cond);
 	node->_then = expression(&current_token, current_token->_next.get());
-	current_token = Token::skip(current_token, ":");
+	current_token = skip(current_token, ":");
 	node->_else = conditional(next_token, current_token);
 	return node;
 }
@@ -2489,13 +2488,13 @@ unique_ptr<Node> Node::add(Token **next_token, Token *current_token)
 unique_ptr<Node> Node::cast(Token **next_token, Token *current_token)
 {
 	/* キャストを含む場合 */
-	if (current_token->is_equal("(") && Token::is_typename(current_token->_next.get()))
+	if (current_token->is_equal("(") && current_token->_next->is_typename())
 	{
 		auto start = current_token;
 
 		/* キャスト先の型を読み取る */
 		auto ty = type_name(&current_token, current_token->_next.get());
-		current_token = Token::skip(current_token, ")");
+		current_token = skip(current_token, ")");
 
 		auto node = new_cast(cast(next_token, current_token), ty);
 		node->_token = start;
@@ -2614,7 +2613,7 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 			/* x[y] を *(x+y) に置き換える */
 			auto start = current_token;
 			auto idx = expression(&current_token, current_token->_next.get());
-			current_token = Token::skip(current_token, "]");
+			current_token = skip(current_token, "]");
 			node = make_unique<Node>(NodeKind::ND_DEREF, new_add(move(node), move(idx), start), start);
 			continue;
 		}
@@ -2674,7 +2673,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		auto stmt = compound_statement(&current_token, current_token->_next->_next.get());
 		node->_body = move(stmt->_body);
 		/* ブロックの後は') */
-		*next_token = Token::skip(current_token, ")");
+		*next_token = skip(current_token, ")");
 		return node;
 	}
 
@@ -2682,7 +2681,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	if (current_token->is_equal("("))
 	{
 		auto node = expression(&current_token, current_token->_next.get());
-		*next_token = Token::skip(current_token, ")");
+		*next_token = skip(current_token, ")");
 		return node;
 	}
 
@@ -2699,12 +2698,12 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	/* sizeof演算子（対象が型そのもの） */
 	if (current_token->is_equal("sizeof") &&
 		current_token->_next->is_equal("(") &&
-		Token::is_typename(current_token->_next->_next.get()))
+		current_token->_next->_next->is_typename())
 	{
 		auto start = current_token;
 		/* sizeof演算子の対象の型情報を読む */
 		auto ty = type_name(&current_token, current_token->_next->_next.get());
-		*next_token = Token::skip(current_token, ")");
+		*next_token = skip(current_token, ")");
 		return make_unique<Node>(ty->_size, start);
 	}
 
@@ -2778,12 +2777,12 @@ Token *Node::parse_typedef(Token *token, shared_ptr<Type> &base)
 	bool first = true;
 
 	/* ";"が出てくるまで読み込み続ける */
-	while (!Token::consume(&token, token, ";"))
+	while (!consume(&token, token, ";"))
 	{
 		/* 2個目以降では","区切りが必要 */
 		if (!first)
 		{
-			token = Token::skip(token, ",");
+			token = skip(token, ",");
 		}
 		first = false;
 
@@ -2818,7 +2817,7 @@ shared_ptr<Type> Node::abstract_declarator(Token **next_token, Token *current_to
 		auto dummy = make_shared<Type>();
 		/* ネストの中を飛ばす */
 		abstract_declarator(&current_token, start->_next.get(), move(dummy));
-		current_token = Token::skip(current_token, ")");
+		current_token = skip(current_token, ")");
 		/* ネストの外側の型を読み込む */
 		ty = type_suffix(next_token, current_token, move(ty));
 		/* ネストの外側の型をベースとして内側の型を読む */
@@ -2883,7 +2882,7 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 		if (head.get() != cur)
 		{
 			/* 2個目以降の引数には区切りとして","が必要 */
-			current_token = Token::skip(current_token, ",");
+			current_token = skip(current_token, ",");
 		}
 		/* 引数を読み取る */
 		auto arg = assign(&current_token, current_token);
@@ -2916,7 +2915,7 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 	node->_ty = ty->_return_ty;
 
 	/* 最後は")"" */
-	*next_token = Token::skip(current_token, ")");
+	*next_token = skip(current_token, ")");
 
 	return node;
 }
@@ -2953,12 +2952,12 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base)
 	bool first = true;
 
 	/* ;が現れるまで読み込みを続ける */
-	while (!Token::consume(&token, token, ";"))
+	while (!consume(&token, token, ";"))
 	{
 		if (!first)
 		{
 			/* 2個目以降の変数定義には","区切りが必要 */
-			token = Token::skip(token, ",");
+			token = skip(token, ",");
 		}
 		/* 初回フラグを下す */
 		first = false;
@@ -3002,4 +3001,62 @@ void Node::resolve_goto_label()
 
 	gotos = nullptr;
 	labels = nullptr;
+}
+
+/**
+ * @brief トークンが期待している文字列と一致する場合は次のトークンのポインタをnext_tokenにセットしtrueを返す。
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param op 比較する文字列
+ * @return 一致：true, 不一致：false
+ */
+bool Node::consume(Token **next_token, Token *current_token, string &&str)
+{
+	if (current_token->is_equal(move(str)))
+	{
+		*next_token = current_token->_next.get();
+		return true;
+	}
+	*next_token = current_token;
+	return false;
+}
+
+/**
+ * @brief トークンが期待している文字列と一致する場合は次のトークンのポインタを返す。不一致ならエラー報告。
+ *
+ * @param token 対象のトークン
+ * @param op 比較する文字列
+ * @return 次のトークン
+ */
+Token *Node::skip(Token *token, string &&op)
+{
+	if (!token->is_equal(move(op)))
+	{
+		error_token(op + "が必要です", token);
+	}
+	return token->_next.get();
+}
+
+/**
+ * @brief トークンが配列、構造体、列挙型の末尾と一致する場合は次のトークンのポインタをnext_tokenにセットしtrueを返す。
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @return 一致：true, 不一致：false
+ */
+bool Node::consume_end(Token **next_token, Token *current_token)
+{
+	if (current_token->is_equal("}"))
+	{
+		*next_token = current_token->_next.get();
+		return true;
+	}
+
+	if (current_token->is_equal(",") && current_token->_next->is_equal("}"))
+	{
+		*next_token = current_token->_next->_next.get();
+		return true;
+	}
+	return false;
 }

@@ -50,17 +50,19 @@ public:
 
 	bool is_equal(string &&op) const;
 	bool is_equal(const string &op) const;
+	bool is_end() const;
+	bool is_typename() const;
 	int64_t get_number() const;
 
 	/* 静的メンバ関数 (public) */
 
 	static unique_ptr<Token> tokenize(const string &filename, string &&input);
 	static unique_ptr<Token> tokenize_file(const string &filepath);
-	static Token *skip(Token *token, string &&op);
-	static bool consume(Token **next_token, Token *current_token, string &&str);
-	static bool is_typename(const Token *token);
 
 private:
+	/* メンバ関数 (private) */
+	bool is_keyword() const;
+
 	/* 静的メンバ関数 (private) */
 
 	static bool start_with(const string &str, const string &op);
@@ -73,8 +75,6 @@ private:
 	static bool is_first_char_of_ident(const char &c);
 	static bool is_char_of_ident(const char &c);
 	static void convert_keywords(Token *token);
-	static bool is_keyword(Token *&token);
-
 	static int from_hex(const char &c);
 	static void add_line_number(Token *token);
 };

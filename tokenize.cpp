@@ -16,8 +16,65 @@
 /** 入力文字列 */
 static string current_input = "";
 
-/* 入力ファイル */
+/** 入力ファイル */
 static string current_filename = "";
+
+/** 型名 */
+static const std::unordered_set<string> type_names = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
+													  "typedef", "enum", "static"};
+
+/** 識別子一覧 */
+static const std::unordered_set<string> keywords = {
+	"return",
+	"if",
+	"else",
+	"for",
+	"while",
+	"int",
+	"sizeof",
+	"char",
+	"struct",
+	"union",
+	"short",
+	"long",
+	"void",
+	"typedef",
+	"_Bool",
+	"enum",
+	"static",
+	"goto",
+	"break",
+	"continue",
+	"switch",
+	"case",
+	"default",
+};
+
+/** 区切り文字一覧 */
+static const vector<string> punctuators =
+	{
+		"<<=",
+		">>=",
+		"==",
+		"!=",
+		"<=",
+		">=",
+		"->",
+		"+=",
+		"-=",
+		"*=",
+		"/=",
+		"++",
+		"--",
+		"%=",
+		"&=",
+		"|=",
+		"^=",
+		"&&",
+		"||",
+		"<<",
+		">>",
+};
 
 /***********/
 /* 汎用関数 */
@@ -274,7 +331,7 @@ void Token::convert_keywords(Token *token)
 {
 	for (Token *t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 	{
-		if (TokenKind::TK_IDENT == t->_kind && is_keyword(t))
+		if (TokenKind::TK_IDENT == t->_kind && t->is_keyword())
 		{
 			t->_kind = TokenKind::TK_KEYWORD;
 		}
@@ -288,36 +345,9 @@ void Token::convert_keywords(Token *token)
  * @return true キーワードである
  * @return false キーワードではない
  */
-bool Token::is_keyword(Token *&token)
+bool Token::is_keyword() const
 {
-	/* 識別子一覧 */
-	static const std::unordered_set<string> kws = {
-		"return",
-		"if",
-		"else",
-		"for",
-		"while",
-		"int",
-		"sizeof",
-		"char",
-		"struct",
-		"union",
-		"short",
-		"long",
-		"void",
-		"typedef",
-		"_Bool",
-		"enum",
-		"static",
-		"goto",
-		"break",
-		"continue",
-		"switch",
-		"case",
-		"default",
-	};
-
-	return kws.count(token->_str) > 0;
+	return keywords.count(_str) > 0;
 }
 
 /**
@@ -567,63 +597,36 @@ bool Token::is_equal(const string &op) const
 }
 
 /**
+ * @brief トークンが配列、配列、共用体の初期化式の末尾であるかを判定
+ *
+ * @return true 末尾である
+ * @return false 末尾ではない
+ */
+bool Token::is_end() const
+{
+	return is_equal("}") || (is_equal(",") && _next->is_equal("}"));
+}
+
+/**
  * @brief トークンが型を表す識別子であるか
  *
  * @param 対象のトークン
  * @return true 型を表す識別子である
  * @return false 型を表す識別子ではない
  */
-bool Token::is_typename(const Token *token)
+bool Token::is_typename() const
 {
-	static const std::unordered_set<string> kws = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
-												   "typedef", "enum", "static"};
-
 	/* 標準の型指定子 */
-	if (kws.count(token->_str))
+	if (type_names.count(_str))
 	{
 		return true;
 	}
 
 	/* typedefされた定義を検索する */
-	if (Object::find_typedef(token))
+	if (Object::find_typedef(this))
 	{
 		return true;
 	}
-	return false;
-}
-
-/**
- * @brief トークンが期待している文字列と一致する場合は次のトークンのポインタを返す。不一致ならエラー報告。
- *
- * @param token 対象のトークン
- * @param op 比較する文字列
- * @return 次のトークン
- */
-Token *Token::skip(Token *token, string &&op)
-{
-	if (!token->is_equal(move(op)))
-	{
-		error_token(op + "が必要です", token);
-	}
-	return token->_next.get();
-}
-
-/**
- * @brief トークンが期待している文字列と一致する場合は次のトークンのポインタをnext_tokenにセットしtrueを返す。
- *
- * @param next_token 残りのトークンを返すための参照
- * @param current_token 現在処理しているトークン
- * @param op 比較する文字列
- * @return 一致：true, 不一致：false
- */
-bool Token::consume(Token **next_token, Token *current_token, string &&str)
-{
-	if (current_token->is_equal(move(str)))
-	{
-		*next_token = current_token->_next.get();
-		return true;
-	}
-	*next_token = current_token;
 	return false;
 }
 
@@ -650,32 +653,7 @@ bool Token::start_with(const string &str, const string &op)
  */
 size_t Token::read_punct(string &&str)
 {
-	static const vector<string> kws =
-		{
-			"<<=",
-			">>=",
-			"==",
-			"!=",
-			"<=",
-			">=",
-			"->",
-			"+=",
-			"-=",
-			"*=",
-			"/=",
-			"++",
-			"--",
-			"%=",
-			"&=",
-			"|=",
-			"^=",
-			"&&",
-			"||",
-			"<<",
-			">>",
-		};
-
-	for (const auto &kw : kws)
+	for (const auto &kw : punctuators)
 	{
 		if (start_with(str, kw))
 		{
