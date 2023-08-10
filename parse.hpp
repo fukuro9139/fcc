@@ -25,6 +25,7 @@ struct Member
 	shared_ptr<Member> _next; /*!< 次のメンバ */
 	shared_ptr<Type> _ty;	  /*!< 型情報 e.g. int or pointer to int */
 	Token *_token = nullptr;  /*!< 対応するトークン */
+	int _idx = 0;			  /*!< 何番目の要素か */
 	int _offset = 0;		  /*!< RBPからのオフセット  */
 };
 
@@ -166,6 +167,7 @@ private:
 	static void string_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static int count_array_init_element(Token *token, const Type *ty);
 	static void array_initializer(Token **next_token, Token *current_token, Initializer *init);
+	static void struct_initializer(Token **next_token, Token *current_token, Initializer *init);
 	static void initializer2(Token **next_token, Token *current_token, Initializer *init);
 	static Token *skip_excess_element(Token *token);
 	static unique_ptr<Node> init_desg_expr(InitDesg *desg, Token *token);

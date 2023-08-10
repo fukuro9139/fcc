@@ -766,7 +766,7 @@ unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_tok
  * @param current_token 現在処理しているトークン
  * @param 現在、処理している初期化式
  * @details 以下のEBNF規則に従う。 @n
- * initializer = string-initialize | array-initializer | assign
+ * initializer = string-initialize | array-initializer | struct-initializer | assign
  */
 void Node::initializer2(Token **next_token, Token *current_token, Initializer *init)
 {
@@ -781,6 +781,13 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 	if (TypeKind::TY_ARRAY == init->_ty->_kind)
 	{
 		array_initializer(next_token, current_token, init);
+		return;
+	}
+
+	/* 構造体 */
+	if (TypeKind::TY_STRUCT == init->_ty->_kind)
+	{
+		struct_initializer(next_token, current_token, init);
 		return;
 	}
 
@@ -855,7 +862,8 @@ void Node::array_initializer(Token **next_token, Token *current_token, Initializ
 	/* 配列の初期化式は"{"で始まる */
 	current_token = Token::skip(current_token, "{");
 
-	if(init->_is_flexible){
+	if (init->_is_flexible)
+	{
 		auto len = count_array_init_element(current_token, init->_ty.get());
 		*init = move(*Object::new_initializer(Type::array_of(init->_ty->_base, len), false));
 	}
@@ -871,6 +879,43 @@ void Node::array_initializer(Token **next_token, Token *current_token, Initializ
 		if (i < init->_ty->_array_length)
 		{
 			initializer2(&current_token, current_token, init->_children[i].get());
+		}
+		else
+		{
+			current_token = skip_excess_element(current_token);
+		}
+	}
+}
+
+/**
+ * @brief 構造体の変数の初期化式を生成する
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param init 初期化式
+ * @details 以下のEBNF規則に従う。 @n
+ * struct_initializer = "{" initializer ("," initializer)* "}"
+ */
+void Node::struct_initializer(Token **next_token, Token *current_token, Initializer *init)
+{
+	current_token = Token::skip(current_token, "{");
+
+	auto mem = init->_ty->_members.get();
+
+	bool first = true;
+	while (!Token::consume(next_token, current_token, "}"))
+	{
+		/* 2個目以降では','区切りが必要 */
+		if (!first)
+		{
+			current_token = Token::skip(current_token, ",");
+		}
+		first = false;
+
+		if (mem)
+		{
+			initializer2(&current_token, current_token, init->_children[mem->_idx].get());
+			mem = mem->_next.get();
 		}
 		else
 		{
@@ -915,6 +960,13 @@ unique_ptr<Node> Node::init_desg_expr(InitDesg *desg, Token *token)
 		return make_unique<Node>(desg->_var, token);
 	}
 
+	if (desg->_member)
+	{
+		auto node = make_unique<Node>(NodeKind::ND_MEMBER, init_desg_expr(desg->_next, token), token);
+		node->_member = desg->_member;
+		return node;
+	}
+
 	auto lhs = init_desg_expr(desg->_next, token);
 	auto rhs = make_unique<Node>(desg->_idx, token);
 	return make_unique<Node>(NodeKind::ND_DEREF, new_add(move(lhs), move(rhs), token), token);
@@ -939,6 +991,19 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 		{
 			InitDesg desg2 = {desg, i};
 			auto rhs = create_lvar_init(init->_children[i].get(), ty->_base.get(), &desg2, token);
+			node = make_unique<Node>(NodeKind::ND_COMMA, move(node), move(rhs), token);
+		}
+		return node;
+	}
+
+	if (TypeKind::TY_STRUCT == ty->_kind)
+	{
+		auto node = make_unique<Node>(NodeKind::ND_NULL_EXPR, token);
+
+		for (auto mem = ty->_members; mem; mem = mem->_next)
+		{
+			InitDesg desg2 = {desg, 0, mem};
+			auto rhs = create_lvar_init(init->_children[mem->_idx].get(), mem->_ty.get(), &desg2, token);
 			node = make_unique<Node>(NodeKind::ND_COMMA, move(node), move(rhs), token);
 		}
 		return node;
@@ -969,7 +1034,7 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, Object *var)
 {
 	auto init = initializer(next_token, current_token, var->_ty, var->_ty);
-	InitDesg desg = {nullptr, 0, var};
+	InitDesg desg = {nullptr, 0, nullptr, var};
 
 	auto lhs = make_unique<Node>(NodeKind::ND_MEMZERO, current_token);
 	lhs->_var = var;
@@ -1272,6 +1337,7 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 	/* ダミーの先頭 */
 	auto head = make_shared<Member>();
 	auto cur = head.get();
+	int idx = 0;
 
 	/* '}'が出てくるまで読み込み続ける */
 	while (!current_token->is_equal("}"))
@@ -1292,6 +1358,7 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 			/* メンバ名部分を読み込む */
 			mem->_ty = declarator(&current_token, current_token, base);
 			mem->_token = mem->_ty->_token;
+			mem->_idx = idx++;
 			/* リストの先頭に繋ぐ */
 			cur->_next = move(mem);
 			cur = cur->_next.get();

@@ -178,7 +178,8 @@ struct Initializer
  */
 struct InitDesg
 {
-	InitDesg *_next;			  /*!< 自身が配列の場合、親の要素 */
+	InitDesg *_next;			  /*!< 自身が配列,構造体の場合、親の要素 */
 	int _idx = 0;				  /*!< 自身を表す配列のインデックス */
+	shared_ptr<Member> _member;	  /*!< 構造体のメンバ */
 	const Object *_var = nullptr; /*!< 変数を表すオブジェクト */
 };

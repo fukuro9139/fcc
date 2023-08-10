@@ -14,7 +14,7 @@
 
 /* Initializerクラス */
 Initializer::Initializer() = default;
-Initializer::Initializer(const shared_ptr<Type> &ty) : _ty(ty){}
+Initializer::Initializer(const shared_ptr<Type> &ty) : _ty(ty) {}
 
 /* Objectクラス */
 
@@ -93,17 +93,36 @@ unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool
 	if (TypeKind::TY_ARRAY == ty->_kind)
 	{
 		/* 要素数が指定されていない */
-		if(is_flexible && ty->_size <0){
+		if (is_flexible && ty->_size < 0)
+		{
 			init->_is_flexible = true;
 			return init;
 		}
 
-		int len = ty->_array_length;
-		init->_children = make_unique<unique_ptr<Initializer>[]>(len);
-		for (int i = 0; i < len; ++i)
+		int len_arr = ty->_array_length;
+		init->_children = make_unique<unique_ptr<Initializer>[]>(len_arr);
+		for (int i = 0; i < len_arr; ++i)
 		{
 			init->_children[i] = new_initializer(ty->_base, false);
 		}
+		return init;
+	}
+
+	if (TypeKind::TY_STRUCT == ty->_kind)
+	{
+		/* 構造体の要素数を数える */
+		int len_struct = 0;
+		for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
+		{
+			++len_struct;
+		}
+
+		init->_children = make_unique<unique_ptr<Initializer>[]>(len_struct);
+		for (auto mem = ty->_members; mem; mem = mem->_next)
+		{
+			init->_children[mem->_idx] = Object::new_initializer(mem->_ty, false);
+		}
+		return init;
 	}
 	return init;
 }
