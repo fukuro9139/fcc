@@ -773,12 +773,14 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 		}
 
 		/* グローバル変数のサイズだけ領域を確保する */
-		*os << "  .data\n";
 		*os << "  .globl " << var->_name << "\n";
-		*os << var->_name << ":\n";
 
 		if (var->_init_data)
 		{
+			/* 初期化式がある場合は.dataセクションに配置 */
+			*os << "  .data\n";
+			*os << var->_name << ":\n";
+
 			auto rel = var->_rel.get();
 			int pos = 0;
 
@@ -795,11 +797,13 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 					*os << "  .byte " << static_cast<unsigned int>(var->_init_data[pos++]) << "\n";
 				}
 			}
+			continue;
 		}
-		else
-		{
-			*os << "  .zero " << var->_ty->_size << "\n";
-		}
+
+		/* 初期化式がない場合は.bssセクションに配置 */
+		*os << "  .bss\n";
+		*os << var->_name << ":\n";
+		*os << "  .zero " << var->_ty->_size << "\n";
 	}
 }
 
