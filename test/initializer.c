@@ -4,8 +4,17 @@ char g3 = 3;
 short g4 = 4;
 int g5 = 5;
 long g6 = -6;
-int arr1_g[3] = {1,2,3};
-int arr2_g[2][2] = {{1,2}, {3,4}};
+int g8[2][2] = {{1, 2}, {3, 4}};
+int g9[3] = {0, 1, 2};
+struct
+{
+	char a;
+	int b;
+} g11[2] = {{1, 2}, {3, 4}};
+struct
+{
+	int a[2];
+} g12[2] = {{{1, 2}}};
 
 int main()
 {
@@ -76,10 +85,20 @@ int main()
 	ASSERT(5, g5);
 	ASSERT(-6, g6);
 
-	ASSERT(1, arr1_g[0]);
-	ASSERT(2, arr1_g[1]);
-	ASSERT(3, arr1_g[2]);
-	ASSERT(3, arr2_g[1][0]);
+	ASSERT(3, g8[1][0]);
+	ASSERT(0, g9[0]);
+	ASSERT(1, g9[1]);
+	ASSERT(2, g9[2]);
+
+	ASSERT(1, g11[0].a);
+	ASSERT(2, g11[0].b);
+	ASSERT(3, g11[1].a);
+	ASSERT(4, g11[1].b);
+
+	ASSERT(1, g12[0].a[0]);
+	ASSERT(2, g12[0].a[1]);
+	ASSERT(0, g12[1].a[0]);
+	ASSERT(0, g12[1].a[1]);
 
 	printf("OK\n");
 	return 0;

@@ -1132,6 +1132,14 @@ void Node::write_gvar_data(Initializer *init, Type *ty, unsigned char buf[], int
 		}
 		return;
 	}
+
+	if(TypeKind::TY_STRUCT == ty->_kind){
+		for(auto mem = ty->_members.get(); mem; mem = mem->_next.get()){
+			write_gvar_data(init->_children[mem->_idx].get(), mem->_ty.get(), buf, offset + mem->_offset);
+			return;
+		}
+	}
+
 	if (init->_expr)
 	{
 		write_buf(buf, evaluate(init->_expr.get()), ty->_size, offset);
