@@ -1596,6 +1596,15 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 			cur = cur->_next.get();
 		}
 	}
+
+	/* 構造体の最後の要素が不完全配列型である場合、フレキシブル配列メンバとして扱う。
+	 * フレキシブル配列メンバは要素数0の配列として扱う。
+	 */
+	if(cur != head.get() && TypeKind::TY_ARRAY == cur->_ty->_kind && cur->_ty->_array_length < 0){
+		cur->_ty = Type::array_of(cur->_ty->_base, 0);
+	}
+
+
 	*next_token = current_token->_next.get();
 	ty->_members = move(head->_next);
 }
