@@ -13,8 +13,6 @@
 
 #include "codegen.hpp"
 
-#define unreachable() error("エラー: " + string(__FILE__) + " : " + std::to_string(__LINE__))
-
 /** スタックの深さ */
 static int depth = 0;
 
@@ -782,7 +780,7 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 
 		if (var->is_str_literal)
 		{
-			for (int i = 0; i < var->_init_data.size(); ++i)
+			for (int i = 0; i < var->_ty->_size; ++i)
 			{
 				*os << "  .byte " << static_cast<int>(var->_init_data[i]) << "\n";
 			}

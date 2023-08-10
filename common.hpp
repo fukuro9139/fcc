@@ -31,3 +31,5 @@ using std::move;
 using std::string;
 using std::vector;
 using std::endl;
+
+#define unreachable() error("エラー: " + string(__FILE__) + " : " + std::to_string(__LINE__))
