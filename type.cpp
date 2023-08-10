@@ -321,11 +321,36 @@ shared_ptr<Type> Type::enum_type()
 }
 
 /**
- * @brief 構造体型の型を返す
+ * @brief 構造体型の型を生成して返す
  *
  * @return 構造体型の型
  */
 shared_ptr<Type> Type::struct_type()
 {
 	return make_shared<Type>(TypeKind::TY_STRUCT, 0, 1);
+}
+
+/**
+ * @brief 構造体型の型の実体を新しく複製して返す
+ *
+ * @param ty 複製元
+ * @return 複製した構造体型の型
+ */
+shared_ptr<Type> Type::copy_struct_type(shared_ptr<Type> ty)
+{
+	/* 実体をコピー */
+	ty = make_shared<Type>(*ty);
+
+	auto head = make_shared<Member>();
+	auto cur = head.get();
+
+	/* メンバの実体をコピー */
+	for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
+	{
+		cur->_next = make_shared<Member>(*mem);
+		cur = cur->_next.get();
+	}
+
+	ty->_members = head->_next;
+	return ty;
 }

@@ -63,11 +63,12 @@ public:
 
 	/* 構造体 */
 	shared_ptr<Member> _members; /*!< 構造体のメンバ */
+	bool _is_flexible = false;	 /*!< フレキシブル配列メンバをもつか */
 
 	/* 関数 */
 	shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */
-	shared_ptr<Type> _params;	  /*!< 引数の型  */
-	shared_ptr<Type> _next;	  /*!< リストの次の型 */
+	shared_ptr<Type> _params;	 /*!< 引数の型  */
+	shared_ptr<Type> _next;		 /*!< リストの次の型 */
 
 	/* コンストラクタ */
 	Type();
@@ -89,13 +90,14 @@ public:
 	static shared_ptr<Type> func_type(const shared_ptr<Type> &return_ty);
 	static shared_ptr<Type> enum_type();
 	static shared_ptr<Type> struct_type();
+	static shared_ptr<Type> copy_struct_type(shared_ptr<Type> ty);
 	static void usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs);
 
 	/* 静的メンバ変数 (public) */
 
 	static const shared_ptr<Type> VOID_BASE;  /*!< void型 */
 	static const shared_ptr<Type> BOOL_BASE;  /*!< bool型 */
-	static const shared_ptr<Type> INT_BASE;   /*!< int型 */
+	static const shared_ptr<Type> INT_BASE;	  /*!< int型 */
 	static const shared_ptr<Type> LONG_BASE;  /*!< long型 */
 	static const shared_ptr<Type> CHAR_BASE;  /*!< char型 */
 	static const shared_ptr<Type> SHORT_BASE; /*!< short型 */

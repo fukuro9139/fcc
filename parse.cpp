@@ -760,6 +760,28 @@ unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_tok
 {
 	auto init = Object::new_initializer(ty, true);
 	initializer2(next_token, current_token, init.get());
+
+	/* フレキシブル配列メンバをもち、初期化式で要素数が確定できる場合 */
+	if ((TypeKind::TY_STRUCT == ty->_kind || TypeKind::TY_UNION == ty->_kind) && ty->_is_flexible)
+	{
+		/* 構造体の型の実体をコピー */
+		ty = Type::copy_struct_type(ty);
+
+		auto mem = ty->_members.get();
+		/* 末尾まで辿る */
+		while (mem->_next)
+		{
+			mem = mem->_next.get();
+		}
+		/* 要素数が定まっていなかったメンバーの型を要素数が確定しいている初期化式の中の型で上書きする */
+		mem->_ty = init->_children[mem->_idx]->_ty;
+		/* 構造体のサイズを更新する */
+		ty->_size += mem->_ty->_size;
+
+		new_ty = ty;
+		return init;
+	}
+
 	new_ty = init->_ty;
 	return init;
 }
@@ -1600,10 +1622,11 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 	/* 構造体の最後の要素が不完全配列型である場合、フレキシブル配列メンバとして扱う。
 	 * フレキシブル配列メンバは要素数0の配列として扱う。
 	 */
-	if(cur != head.get() && TypeKind::TY_ARRAY == cur->_ty->_kind && cur->_ty->_array_length < 0){
+	if (cur != head.get() && TypeKind::TY_ARRAY == cur->_ty->_kind && cur->_ty->_array_length < 0)
+	{
 		cur->_ty = Type::array_of(cur->_ty->_base, 0);
+		ty->_is_flexible = true;
 	}
-
 
 	*next_token = current_token->_next.get();
 	ty->_members = move(head->_next);

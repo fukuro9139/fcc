@@ -83,7 +83,8 @@ Object *Object::new_gvar(const string &name, shared_ptr<Type> &&ty)
 /**
  * @brief 新しい初期化式を作成する
  *
- * @param 初期化式の型
+ * @param ty 初期化式の型
+ * @param is_flexible 
  * @return 作成した初期化式
  */
 unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool is_flexible)
@@ -118,9 +119,18 @@ unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool
 		}
 
 		init->_children = make_unique<unique_ptr<Initializer>[]>(len_struct);
+		
 		for (auto mem = ty->_members; mem; mem = mem->_next)
 		{
-			init->_children[mem->_idx] = Object::new_initializer(mem->_ty, false);
+			/* フレキシブル配列メンバをもつとき、最後の配列メンバをフレキシブル配列メンバとする */
+			if(is_flexible && ty->_is_flexible && !mem->_next){
+				auto child = make_unique<Initializer>();
+				child->_ty = mem->_ty;
+				child->_is_flexible = true;
+				init->_children[mem->_idx] = move(child);
+			}else{
+				init->_children[mem->_idx] = Object::new_initializer(mem->_ty, false);
+			}
 		}
 		return init;
 	}
