@@ -193,16 +193,20 @@ Object *Node::new_anonymous_gvar(shared_ptr<Type> &&ty)
 Object *Node::new_string_literal(const string &str)
 {
 	/* 文字列リテラルの型はchar型配列で長さは文字数+'\0'終端 */
-	/* 文字列リテラルは前後に'"'がついているので取り除く */
-	auto ty = Type::array_of(Type::CHAR_BASE, str.size() - 1);
+	auto ty = Type::array_of(Type::CHAR_BASE, str.size() + 1);
 
 	/* 仮名を使ってオブジェクトを生成 */
 	auto obj = new_anonymous_gvar(move(ty));
 
 	/* init_dataに文字列を入れて'\0'終端を追加 */
-	obj->_init_data = str.substr(1, str.size() - 2);
-	obj->_init_data.push_back('\0');
-	obj->is_str_literal = true;
+	obj->_init_data = make_unique<char[]>(str.size()+1);
+
+	for(int i=0; i<str.size(); i++){
+		obj->_init_data[i] = str[i];
+	}
+
+	obj->_init_data[str.size()] = '\0';
+
 	return obj;
 }
 
@@ -1727,117 +1731,117 @@ unique_ptr<Node> Node::expression(Token **next_token, Token *current_token)
  * @param node 評価するノード
  * @return 評価結果の数値
  */
-int64_t Node::eval(Node *node)
+int64_t Node::evaluate(Node *node)
 {
 	static std::unordered_map<NodeKind, int64_t (*)(Node *)> eval_funcs = {
 		{NodeKind::ND_ADD, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) + eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) + evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_SUB, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) - eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) - evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_MUL, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) * eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) * evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_DIV, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) / eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) / evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_NEG, [](Node *node)
 		 {
-			 return -eval(node->_lhs.get());
+			 return -evaluate(node->_lhs.get());
 		 }},
 
 		{NodeKind::ND_MOD, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) % eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) % evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_BITAND, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) & eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) & evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_BITOR, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) | eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) | evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_BITXOR, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) ^ eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) ^ evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_SHL, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) << eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) << evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_SHR, [](Node *node)
 		 {
-			 return eval(node->_lhs.get()) >> eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) >> evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_EQ, [](Node *node) -> int64_t
 		 {
-			 return eval(node->_lhs.get()) == eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) == evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_NE, [](Node *node) -> int64_t
 		 {
-			 return eval(node->_lhs.get()) != eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) != evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_LT, [](Node *node) -> int64_t
 		 {
-			 return eval(node->_lhs.get()) < eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) < evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_LE, [](Node *node) -> int64_t
 		 {
-			 return eval(node->_lhs.get()) <= eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) <= evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_COND, [](Node *node)
 		 {
-			 return eval(node->_condition.get()) ? eval(node->_then.get()) : eval(node->_else.get());
+			 return evaluate(node->_condition.get()) ? evaluate(node->_then.get()) : evaluate(node->_else.get());
 		 }},
 
 		{NodeKind::ND_COMMA, [](Node *node)
 		 {
-			 return eval(node->_rhs.get());
+			 return evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_NOT, [](Node *node) -> int64_t
 		 {
-			 return !eval(node->_lhs.get());
+			 return !evaluate(node->_lhs.get());
 		 }},
 
 		{NodeKind::ND_BITNOT, [](Node *node)
 		 {
-			 return ~eval(node->_lhs.get());
+			 return ~evaluate(node->_lhs.get());
 		 }},
 
 		{NodeKind::ND_LOGAND, [](Node *node) -> int64_t
 		 {
-			 return eval(node->_lhs.get()) && eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) && evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_LOGOR, [](Node *node) -> int64_t
 		 {
-			 return eval(node->_lhs.get()) || eval(node->_rhs.get());
+			 return evaluate(node->_lhs.get()) || evaluate(node->_rhs.get());
 		 }},
 
 		{NodeKind::ND_CAST, [](Node *node) -> int64_t
 		 {
-			 uint64_t val = eval(node->_lhs.get());
+			 uint64_t val = evaluate(node->_lhs.get());
 			 if (node->_ty->is_integer())
 			 {
 				 switch (node->_ty->_size)
@@ -1880,7 +1884,7 @@ int64_t Node::eval(Node *node)
 int64_t Node::const_expr(Token **next_token, Token *current_token)
 {
 	auto node = conditional(next_token, current_token);
-	return eval(node.get());
+	return evaluate(node.get());
 }
 
 /**
@@ -2466,7 +2470,9 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	/* 文字列リテラル */
 	if (TokenKind::TK_STR == current_token->_kind)
 	{
-		auto var = new_string_literal(current_token->_str);
+		/* 前後の'"'を取り除く */
+		auto str = current_token->_str.substr(1, current_token->_str.size()-2);
+		auto var = new_string_literal(str);
 		*next_token = current_token->_next.get();
 		return make_unique<Node>(var, current_token);
 	}

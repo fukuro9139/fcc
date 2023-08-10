@@ -45,8 +45,7 @@ public:
 	bool is_static = false;		/*!< ファイルスコープか */
 
 	/* グローバル変数 */
-	string _init_data = "";		 /*!< 文字列リテラル */
-	bool is_str_literal = false; /*!< 文字列リテラルか*/
+	unique_ptr<char[]> _init_data; /*!< グローバル変数の初期値 */
 
 	/* 関数用 */
 

@@ -778,7 +778,7 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 		*os << "  .globl " << var->_name << "\n";
 		*os << var->_name << ":\n";
 
-		if (var->is_str_literal)
+		if (var->_init_data)
 		{
 			for (int i = 0; i < var->_ty->_size; ++i)
 			{
