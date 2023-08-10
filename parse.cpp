@@ -812,7 +812,6 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 			init->_expr = move(expr);
 			return;
 		}
-
 		struct_initializer2(next_token, current_token, init);
 		return;
 	}
@@ -821,6 +820,16 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 	if (TypeKind::TY_UNION == init->_ty->_kind)
 	{
 		union_initializer(next_token, current_token, init);
+		return;
+	}
+	
+	/* スカラー値の初期化式は'{}'で囲むことができる。
+	 * 例: int x = {1};
+	 */
+	if (current_token->is_equal("{"))
+	{
+		initializer2(&current_token, current_token->_next.get(), init);
+		*next_token = Token::skip(current_token, "}");
 		return;
 	}
 
