@@ -787,6 +787,15 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
 	/* 構造体 */
 	if (TypeKind::TY_STRUCT == init->_ty->_kind)
 	{
+		/* 構造体は他の構造体で初期化できる */
+		if(!current_token->is_equal("{")){
+			auto expr = assign(next_token, current_token);
+			Type::add_type(expr.get());
+			if(TypeKind::TY_STRUCT ==  expr->_ty->_kind){
+				init->_expr = move(expr);
+				return;
+			}
+		}
 		struct_initializer(next_token, current_token, init);
 		return;
 	}
@@ -996,7 +1005,7 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 		return node;
 	}
 
-	if (TypeKind::TY_STRUCT == ty->_kind)
+	if (TypeKind::TY_STRUCT == ty->_kind && !init->_expr)
 	{
 		auto node = make_unique<Node>(NodeKind::ND_NULL_EXPR, token);
 
