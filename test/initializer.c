@@ -4,6 +4,8 @@ char g3 = 3;
 short g4 = 4;
 int g5 = 5;
 long g6 = -6;
+int arr1_g[3] = {1,2,3};
+int arr2_g[2][2] = {{1,2}, {3,4}};
 
 int main()
 {
@@ -73,6 +75,11 @@ int main()
 	ASSERT(4, g4);
 	ASSERT(5, g5);
 	ASSERT(-6, g6);
+
+	ASSERT(1, arr1_g[0]);
+	ASSERT(2, arr1_g[1]);
+	ASSERT(3, arr1_g[2]);
+	ASSERT(3, arr2_g[1][0]);
 
 	printf("OK\n");
 	return 0;

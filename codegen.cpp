@@ -782,7 +782,7 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 		{
 			for (int i = 0; i < var->_ty->_size; ++i)
 			{
-				*os << "  .byte " << static_cast<int>(var->_init_data[i]) << "\n";
+				*os << "  .byte " << static_cast<unsigned int>(var->_init_data[i]) << "\n";
 			}
 		}
 		else
