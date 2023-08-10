@@ -19,6 +19,7 @@
 struct Scope;
 struct VarScope;
 struct Initializer;
+struct Relocation;
 
 /**
  * @brief 変数または関数を表す。各オブジェクトは名前によって区別する
@@ -46,6 +47,7 @@ public:
 
 	/* グローバル変数 */
 	unique_ptr<unsigned char[]> _init_data; /*!< グローバル変数の初期値 */
+	unique_ptr<Relocation> _rel;			/*!< 他のグローバル変数のポインタによる初期化 */
 
 	/* 関数用 */
 
@@ -181,4 +183,17 @@ struct InitDesg
 	int _idx = 0;				  /*!< 自身を表す配列のインデックス */
 	shared_ptr<Member> _member;	  /*!< 構造体のメンバ */
 	const Object *_var = nullptr; /*!< 変数を表すオブジェクト */
+};
+
+/**
+ * @brief グローバル変数は定数式または他のグローバル変数のポインタで初期化される。
+ * この構造体は後者の初期化法をサポートする。
+ * 例: int x=1; int *y = &x; int main(){...}
+ */
+struct Relocation
+{
+	unique_ptr<Relocation> _next; /*!< 次のポインタによる初期化式 */
+	int _offset = 0;			  /*!< オフセット */
+	string _label;				  /*!< 変数名 */
+	long _addend = 0;			  /*!<  ポインタが最終的に指し示すアドレスのオフセット  */
 };

@@ -387,7 +387,6 @@ void CodeGen::generate_expression(Node *node)
 		generate_expression(node->_rhs.get());
 		return;
 
-	
 	case NodeKind::ND_MEMZERO:
 		/* 変数が使うメモリサイズ */
 		*os << "  mov rcx, " << node->_var->_ty->_size << "\n";
@@ -780,9 +779,21 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 
 		if (var->_init_data)
 		{
-			for (int i = 0; i < var->_ty->_size; ++i)
+			auto rel = var->_rel.get();
+			int pos = 0;
+
+			while (pos < var->_ty->_size)
 			{
-				*os << "  .byte " << static_cast<unsigned int>(var->_init_data[i]) << "\n";
+				if (rel && rel->_offset == pos)
+				{
+					*os << "  .quad " << rel->_label << " + " << rel->_addend << "\n";
+					rel = rel->_next.get();
+					pos += 8;
+				}
+				else
+				{
+					*os << "  .byte " << static_cast<unsigned int>(var->_init_data[pos++]) << "\n";
+				}
 			}
 		}
 		else

@@ -1121,29 +1121,53 @@ void Node::write_buf(unsigned char buf[], int64_t val, int sz, int offset)
  * @param buf データの書き込み先
  * @param offset オフセット
  */
-void Node::write_gvar_data(Initializer *init, Type *ty, unsigned char buf[], int offset)
+Relocation *Node::write_gvar_data(Relocation *cur, Initializer *init, Type *ty, unsigned char buf[], int offset)
 {
+
 	if (TypeKind::TY_ARRAY == ty->_kind)
 	{
 		int sz = ty->_base->_size;
 		for (int i = 0; i < ty->_array_length; ++i)
 		{
-			write_gvar_data(init->_children[i].get(), ty->_base.get(), buf, offset + sz * i);
+			cur = write_gvar_data(cur, init->_children[i].get(), ty->_base.get(), buf, offset + sz * i);
 		}
-		return;
+		return cur;
 	}
 
-	if(TypeKind::TY_STRUCT == ty->_kind){
-		for(auto mem = ty->_members.get(); mem; mem = mem->_next.get()){
-			write_gvar_data(init->_children[mem->_idx].get(), mem->_ty.get(), buf, offset + mem->_offset);
-		}
-		return;
-	}
-
-	if (init->_expr)
+	if (TypeKind::TY_STRUCT == ty->_kind)
 	{
-		write_buf(buf, evaluate(init->_expr.get()), ty->_size, offset);
+		for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
+		{
+			cur = write_gvar_data(cur, init->_children[mem->_idx].get(), mem->_ty.get(), buf, offset + mem->_offset);
+		}
+		return cur;
 	}
+
+	if (TypeKind::TY_UNION == ty->_kind)
+	{
+		return write_gvar_data(cur, init->_children[0].get(), ty->_members->_ty.get(), buf, offset);
+	}
+
+	if (!init->_expr)
+	{
+		return cur;
+	}
+
+	string label = "";
+	auto val = evaluate2(init->_expr.get(), &label);
+
+	if (label.empty())
+	{
+		write_buf(buf, val, ty->_size, offset);
+		return cur;
+	}
+
+	auto rel = make_unique<Relocation>();
+	rel->_offset = offset;
+	rel->_label = label;
+	rel->_addend = val;
+	cur->_next = move(rel);
+	return cur->_next.get();
 }
 
 /**
@@ -1161,10 +1185,12 @@ void Node::write_gvar_data(Initializer *init, Type *ty, unsigned char buf[], int
 void Node::gvar_initializer(Token **next_token, Token *current_token, Object *var)
 {
 	auto init = initializer(next_token, current_token, var->_ty, var->_ty);
+	auto head = make_unique<Relocation>();
 
 	auto buf = make_unique<unsigned char[]>(var->_ty->_size);
-	write_gvar_data(init.get(), var->_ty.get(), buf.get(), 0);
+	write_gvar_data(head.get(),init.get(), var->_ty.get(), buf.get(), 0);
 	var->_init_data = move(buf);
+	var->_rel = move(head->_next);
 }
 
 /**
@@ -1817,115 +1843,87 @@ unique_ptr<Node> Node::expression(Token **next_token, Token *current_token)
  */
 int64_t Node::evaluate(Node *node)
 {
-	static std::unordered_map<NodeKind, int64_t (*)(Node *)> eval_funcs = {
-		{NodeKind::ND_ADD, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) + evaluate(node->_rhs.get());
-		 }},
+	return evaluate2(node, nullptr);
+}
 
-		{NodeKind::ND_SUB, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) - evaluate(node->_rhs.get());
-		 }},
+/**
+ * @brief ノードを定数式として評価
+ *
+ * @param node 評価するノード
+ * @param label 定数式が変数のポインタの場合、変数の名前
+ * @return 評価結果の数値
+ */
+int64_t Node::evaluate2(Node *node, string *label)
+{
+	Type::add_type(node);
 
-		{NodeKind::ND_MUL, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) * evaluate(node->_rhs.get());
-		 }},
+	const std::unordered_map<NodeKind, std::function<int64_t()>> eval_funcs = {
+		{NodeKind::ND_ADD, [&]()
+		 { return evaluate2(node->_lhs.get(), label) + evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_DIV, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) / evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_SUB, [&]()
+		 { return evaluate2(node->_lhs.get(), label) - evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_NEG, [](Node *node)
-		 {
-			 return -evaluate(node->_lhs.get());
-		 }},
+		{NodeKind::ND_MUL, [&]()
+		 { return evaluate(node->_lhs.get()) * evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_MOD, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) % evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_DIV, [&]()
+		 { return evaluate(node->_lhs.get()) / evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_BITAND, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) & evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_NEG, [&]()
+		 { return -evaluate(node->_lhs.get()); }},
 
-		{NodeKind::ND_BITOR, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) | evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_MOD, [&]()
+		 { return evaluate(node->_lhs.get()) % evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_BITXOR, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) ^ evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_BITAND, [&]()
+		 { return evaluate(node->_lhs.get()) & evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_SHL, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) << evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_BITOR, [&]()
+		 { return evaluate(node->_lhs.get()) | evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_SHR, [](Node *node)
-		 {
-			 return evaluate(node->_lhs.get()) >> evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_BITXOR, [&]()
+		 { return evaluate(node->_lhs.get()) ^ evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_EQ, [](Node *node) -> int64_t
-		 {
-			 return evaluate(node->_lhs.get()) == evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_SHL, [&]()
+		 { return evaluate(node->_lhs.get()) << evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_NE, [](Node *node) -> int64_t
-		 {
-			 return evaluate(node->_lhs.get()) != evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_SHR, [&]()
+		 { return evaluate(node->_lhs.get()) >> evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_LT, [](Node *node) -> int64_t
-		 {
-			 return evaluate(node->_lhs.get()) < evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_EQ, [&]() -> int64_t
+		 { return evaluate(node->_lhs.get()) == evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_LE, [](Node *node) -> int64_t
-		 {
-			 return evaluate(node->_lhs.get()) <= evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_NE, [&]() -> int64_t
+		 { return evaluate(node->_lhs.get()) != evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_COND, [](Node *node)
-		 {
-			 return evaluate(node->_condition.get()) ? evaluate(node->_then.get()) : evaluate(node->_else.get());
-		 }},
+		{NodeKind::ND_LT, [&]() -> int64_t
+		 { return evaluate(node->_lhs.get()) < evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_COMMA, [](Node *node)
-		 {
-			 return evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_LE, [&]() -> int64_t
+		 { return evaluate(node->_lhs.get()) <= evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_NOT, [](Node *node) -> int64_t
-		 {
-			 return !evaluate(node->_lhs.get());
-		 }},
+		{NodeKind::ND_COND, [&]()
+		 { return evaluate(node->_condition.get()) ? evaluate2(node->_then.get(), label) : evaluate2(node->_else.get(), label); }},
 
-		{NodeKind::ND_BITNOT, [](Node *node)
-		 {
-			 return ~evaluate(node->_lhs.get());
-		 }},
+		{NodeKind::ND_COMMA, [&]()
+		 { return evaluate2(node->_rhs.get(), label); }},
 
-		{NodeKind::ND_LOGAND, [](Node *node) -> int64_t
-		 {
-			 return evaluate(node->_lhs.get()) && evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_NOT, [&]() -> int64_t
+		 { return !evaluate(node->_lhs.get()); }},
 
-		{NodeKind::ND_LOGOR, [](Node *node) -> int64_t
-		 {
-			 return evaluate(node->_lhs.get()) || evaluate(node->_rhs.get());
-		 }},
+		{NodeKind::ND_BITNOT, [&]()
+		 { return ~evaluate(node->_lhs.get()); }},
 
-		{NodeKind::ND_CAST, [](Node *node) -> int64_t
+		{NodeKind::ND_LOGAND, [&]() -> int64_t
+		 { return evaluate(node->_lhs.get()) && evaluate(node->_rhs.get()); }},
+
+		{NodeKind::ND_LOGOR, [&]() -> int64_t
+		 { return evaluate(node->_lhs.get()) || evaluate(node->_rhs.get()); }},
+
+		{NodeKind::ND_CAST, [&]() -> int64_t
 		 {
-			 uint64_t val = evaluate(node->_lhs.get());
+			 uint64_t val = evaluate2(node->_lhs.get(), label);
 			 if (node->_ty->is_integer())
 			 {
 				 switch (node->_ty->_size)
@@ -1943,18 +1941,75 @@ int64_t Node::evaluate(Node *node)
 			 return val;
 		 }},
 
-		{NodeKind::ND_NUM, [](Node *node)
+		{NodeKind::ND_ADDR, [&]()
+		 { return evaluate_rval(node->_lhs.get(), label); }},
+
+		{NodeKind::ND_MEMBER, [&]()
 		 {
-			 return node->_val;
+			 if (!label)
+			 {
+				 error_token("コンパイル時に定数ではありません", node->_token);
+			 }
+			 if (TypeKind::TY_ARRAY != node->_ty->_kind)
+			 {
+				 error_token("無効な初期化式です", node->_token);
+			 }
+			 return evaluate_rval(node->_lhs.get(), label) + node->_member->_offset;
 		 }},
+		{NodeKind::ND_VAR, [&]() -> int64_t
+		 {
+			 if (!label)
+			 {
+				 error_token("コンパイル時に定数ではありません", node->_token);
+			 }
+			 if (TypeKind::TY_ARRAY != node->_var->_ty->_kind && TypeKind::TY_FUNC != node->_var->_ty->_kind)
+			 {
+				 error_token("無効な初期化式です", node->_token);
+			 }
+			 *label = node->_var->_name;
+			 return 0;
+		 }},
+
+		{NodeKind::ND_NUM, [&]()
+		 { return node->_val; }},
 	};
 
 	auto it = eval_funcs.find(node->_kind);
 	if (eval_funcs.end() != it)
 	{
-		return it->second(node);
+		return it->second();
 	}
 	error_token("コンパイル時に定数ではありません", node->_token);
+	return 0;
+}
+
+/**
+ * @brief 右辺値を評価する
+ *
+ * @param node 評価対象のノード
+ * @param label 変数名を返すための参照
+ * @return 評価結果
+ */
+int64_t Node::evaluate_rval(Node *node, string *label)
+{
+	switch (node->_kind)
+	{
+	case NodeKind::ND_VAR:
+		if (node->_var->is_local)
+		{
+			error_token("コンパイル時に定数ではありません", node->_token);
+		}
+		*label = node->_var->_name;
+		return 0;
+	case NodeKind::ND_DEREF:
+		return evaluate2(node->_lhs.get(), label);
+	case NodeKind::ND_MEMBER:
+		return evaluate_rval(node->_lhs.get(), label) + node->_member->_offset;
+	default:
+		break;
+	}
+
+	error_token("無効な初期化式です", node->_token);
 	return 0;
 }
 

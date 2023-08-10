@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
+#include <functional>
 
 using std::unique_ptr;
 using std::shared_ptr;
