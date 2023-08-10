@@ -221,7 +221,7 @@ private:
 	static shared_ptr<Type> abstract_declarator(Token **next_token, Token *current_token, shared_ptr<Type> &&ty);
 	static shared_ptr<Type> type_name(Token **next_token, Token *current_token);
 	static unique_ptr<Node> function_call(Token **next_token, Token *current_token);
-	static Token *global_variable(Token *token, shared_ptr<Type> &&base);
+	static Token *global_variable(Token *token, shared_ptr<Type> &&base, const VarAttr *attr);
 	static void resolve_goto_label();
 	static bool is_function(Token *token);
 	static bool consume(Token **next_token, Token *current_token, string &&str);

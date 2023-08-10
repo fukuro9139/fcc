@@ -60,7 +60,7 @@ unique_ptr<Object> Object::new_var(const string &name, shared_ptr<Type> &&ty)
 Object *Object::new_lvar(const string &name, shared_ptr<Type> &&ty)
 {
 	auto var = new_var(name, move(ty));
-	var->is_local = true;
+	var->_is_local = true;
 	var->_next = move(locals);
 	locals = move(var);
 	return locals.get();
@@ -76,6 +76,7 @@ Object *Object::new_gvar(const string &name, shared_ptr<Type> &&ty)
 {
 	auto var = new_var(name, move(ty));
 	var->_next = move(globals);
+	var->_is_definition = true;
 	globals = move(var);
 	return globals.get();
 }
@@ -241,7 +242,7 @@ void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
 	for (auto fn = prog.get(); fn; fn = fn->_next.get())
 	{
 		/* 関数でなければスキップ */
-		if (!fn->is_function)
+		if (!fn->_is_function)
 		{
 			continue;
 		}

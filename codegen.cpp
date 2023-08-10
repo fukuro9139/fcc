@@ -278,7 +278,7 @@ void CodeGen::generate_address(Node *node)
 	{
 	case NodeKind::ND_VAR:
 		/* ローカル変数 */
-		if (node->_var->is_local)
+		if (node->_var->_is_local)
 		{
 			*os << "  lea rax, [rbp - " << node->_var->_offset << "]\n";
 		}
@@ -766,8 +766,8 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 {
 	for (auto var = program.get(); var; var = var->_next.get())
 	{
-		/* 関数の場合は何もしない */
-		if (var->is_function)
+		/* 関数または宣言の場合は何もしない */
+		if (var->_is_function || !var->_is_definition)
 		{
 			continue;
 		}
@@ -820,13 +820,13 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 	for (auto fn = program.get(); fn; fn = fn->_next.get())
 	{
 		/* 関数の宣言でなければ何もしない */
-		if (!fn->is_function || !fn->is_definition)
+		if (!fn->_is_function || !fn->_is_definition)
 		{
 			continue;
 		}
 
 		/* 関数のラベル部分を出力 */
-		if (fn->is_static)
+		if (fn->_is_static)
 		{
 			*os << "  .local " << fn->_name << "\n";
 		}

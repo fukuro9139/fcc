@@ -21,34 +21,13 @@ static string current_filename = "";
 
 /** 型名 */
 static const std::unordered_set<string> type_names = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
-													  "typedef", "enum", "static"};
+													  "typedef", "enum", "static", "extern"};
 
 /** 識別子一覧 */
-static const std::unordered_set<string> keywords = {
-	"return",
-	"if",
-	"else",
-	"for",
-	"while",
-	"int",
-	"sizeof",
-	"char",
-	"struct",
-	"union",
-	"short",
-	"long",
-	"void",
-	"typedef",
-	"_Bool",
-	"enum",
-	"static",
-	"goto",
-	"break",
-	"continue",
-	"switch",
-	"case",
-	"default",
-};
+static const std::unordered_set<string> keywords = {"return", "if", "else", "for", "while", "int", "sizeof", "char",
+													"struct", "union", "short", "long", "void", "typedef", "_Bool",
+													"enum", "static", "goto", "break", "continue", "switch", "case",
+													"default", "extern"};
 
 /** 区切り文字一覧 */
 static const vector<string> punctuators =
@@ -73,8 +52,7 @@ static const vector<string> punctuators =
 		"&&",
 		"||",
 		"<<",
-		">>",
-};
+		">>"};
 
 /***********/
 /* 汎用関数 */

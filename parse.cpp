@@ -262,7 +262,7 @@ unique_ptr<Object> Node::parse(Token *token)
 		auto base = declspec(&token, token, &attr);
 
 		/* typedef */
-		if (attr.is_typedef)
+		if (attr._is_typedef)
 		{
 			token = parse_typedef(token, base);
 			continue;
@@ -276,7 +276,7 @@ unique_ptr<Object> Node::parse(Token *token)
 		}
 
 		/* グローバル変数 */
-		token = global_variable(token, move(base));
+		token = global_variable(token, move(base), &attr);
 	}
 
 	return move(Object::globals);
@@ -592,7 +592,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 			auto base = declspec(&current_token, current_token, &attr);
 
 			/* typedefの場合 */
-			if (attr.is_typedef)
+			if (attr._is_typedef)
 			{
 				current_token = parse_typedef(current_token, base);
 				continue;
@@ -637,16 +637,16 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	/* 新しい関数を生成する。 */
 	auto fn = Object::new_gvar(ty->_token->_str, move(ty));
 	/* 関数であるフラグをセット */
-	fn->is_function = true;
+	fn->_is_function = true;
 
 	/* 定義か宣言か、後ろに";"がくるなら宣言 */
-	fn->is_definition = !consume(&token, token, ";");
+	fn->_is_definition = !consume(&token, token, ";");
 
 	/* staticかどうか */
-	fn->is_static = attr->is_static;
+	fn->_is_static = attr->_is_static;
 
 	/* 宣言であるなら現在のトークンを返して抜ける */
-	if (!fn->is_definition)
+	if (!fn->_is_definition)
 	{
 		return token;
 	}
@@ -1693,7 +1693,7 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  * @details
  * 下記のEBNF規則に従う。 @n
  * declspec =  ("void" | "_BOOL" | "int" | "short" | "long" | "char" @n
- * 				| "typedef" | "static" @n
+ * 				| "typedef" | "static" | "extern" @n
  * 				| struct-decl | union-decl | typedef-name @n
  * 				| enum-specifier)+ @n
  * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
@@ -1748,7 +1748,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	while (current_token->is_typename())
 	{
 		/* ストレージクラス指定子 */
-		if (current_token->is_equal("typedef") || current_token->is_equal("static"))
+		if (current_token->is_equal("typedef") || current_token->is_equal("static") || current_token->is_equal("extern"))
 		{
 			/* ストレージクラス指定子が使用できない箇所である場合エラー 例 function(int i, typedef int INT) */
 			if (!attr)
@@ -1757,16 +1757,21 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 			}
 			if (current_token->is_equal("typedef"))
 			{
-				attr->is_typedef = true;
+				attr->_is_typedef = true;
+			}
+			else if (current_token->is_equal("static"))
+			{
+				attr->_is_static = true;
 			}
 			else
 			{
-				attr->is_static = true;
+				attr->_is_extern = true;
 			}
-			/* typedefとstaticが同時に指定されている場合 */
-			if (attr->is_static + attr->is_typedef > 1)
+
+			/* typedef,static, externが同時に指定されている場合 */
+			if (attr->_is_static + attr->_is_typedef + attr->_is_extern > 1)
 			{
-				error_token("typedefとstaticは同時に指定できません", current_token);
+				error_token("typedef, static, externは同時に指定できません", current_token);
 			}
 			current_token = current_token->_next.get();
 			continue;
@@ -2112,7 +2117,7 @@ int64_t Node::evaluate_rval(Node *node, string *label)
 	switch (node->_kind)
 	{
 	case NodeKind::ND_VAR:
-		if (node->_var->is_local)
+		if (node->_var->_is_local)
 		{
 			error_token("コンパイル時に定数ではありません", node->_token);
 		}
@@ -2984,7 +2989,7 @@ bool Node::is_function(Token *token)
  * @param base 型宣言の前半部分から読み取れた型
  * @return 次のトークン
  */
-Token *Node::global_variable(Token *token, shared_ptr<Type> &&base)
+Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAttr *attr)
 {
 	/* 1個めの変数であるか */
 	bool first = true;
@@ -3003,6 +3008,7 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base)
 		/* 最終的な型を決定する */
 		auto ty = declarator(&token, token, base);
 		auto var = Object::new_gvar(ty->_token->_str, move(ty));
+		var->_is_definition = !attr->_is_extern;
 		if (token->is_equal("="))
 		{
 			gvar_initializer(&token, token->_next.get(), var);

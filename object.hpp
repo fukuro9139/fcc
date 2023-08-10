@@ -34,16 +34,16 @@ public:
 	unique_ptr<Object> _next; /*!< 次のオブジェクト */
 	string _name = "";		  /*!< 名前 */
 	shared_ptr<Type> _ty;	  /* 型 */
-	bool is_local = false;	  /*!< ローカル変数であるか */
+	bool _is_local = false;	  /*!< ローカル変数であるか */
 
 	/* ローカル変数用 */
 
 	int _offset = 0; /*!< RBPからのオフセット */
 
 	/* グローバル変数 or 関数用 */
-	bool is_function = false;	/*!< 関数であるか */
-	bool is_definition = false; /*!< 宣言であるか */
-	bool is_static = false;		/*!< ファイルスコープか */
+	bool _is_function = false;	 /*!< 関数であるか */
+	bool _is_definition = false; /*!< 宣言であるか */
+	bool _is_static = false;	 /*!< ファイルスコープか */
 
 	/* グローバル変数 */
 	unique_ptr<unsigned char[]> _init_data; /*!< グローバル変数の初期値 */
@@ -145,8 +145,9 @@ struct Scope
  */
 struct VarAttr
 {
-	bool is_typedef = false; /*!< typedefされた型か*/
-	bool is_static = false;	 /*!< ファイルスコープか */
+	bool _is_typedef = false; /*!< typedefされた型か*/
+	bool _is_static = false;  /*!< ファイルスコープか */
+	bool _is_extern = false;  /*!< 外部宣言か */
 };
 
 /**
