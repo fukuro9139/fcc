@@ -273,11 +273,11 @@ void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
  *
  * @param param 引数のリスト
  */
-void Object::create_params_lvars(shared_ptr<Type> &&param)
+void Object::create_params_lvars(shared_ptr<Type> &param)
 {
 	if (param)
 	{
-		create_params_lvars(move(param->_next));
+		create_params_lvars(param->_next);
 		new_lvar(param->_token->_str, param);
 	}
 }

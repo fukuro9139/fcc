@@ -671,7 +671,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	Object::enter_scope();
 
 	/* 引数をローカル変数として作成 */
-	Object::create_params_lvars(move(ty->_params));
+	Object::create_params_lvars(ty->_params);
 	fn->_params = move(Object::locals);
 
 	/* 引数の次は"{"がくる */
