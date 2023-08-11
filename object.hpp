@@ -55,6 +55,7 @@ public:
 	unique_ptr<Object> _params; /*!< 引数 */
 	unique_ptr<Node> _body;		/*!< 関数の表す内容を抽象構文木で表す。根のノードを持つ */
 	unique_ptr<Object> _locals; /*!< 関数内で使うローカル変数 */
+	Object *_va_area = nullptr; /*!<  可変長引数*/
 	int _stack_size = 0;		/*!< 使用するスタックの深さ */
 
 	/* コンストラクタ */

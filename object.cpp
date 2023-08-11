@@ -253,13 +253,7 @@ void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
 		}
 
 		int offset = 0;
-		/* 引数 */
-		for (auto *var = fn->_params.get(); var; var = var->_next.get())
-		{
-			offset += var->_ty->_size;
-			offset = align_to(offset, var->_align);
-			var->_offset = offset;
-		}
+
 		/* ローカル変数 */
 		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
 		{
@@ -267,6 +261,15 @@ void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
 			offset = align_to(offset, var->_align);
 			var->_offset = offset;
 		}
+		
+		/* 引数 */
+		for (auto *var = fn->_params.get(); var; var = var->_next.get())
+		{
+			offset += var->_ty->_size;
+			offset = align_to(offset, var->_align);
+			var->_offset = offset;
+		}
+
 		/* スタックサイズが16の倍数になるようにアライメントする */
 		fn->_stack_size = align_to(move(offset), 16);
 	}

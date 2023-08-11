@@ -711,6 +711,11 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	Object::create_params_lvars(ty->_params);
 	fn->_params = move(Object::locals);
 
+	/* 可変長引数を持つ場合 */
+	if(ty->_is_variadic){
+		fn->_va_area = Object::new_lvar("__va_area__", Type::array_of(Type::CHAR_BASE, 136));
+	}
+
 	/* 引数の次は"{"がくる */
 	token = skip(token, "{");
 

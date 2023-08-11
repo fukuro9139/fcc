@@ -901,6 +901,40 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 		*os << "  mov rbp, rsp\n";
 		*os << "  sub rsp, " << fn->_stack_size << "\n";
 
+		/* 可変長引数関数 */
+		if (fn->_va_area)
+		{
+			int gp = 0;
+			/* 引数の数を数える */
+			for (auto var = fn->_params.get(); var; var = var->_next.get())
+			{
+				++gp;
+			}
+			int off = fn->_va_area->_offset;
+
+			/* va_elem */
+			*os << "  mov DWORD PTR [rbp - " << off << "], " << gp * 8 << "\n";
+			*os << "  mov DWORD PTR [rbp - " << off - 4 << "], 0\n";
+			*os << "  mov QWORD PTR [rbp - " << off - 16 << "], rbp\n";
+			*os << "  add QWORD PTR [rbp - " << off - 16 << "], " << off + 24 << "\n";
+
+			/* レジスタの値をストアする */
+			*os << "  mov QWORD PTR [rbp - " << off - 24 << "], rdi\n";
+			*os << "  mov QWORD PTR [rbp - " << off - 32 << "], rsi\n";
+			*os << "  mov QWORD PTR [rbp - " << off - 40 << "], rdx\n";
+			*os << "  mov QWORD PTR [rbp - " << off - 48 << "], rcx\n";
+			*os << "  mov QWORD PTR [rbp - " << off - 56 << "], r8\n";
+			*os << "  mov QWORD PTR [rbp - " << off - 64 << "], r9\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 72 << "], xmm0\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 80 << "], xmm1\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 88 << "], xmm2\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 96 << "], xmm3\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 104 << "], xmm4\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 112 << "], xmm5\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 120 << "], xmm6\n";
+			*os << "  movsd QWORD PTR [rbp - " << off - 128 << "], xmm7\n";
+		}
+
 		/* 関数の場合、レジスタから引数を受け取って確保してあるスタック領域にローカル変数と同様にストアする */
 		int cnt = 0;
 		for (auto var = fn->_params.get(); var; var = var->_next.get())
