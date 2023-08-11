@@ -913,12 +913,17 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 			int off = fn->_va_area->_offset;
 
 			/* va_elem */
+			/* 最初にva_argを読んだときに返されるのは"..."の直後の名前なし引数なので
+			 * "..."の前にある引数のサイズを記録しておく。
+			 */
 			*os << "  mov DWORD PTR [rbp - " << off << "], " << gp * 8 << "\n";
 			*os << "  mov DWORD PTR [rbp - " << off - 4 << "], 0\n";
+
+			/* レジスタの引数をストアしている領域のアドレス */
 			*os << "  mov QWORD PTR [rbp - " << off - 16 << "], rbp\n";
 			*os << "  sub QWORD PTR [rbp - " << off - 16 << "], " << off - 24 << "\n";
 
-			/* レジスタの値をストアする */
+			/* レジスタの引数をストアする */
 			*os << "  mov QWORD PTR [rbp - " << off - 24 << "], rdi\n";
 			*os << "  mov QWORD PTR [rbp - " << off - 32 << "], rsi\n";
 			*os << "  mov QWORD PTR [rbp - " << off - 40 << "], rdx\n";
