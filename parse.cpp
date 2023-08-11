@@ -732,23 +732,26 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 		}
 
 		/* static指定されたローカル変数 */
-		if(attr && attr->_is_static){
+		if (attr && attr->_is_static)
+		{
 			/* ブローバル変数として仮名をつけて登録 */
 			auto var = new_anonymous_gvar(ty);
 			/* ローカル変数に名前を登録してグローバル変数のオブジェクトを参照 */
 			Object::push_scope(ty->_token->_str)->_var = var;
 
 			/* 初期化式を持つ場合 */
-			if(current_token->is_equal("=")){
+			if (current_token->is_equal("="))
+			{
 				gvar_initializer(&current_token, current_token->_next.get(), var);
 				continue;
 			}
 		}
 
 		const auto var = Object::new_lvar(ty->_token->_str, ty);
-		
+
 		/* アライン指定がある場合 */
-		if(attr && attr->_align){
+		if (attr && attr->_align)
+		{
 			var->_align = attr->_align;
 		}
 
@@ -2596,6 +2599,13 @@ unique_ptr<Node> Node::cast(Token **next_token, Token *current_token)
 		auto ty = type_name(&current_token, current_token->_next.get());
 		current_token = skip(current_token, ")");
 
+		/* 複合リテラル式 */
+		if (current_token->is_equal("{"))
+		{
+			return unary(next_token, start);
+		}
+
+		/* 型キャスト */
 		auto node = new_cast(cast(next_token, current_token), ty);
 		node->_token = start;
 		return node;
@@ -2698,10 +2708,35 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
- * @details 下記のEBNF規則に従う。 @n postfix = primary ("[" expression "]" | "." identifier | "->" identifier | "++" | "--")*
+ * @details 下記のEBNF規則に従う。 @n
+ * postfix = "(" type-name ")" "{" initializer-list "}"
+ * 		   | primary ("[" expression "]" | "." identifier | "->" identifier | "++" | "--")*
  */
 unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 {
+	/* 複合リテラル式 */
+	if (current_token->is_equal("(") && current_token->_next->is_typename())
+	{
+		auto start = current_token;
+		/* 型名を評価 */
+		auto ty = type_name(&current_token, current_token->_next.get());
+		current_token = skip(current_token, ")");
+
+		/* グローバルスコープにいる場合、グローバル変数として登録 */
+		if (Object::at_outermost_scope())
+		{
+			auto var = new_anonymous_gvar(ty);
+			gvar_initializer(next_token, current_token, var);
+			return make_unique<Node>(var, start);
+		}
+
+		/* ローカル変数として登録 */
+		auto var = Object::new_lvar("", ty);
+		auto lhs = lvar_initializer(next_token, current_token, var);
+		auto rhs = make_unique<Node>(var, current_token);
+		return make_unique<Node>(NodeKind::ND_COMMA, move(lhs), move(rhs), start);
+	}
+
 	/* 単項を読む */
 	auto node = primary(&current_token, current_token);
 
@@ -2820,14 +2855,16 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	}
 
 	/* _Alignof演算子(型) */
-	if(current_token->is_equal("_Alignof") && current_token->_next->is_equal("(") && current_token->_next->_next->is_typename()){
+	if (current_token->is_equal("_Alignof") && current_token->_next->is_equal("(") && current_token->_next->_next->is_typename())
+	{
 		auto ty = type_name(&current_token, current_token->_next->_next.get());
 		*next_token = skip(current_token, ")");
-		return make_unique<Node>(ty->_align, current_token);	
+		return make_unique<Node>(ty->_align, current_token);
 	}
 
 	/* _Alignof演算子(変数) */
-	if(current_token->is_equal("_Alignof")){
+	if (current_token->is_equal("_Alignof"))
+	{
 		auto node = unary(next_token, current_token->_next.get());
 		Type::add_type(node.get());
 		return make_unique<Node>(node->_ty->_align, current_token);
@@ -3083,7 +3120,8 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAtt
 		var->_is_definition = !attr->_is_extern;
 
 		/* アライン指定 */
-		if(attr->_align){
+		if (attr->_align)
+		{
 			var->_align = attr->_align;
 		}
 

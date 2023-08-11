@@ -86,7 +86,7 @@ Object *Object::new_gvar(const string &name, shared_ptr<Type> ty)
  * @brief 新しい初期化式を作成する
  *
  * @param ty 初期化式の型
- * @param is_flexible 
+ * @param is_flexible
  * @return 作成した初期化式
  */
 unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool is_flexible)
@@ -121,16 +121,19 @@ unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool
 		}
 
 		init->_children = make_unique<unique_ptr<Initializer>[]>(len_struct);
-		
+
 		for (auto mem = ty->_members; mem; mem = mem->_next)
 		{
 			/* フレキシブル配列メンバをもつとき、最後の配列メンバをフレキシブル配列メンバとする */
-			if(is_flexible && ty->_is_flexible && !mem->_next){
+			if (is_flexible && ty->_is_flexible && !mem->_next)
+			{
 				auto child = make_unique<Initializer>();
 				child->_ty = mem->_ty;
 				child->_is_flexible = true;
 				init->_children[mem->_idx] = move(child);
-			}else{
+			}
+			else
+			{
 				init->_children[mem->_idx] = Object::new_initializer(mem->_ty, false);
 			}
 		}
@@ -321,4 +324,15 @@ VarScope *Object::push_scope(const string &name)
 void Object::push_tag_scope(Token *token, const shared_ptr<Type> &ty)
 {
 	scope->_tags = make_unique<TagScope>(token->_str, ty, move(scope->_tags));
+}
+
+/**
+ * @brief 現在のスコープが最も外側のスコープ（グローバルスコープ）であるか
+ *
+ * @return true グローバルスコープである
+ * @return false グローバルスコープではない
+ */
+bool Object::at_outermost_scope()
+{
+	return scope->_next == nullptr;
 }

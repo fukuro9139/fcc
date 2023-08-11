@@ -78,6 +78,7 @@ public:
 	static void create_params_lvars(shared_ptr<Type> &param);
 	static void enter_scope();
 	static void leave_scope();
+	static bool at_outermost_scope();
 	static VarScope *push_scope(const string &name);
 	static void push_tag_scope(Token *token, const shared_ptr<Type> &ty);
 
