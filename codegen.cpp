@@ -776,7 +776,7 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 		*os << "  .globl " << var->_name << "\n";
 
 		/* アライメントの指定 */
-		*os << "  .align " << var->_ty->_align << "\n";
+		*os << "  .align " << var->_align << "\n";
 
 		if (var->_init_data)
 		{

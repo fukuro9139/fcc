@@ -439,7 +439,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		if (current_token->is_typename())
 		{
 			auto base = declspec(&current_token, current_token, nullptr);
-			node->_init = declaration(&current_token, current_token, base);
+			node->_init = declaration(&current_token, current_token, base, nullptr);
 		}
 		else
 		{
@@ -613,7 +613,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 			}
 
 			/* それ以外の場合は変数の定義または宣言 */
-			cur->_next = declaration(&current_token, current_token, base);
+			cur->_next = declaration(&current_token, current_token, base, &attr);
 		}
 		/* 宣言、定義以外の文 */
 		else
@@ -703,7 +703,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n declaration = declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
  */
-unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, shared_ptr<Type> &base)
+unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, shared_ptr<Type> &base, const VarAttr *attr)
 {
 	/* ノードリストの先頭としてダミーのノードを作成 */
 	auto head = make_unique_for_overwrite<Node>();
@@ -733,6 +733,11 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 		}
 
 		const auto var = Object::new_lvar(ty->_token->_str, move(ty));
+		
+		/* アライン指定がある場合 */
+		if(attr && attr->_align){
+			var->_align = attr->_align;
+		}
 
 		/* 宣言の後に初期化式をもつ場合 */
 		if (current_token->is_equal("="))
@@ -1550,13 +1555,13 @@ shared_ptr<Type> Node::struct_decl(Token **next_token, Token *current_token)
 	int offset = 0;
 	for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
 	{
-		offset = Object::align_to(offset, mem->_ty->_align);
+		offset = Object::align_to(offset, mem->_align);
 		mem->_offset = offset;
 		offset += mem->_ty->_size;
-		/* アライメントの基数はメンバの基数のうち最大値に合わせる */
-		if (ty->_align < mem->_ty->_align)
+		/* アライメントの基数はメンバのアライメントのうち最大値に合わせる */
+		if (ty->_align < mem->_align)
 		{
-			ty->_align = mem->_ty->_align;
+			ty->_align = mem->_align;
 		}
 	}
 	ty->_size = Object::align_to(offset, ty->_align);
@@ -1586,9 +1591,9 @@ shared_ptr<Type> Node::union_decl(Token **next_token, Token *current_token)
 	/* アライメントと全体のサイズの計算だけ行う */
 	for (auto mem = ty->_members.get(); mem; mem = mem->_next.get())
 	{
-		if (ty->_align < mem->_ty->_align)
+		if (ty->_align < mem->_align)
 		{
-			ty->_align = mem->_ty->_align;
+			ty->_align = mem->_align;
 		}
 		if (ty->_size < mem->_ty->_size)
 		{
@@ -1617,7 +1622,8 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 	/* '}'が出てくるまで読み込み続ける */
 	while (!current_token->is_equal("}"))
 	{
-		auto base = declspec(&current_token, current_token, nullptr);
+		VarAttr attr = {};
+		auto base = declspec(&current_token, current_token, &attr);
 		bool first = true;
 
 		/* ';'が出てくるまで読み込み続ける */
@@ -1634,6 +1640,8 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 			mem->_ty = declarator(&current_token, current_token, base);
 			mem->_token = mem->_ty->_token;
 			mem->_idx = idx++;
+			/* アライン指定がある場合はそちらを優先 */
+			mem->_align = attr._align ? attr._align : mem->_ty->_align;
 			/* リストの先頭に繋ぐ */
 			cur->_next = move(mem);
 			cur = cur->_next.get();
@@ -1789,6 +1797,27 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 				error_token("typedef, static, externは同時に指定できません", current_token);
 			}
 			current_token = current_token->_next.get();
+			continue;
+		}
+
+		/* アライメント指定 */
+		if (current_token->is_equal("_Alignas"))
+		{
+			if (!attr)
+			{
+				error_token("ここでは_Alignas指定子は使用できません", current_token);
+			}
+			current_token = skip(current_token->_next.get(), "(");
+
+			if (current_token->is_typename())
+			{
+				attr->_align = type_name(&current_token, current_token)->_align;
+			}
+			else
+			{
+				attr->_align = const_expr(&current_token, current_token);
+			}
+			current_token = skip(current_token, ")");
 			continue;
 		}
 
@@ -2718,7 +2747,7 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | "sizeof" "(" type-name ")" | identifier args? | str | num @n
+ * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | "sizeof" "(" type-name ")" | "_Alignof" "(" type-name ")" | identifier args? | str | num @n
  * args = "(" ")"
  */
 unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
@@ -2774,6 +2803,14 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		Type::add_type(node.get());
 		/* 型のサイズの数値ノードを返す */
 		return make_unique<Node>(node->_ty->_size, current_token);
+	}
+
+	/* _Alignof演算子 */
+	if(current_token->is_equal("_Alignof")){
+		current_token = skip(current_token->_next.get(), "(");
+		auto ty = type_name(&current_token, current_token);
+		*next_token = skip(current_token, ")");
+		return make_unique<Node>(ty->_align, current_token);
 	}
 
 	/* トークンが識別子の場合 */
@@ -3024,6 +3061,12 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAtt
 		auto ty = declarator(&token, token, base);
 		auto var = Object::new_gvar(ty->_token->_str, move(ty));
 		var->_is_definition = !attr->_is_extern;
+
+		/* アライン指定 */
+		if(attr->_align){
+			var->_align = attr->_align;
+		}
+
 		if (token->is_equal("="))
 		{
 			gvar_initializer(&token, token->_next.get(), var);

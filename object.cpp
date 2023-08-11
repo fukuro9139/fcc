@@ -47,6 +47,7 @@ Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(move(
 unique_ptr<Object> Object::new_var(const string &name, shared_ptr<Type> &&ty)
 {
 	auto var = make_unique<Object>(name, move(ty));
+	var->_align = var->_ty->_align;
 	push_scope(name)->_var = var.get();
 	return var;
 }
@@ -252,7 +253,7 @@ void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
 		for (auto *var = fn->_params.get(); var; var = var->_next.get())
 		{
 			offset += var->_ty->_size;
-			offset = align_to(offset, var->_ty->_align);
+			offset = align_to(offset, var->_align);
 			var->_offset = offset;
 		}
 		/* ローカル変数 */

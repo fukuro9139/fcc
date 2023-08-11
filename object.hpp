@@ -35,6 +35,7 @@ public:
 	string _name = "";		  /*!< 名前 */
 	shared_ptr<Type> _ty;	  /* 型 */
 	bool _is_local = false;	  /*!< ローカル変数であるか */
+	int _align = 0;			  /*!< アライメント */
 
 	/* ローカル変数用 */
 
@@ -148,6 +149,7 @@ struct VarAttr
 	bool _is_typedef = false; /*!< typedefされた型か*/
 	bool _is_static = false;  /*!< ファイルスコープか */
 	bool _is_extern = false;  /*!< 外部宣言か */
+	int _align = 0;			  /*!< アライメント */
 };
 
 /**

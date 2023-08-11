@@ -26,6 +26,7 @@ struct Member
 	shared_ptr<Type> _ty;	  /*!< 型情報 e.g. int or pointer to int */
 	Token *_token = nullptr;  /*!< 対応するトークン */
 	int _idx = 0;			  /*!< 何番目の要素か */
+	int _align = 0;			  /*!< アライメント */
 	int _offset = 0;		  /*!< RBPからのオフセット  */
 };
 
@@ -190,7 +191,7 @@ private:
 	static shared_ptr<Type> declspec(Token **next_token, Token *current_token, VarAttr *attr);
 	static shared_ptr<Type> enum_specifier(Token **next_token, Token *current_token);
 	static shared_ptr<Type> declarator(Token **next_token, Token *current_token, shared_ptr<Type> ty);
-	static unique_ptr<Node> declaration(Token **next_token, Token *current_token, shared_ptr<Type> &base);
+	static unique_ptr<Node> declaration(Token **next_token, Token *current_token, shared_ptr<Type> &base, const VarAttr *attr);
 	static shared_ptr<Type> function_parameters(Token **next_token, Token *current_token, shared_ptr<Type> &&ty);
 	static shared_ptr<Type> array_dimensions(Token **next_token, Token *current_token, shared_ptr<Type> &&ty);
 	static shared_ptr<Type> type_suffix(Token **next_token, Token *current_token, shared_ptr<Type> &&ty);
