@@ -501,7 +501,7 @@ void CodeGen::generate_expression(Node *node)
 		}else{
 			*os << "  sub rsp, 8\n";
 			*os << "  call " << node->_func_name << "\n";
-			*os << "  add rsp 8\n";
+			*os << "  add rsp, 8\n";
 		}
 
 		return;
