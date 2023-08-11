@@ -2747,7 +2747,8 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | "sizeof" "(" type-name ")" | "_Alignof" "(" type-name ")" | identifier args? | str | num @n
+ * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | "sizeof" "(" type-name ")" @n
+ * 		   | "_Alignof" "(" type-name ")" | "_Alignof" unary  | identifier args? | str | num @n
  * args = "(" ")"
  */
 unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
@@ -2805,12 +2806,18 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		return make_unique<Node>(node->_ty->_size, current_token);
 	}
 
-	/* _Alignof演算子 */
-	if(current_token->is_equal("_Alignof")){
-		current_token = skip(current_token->_next.get(), "(");
-		auto ty = type_name(&current_token, current_token);
+	/* _Alignof演算子(型) */
+	if(current_token->is_equal("_Alignof") && current_token->_next->is_equal("(") && current_token->_next->_next->is_typename()){
+		auto ty = type_name(&current_token, current_token->_next->_next.get());
 		*next_token = skip(current_token, ")");
-		return make_unique<Node>(ty->_align, current_token);
+		return make_unique<Node>(ty->_align, current_token);	
+	}
+
+	/* _Alignof演算子(変数) */
+	if(current_token->is_equal("_Alignof")){
+		auto node = unary(next_token, current_token->_next.get());
+		Type::add_type(node.get());
+		return make_unique<Node>(node->_ty->_align, current_token);
 	}
 
 	/* トークンが識別子の場合 */
