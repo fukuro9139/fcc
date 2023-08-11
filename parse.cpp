@@ -298,6 +298,7 @@ unique_ptr<Object> Node::parse(Token *token)
  * 	     	 | "default" ":" statement @n
  * 			 | "for" "(" expression-statement expression? ";" expression? ")" statement @n
  * 			 | "while" "(" expression ")" statement @n
+ * 			 | "do" statement "while" "(" expression ")" ";" @n
  * 			 | "goto" ident ";" @n
  * 			 | "continue" ";" @n
  * 			 |  ident ":" statement @n
@@ -502,6 +503,36 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		/* ラベルを設定しなおす */
 		brk_label = brk;
 		cont_label = cont;
+		return node;
+	}
+
+	/* do while */
+	if(current_token->is_equal("do")){
+		auto node = make_unique<Node>(NodeKind::ND_DO, current_token);
+
+		/* 現在のラベルを一時保存 */
+		auto brk = brk_label;
+		auto cont = cont_label;
+
+		/* 新しいラベルを生成 */
+		brk_label = node->_brk_label = new_unique_name();
+		cont_label = node->_cont_label = new_unique_name();
+
+		/* doの中身の処理 */
+		node->_then = statement(&current_token, current_token->_next.get());
+
+		/* ラベルを復元 */
+		brk_label = brk;
+		cont_label = cont;
+
+		current_token = skip(current_token, "while");
+		current_token = skip(current_token, "(");
+
+		/* 条件式 */
+		node->_condition = expression(&current_token, current_token);
+		
+		current_token = skip(current_token, ")");
+		*next_token = skip(current_token, ";");
 		return node;
 	}
 

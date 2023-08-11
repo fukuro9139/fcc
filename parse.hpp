@@ -55,6 +55,7 @@ enum class NodeKind
 	ND_RETURN,	  /*!< return */
 	ND_IF,		  /*!< if */
 	ND_FOR,		  /*!< for or while*/
+	ND_DO,		  /*!< do */
 	ND_SWITCH,	  /*!< switch文 */
 	ND_CASE,	  /*!< case */
 	ND_BLOCK,	  /*!< {...} */

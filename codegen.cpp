@@ -715,6 +715,19 @@ void CodeGen::generate_statement(Node *node)
 		return;
 	}
 
+	case NodeKind::ND_DO:
+	{
+		int c = label_count();
+		*os << ".L.begin." << c << ":\n";
+		generate_statement(node->_then.get());
+		*os << node->_cont_label << ":\n";
+		generate_expression(node->_condition.get());
+		*os << "  cmp rax, 0\n";
+		*os << "  jne .L.begin." << c << "\n";
+		*os << node->_brk_label << ":\n";
+		return;
+	}
+
 	case NodeKind::ND_SWITCH:
 	{
 		generate_expression(node->_condition.get());
