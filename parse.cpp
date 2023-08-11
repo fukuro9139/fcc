@@ -313,7 +313,8 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 		auto node = make_unique<Node>(NodeKind::ND_RETURN, current_token);
 
 		/* 戻り値なし */
-		if(consume(next_token, current_token->_next.get(), ";")){
+		if (consume(next_token, current_token->_next.get(), ";"))
+		{
 			return node;
 		}
 
@@ -507,7 +508,8 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 	}
 
 	/* do while */
-	if(current_token->is_equal("do")){
+	if (current_token->is_equal("do"))
+	{
 		auto node = make_unique<Node>(NodeKind::ND_DO, current_token);
 
 		/* 現在のラベルを一時保存 */
@@ -530,7 +532,7 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 
 		/* 条件式 */
 		node->_condition = expression(&current_token, current_token);
-		
+
 		current_token = skip(current_token, ")");
 		*next_token = skip(current_token, ";");
 		return node;
@@ -712,7 +714,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	fn->_params = move(Object::locals);
 
 	/* 可変長引数を持つ場合 */
-	if(ty->_is_variadic){
+	if (ty->_is_variadic)
+	{
 		fn->_va_area = Object::new_lvar("__va_area__", Type::array_of(Type::CHAR_BASE, 136));
 	}
 
@@ -1406,7 +1409,8 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 		}
 
 		/* 可変長引数 */
-		if(current_token->is_equal("...")){
+		if (current_token->is_equal("..."))
+		{
 			is_variadic = true;
 			current_token = current_token->_next.get();
 			skip(current_token, ")");
@@ -1429,7 +1433,8 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 	}
 
 	/* 引数が存在しない場合 */
-	if(cur == head.get()){
+	if (cur == head.get())
+	{
 		is_variadic = true;
 	}
 
@@ -1791,6 +1796,7 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  * 下記のEBNF規則に従う。 @n
  * declspec =  ("void" | "_BOOL" | "int" | "short" | "long" | "char" @n
  * 				| "typedef" | "static" | "extern" @n
+ * 				| "signed" @n
  * 				| struct-decl | union-decl | typedef-name @n
  * 				| enum-specifier)+ @n
  * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
@@ -1813,6 +1819,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	constexpr int INT = 1 << 8;
 	constexpr int LONG = 1 << 10;
 	constexpr int OTHER = 1 << 12;
+	constexpr int SIGNED = 1 << 13;
 
 	static const std::unordered_map<string, int> str_to_type = {
 		{"void", VOID},
@@ -1821,19 +1828,29 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{"short", SHORT},
 		{"int", INT},
 		{"long", LONG},
+		{"signed", SIGNED},
 	};
 
 	static const std::unordered_map<int, shared_ptr<Type>> int_to_type = {
 		{VOID, Type::VOID_BASE},
 		{BOOL, Type::BOOL_BASE},
 		{CHAR, Type::CHAR_BASE},
+		{SIGNED + CHAR, Type::CHAR_BASE},
 		{SHORT, Type::SHORT_BASE},
+		{SIGNED + SHORT, Type::SHORT_BASE},
 		{SHORT + INT, Type::SHORT_BASE},
+		{SIGNED + SHORT + INT, Type::SHORT_BASE},
 		{INT, Type::INT_BASE},
+		{SIGNED, Type::INT_BASE},
+		{SIGNED + INT, Type::INT_BASE},
 		{LONG, Type::LONG_BASE},
 		{LONG + INT, Type::LONG_BASE},
 		{LONG + LONG, Type::LONG_BASE},
 		{LONG + LONG + INT, Type::LONG_BASE},
+		{SIGNED + LONG, Type::LONG_BASE},
+		{SIGNED + LONG + INT, Type::LONG_BASE},
+		{SIGNED + LONG + LONG, Type::LONG_BASE},
+		{SIGNED + LONG + LONG + INT, Type::LONG_BASE},
 	};
 
 	/* それぞれの型名の出現回数を表すカウンタ。
@@ -1928,7 +1945,15 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		auto it = str_to_type.find(current_token->_str);
 		if (it != str_to_type.end())
 		{
-			counter += it->second;
+			if ("signed" != it->first)
+			{
+				counter += it->second;
+			}
+			/* signedは複数重ねることができるのでbitorを使う。例: signed signed int x; */
+			else
+			{
+				counter |= it->second;
+			}
 		}
 		else
 		{
@@ -3100,7 +3125,8 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 		Type::add_type(arg.get());
 
 		/* 引数が多すぎる場合 */
-		if(!param_ty && !ty->_is_variadic){
+		if (!param_ty && !ty->_is_variadic)
+		{
 			error_token("引数が多すぎます", current_token);
 		}
 
@@ -3119,7 +3145,8 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 	}
 
 	/* 引数が少なすぎる場合 */
-	if(param_ty){
+	if (param_ty)
+	{
 		error_token("引数が少なすぎます", current_token);
 	}
 
