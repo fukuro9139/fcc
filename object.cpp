@@ -30,8 +30,8 @@ Object::Object() = default;
 
 Object::Object(const string &name) : _name(name) {}
 
-Object::Object(const string &name, shared_ptr<Type> &&ty)
-	: _name(name), _ty(move(ty)) {}
+Object::Object(const string &name, shared_ptr<Type> &ty)
+	: _name(name), _ty(ty) {}
 
 Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(move(body)), _locals(move(locs)) {}
 
@@ -44,10 +44,10 @@ Object::Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs) : _body(move(
  * @param ty 変数の型
  * @return 作成したオブジェクトのポインタ
  */
-unique_ptr<Object> Object::new_var(const string &name, shared_ptr<Type> &&ty)
+unique_ptr<Object> Object::new_var(const string &name, shared_ptr<Type> &ty)
 {
-	auto var = make_unique<Object>(name, move(ty));
-	var->_align = var->_ty->_align;
+	auto var = make_unique<Object>(name, ty);
+	var->_align = ty->_align;
 	push_scope(name)->_var = var.get();
 	return var;
 }
@@ -58,9 +58,9 @@ unique_ptr<Object> Object::new_var(const string &name, shared_ptr<Type> &&ty)
  * @param  オブジェクトの型
  * @return 生成した変数へのポインタ
  */
-Object *Object::new_lvar(const string &name, shared_ptr<Type> &&ty)
+Object *Object::new_lvar(const string &name, shared_ptr<Type> ty)
 {
-	auto var = new_var(name, move(ty));
+	auto var = new_var(name, ty);
 	var->_is_local = true;
 	var->_next = move(locals);
 	locals = move(var);
@@ -73,9 +73,9 @@ Object *Object::new_lvar(const string &name, shared_ptr<Type> &&ty)
  * @param  ty オブジェクトの型
  * @return 生成した変数へのポインタ
  */
-Object *Object::new_gvar(const string &name, shared_ptr<Type> &&ty)
+Object *Object::new_gvar(const string &name, shared_ptr<Type> ty)
 {
-	auto var = new_var(name, move(ty));
+	auto var = new_var(name, ty);
 	var->_next = move(globals);
 	var->_is_definition = true;
 	globals = move(var);
@@ -278,7 +278,7 @@ void Object::create_params_lvars(shared_ptr<Type> &&param)
 	if (param)
 	{
 		create_params_lvars(move(param->_next));
-		new_lvar(param->_token->_str, move(param));
+		new_lvar(param->_token->_str, param);
 	}
 }
 

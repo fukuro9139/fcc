@@ -179,9 +179,9 @@ string Node::new_unique_name()
  * @param ty 生成するグローバル変数の型
  * @return unique_ptr<Object>
  */
-Object *Node::new_anonymous_gvar(shared_ptr<Type> &&ty)
+Object *Node::new_anonymous_gvar(shared_ptr<Type> &ty)
 {
-	return Object::new_gvar(new_unique_name(), move(ty));
+	return Object::new_gvar(new_unique_name(), ty);
 }
 
 /**
@@ -196,7 +196,7 @@ Object *Node::new_string_literal(const string &str)
 	auto ty = Type::array_of(Type::CHAR_BASE, str.size() + 1);
 
 	/* 仮名を使ってオブジェクトを生成 */
-	auto obj = new_anonymous_gvar(move(ty));
+	auto obj = new_anonymous_gvar(ty);
 
 	/* init_dataに文字列を入れて'\0'終端を追加 */
 	obj->_init_data = make_unique<unsigned char[]>(str.size() + 1);
@@ -648,9 +648,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	/* 型を判定 */
 	auto ty = declarator(&token, token, base);
 
-	auto parameters = ty->_params;
 	/* 新しい関数を生成する。 */
-	auto fn = Object::new_gvar(ty->_token->_str, move(ty));
+	auto fn = Object::new_gvar(ty->_token->_str, ty);
 	/* 関数であるフラグをセット */
 	fn->_is_function = true;
 
@@ -672,7 +671,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	Object::enter_scope();
 
 	/* 引数をローカル変数として作成 */
-	Object::create_params_lvars(move(parameters));
+	Object::create_params_lvars(move(ty->_params));
 	fn->_params = move(Object::locals);
 
 	/* 引数の次は"{"がくる */
@@ -732,7 +731,21 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 			error_token("変数がvoid型で宣言されています", current_token);
 		}
 
-		const auto var = Object::new_lvar(ty->_token->_str, move(ty));
+		/* static指定されたローカル変数 */
+		if(attr && attr->_is_static){
+			/* ブローバル変数として仮名をつけて登録 */
+			auto var = new_anonymous_gvar(ty);
+			/* ローカル変数に名前を登録してグローバル変数のオブジェクトを参照 */
+			Object::push_scope(ty->_token->_str)->_var = var;
+
+			/* 初期化式を持つ場合 */
+			if(current_token->is_equal("=")){
+				gvar_initializer(&current_token, current_token->_next.get(), var);
+				continue;
+			}
+		}
+
+		const auto var = Object::new_lvar(ty->_token->_str, ty);
 		
 		/* アライン指定がある場合 */
 		if(attr && attr->_align){
@@ -3066,7 +3079,7 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAtt
 
 		/* 最終的な型を決定する */
 		auto ty = declarator(&token, token, base);
-		auto var = Object::new_gvar(ty->_token->_str, move(ty));
+		auto var = Object::new_gvar(ty->_token->_str, ty);
 		var->_is_definition = !attr->_is_extern;
 
 		/* アライン指定 */

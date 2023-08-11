@@ -61,13 +61,13 @@ public:
 
 	Object();
 	Object(const string &name);
-	Object(const string &name, shared_ptr<Type> &&ty);
+	Object(const string &name, shared_ptr<Type> &ty);
 	Object(unique_ptr<Node> &&body, unique_ptr<Object> &&locs);
 
 	/* 静的メンバ関数 (public) */
 
-	static Object *new_lvar(const string &name, shared_ptr<Type> &&ty);
-	static Object *new_gvar(const string &name, shared_ptr<Type> &&ty);
+	static Object *new_lvar(const string &name, shared_ptr<Type> ty);
+	static Object *new_gvar(const string &name, shared_ptr<Type> ty);
 	static unique_ptr<Initializer> new_initializer(const shared_ptr<Type> &ty, bool is_flexible);
 	static VarScope *find_var(const Token *token);
 	static shared_ptr<Type> find_typedef(const Token *token);
@@ -91,7 +91,7 @@ public:
 private:
 	/* 静的メンバ関数 (private) */
 
-	static unique_ptr<Object> new_var(const string &name, shared_ptr<Type> &&ty);
+	static unique_ptr<Object> new_var(const string &name, shared_ptr<Type> &ty);
 
 	/** 変数のスコープ */
 	static unique_ptr<Scope> scope;

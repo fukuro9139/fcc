@@ -159,7 +159,7 @@ private:
 	static unique_ptr<Node> new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token);
 	static unique_ptr<Node> new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token);
 	static Object *new_string_literal(const string &str);
-	static Object *new_anonymous_gvar(shared_ptr<Type> &&ty);
+	static Object *new_anonymous_gvar(shared_ptr<Type> &ty);
 	static string new_unique_name();
 	static unique_ptr<Node> new_long(const int64_t &val, Token *token);
 	static unique_ptr<Node> new_inc_dec(unique_ptr<Node> &&node, Token *token, int addend);
