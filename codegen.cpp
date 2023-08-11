@@ -916,7 +916,7 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 			*os << "  mov DWORD PTR [rbp - " << off << "], " << gp * 8 << "\n";
 			*os << "  mov DWORD PTR [rbp - " << off - 4 << "], 0\n";
 			*os << "  mov QWORD PTR [rbp - " << off - 16 << "], rbp\n";
-			*os << "  add QWORD PTR [rbp - " << off - 16 << "], " << off + 24 << "\n";
+			*os << "  sub QWORD PTR [rbp - " << off - 16 << "], " << off - 24 << "\n";
 
 			/* レジスタの値をストアする */
 			*os << "  mov QWORD PTR [rbp - " << off - 24 << "], rdi\n";
