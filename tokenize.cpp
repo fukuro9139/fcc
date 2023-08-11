@@ -34,6 +34,7 @@ static const vector<string> punctuators =
 	{
 		"<<=",
 		">>=",
+		"...",
 		"==",
 		"!=",
 		"<=",

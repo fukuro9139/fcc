@@ -1376,7 +1376,7 @@ void Node::gvar_initializer(Token **next_token, Token *current_token, Object *va
  * @param ty 宣言されている型
  * @return 引数の情報を含む関数の型
  * @details 以下のEBNF規則に従う。 @n
- * function-parameters = ( "void" | parameters ("," parameters)*)? ")" @n
+ * function-parameters = ( "void" | parameters ("," parameters)* ("," "...")?)? ")" @n
  * parameters = declspec declarator
  */
 shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
@@ -1389,6 +1389,7 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 
 	auto head = make_unique_for_overwrite<Type>();
 	auto cur = head.get();
+	bool is_variadic = false;
 
 	/* ")"が出てくるまで読み取りを続ける */
 	while (!current_token->is_equal(")"))
@@ -1398,6 +1399,15 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 			/* 2個目以降の引数では","区切りが必要 */
 			current_token = skip(current_token, ",");
 		}
+
+		/* 可変長引数 */
+		if(current_token->is_equal("...")){
+			is_variadic = true;
+			current_token = current_token->_next.get();
+			skip(current_token, ")");
+			break;
+		}
+
 		/* 引数の型を決定 */
 		auto ty2 = declspec(&current_token, current_token, nullptr);
 		ty2 = declarator(&current_token, current_token, ty2);
@@ -1415,6 +1425,7 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 
 	ty = Type::func_type(ty);
 	ty->_params = move(head->_next);
+	ty->_is_variadic = is_variadic;
 	*next_token = current_token->_next.get();
 	return ty;
 }

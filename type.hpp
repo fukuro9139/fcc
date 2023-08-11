@@ -68,6 +68,7 @@ public:
 	/* 関数 */
 	shared_ptr<Type> _return_ty; /*!< kindがTY_FUNCのとき、戻り値の型 */
 	shared_ptr<Type> _params;	 /*!< 引数の型  */
+	bool _is_variadic = false;	 /*!< 可変長引数を持つか */
 	shared_ptr<Type> _next;		 /*!< リストの次の型 */
 
 	/* コンストラクタ */
