@@ -1428,6 +1428,11 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 		cur = cur->_next.get();
 	}
 
+	/* 引数が存在しない場合 */
+	if(cur == head.get()){
+		is_variadic = true;
+	}
+
 	ty = Type::func_type(ty);
 	ty->_params = move(head->_next);
 	ty->_is_variadic = is_variadic;
@@ -3094,6 +3099,11 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 		/* 引数の型を決定 */
 		Type::add_type(arg.get());
 
+		/* 引数が多すぎる場合 */
+		if(!param_ty && !ty->_is_variadic){
+			error_token("引数が多すぎます", current_token);
+		}
+
 		if (param_ty)
 		{
 			if (TypeKind::TY_STRUCT == param_ty->_kind || TypeKind::TY_UNION == param_ty->_kind)
@@ -3106,6 +3116,11 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 		}
 		cur->_next = move(arg);
 		cur = cur->_next.get();
+	}
+
+	/* 引数が少なすぎる場合 */
+	if(param_ty){
+		error_token("引数が少なすぎます", current_token);
 	}
 
 	/* 関数呼び出しノードを作成 */
