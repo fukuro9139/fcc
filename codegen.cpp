@@ -513,13 +513,13 @@ void CodeGen::generate_expression(Node *node)
 		switch (node->_ty->_kind)
 		{
 		case TypeKind::TY_BOOL:
-			*os << "  movzx eax, al\n";
+			*os << "  movzb eax, al\n";
 			return;
 		case TypeKind::TY_CHAR:
-			*os << "  movzx eax, al\n";
+			*os << "  movsb eax, al\n";
 			return;
 		case TypeKind::TY_SHORT:
-			*os << "  movzx eax, ax\n";
+			*os << "  movsw eax, ax\n";
 			return;
 		default:
 			break;
