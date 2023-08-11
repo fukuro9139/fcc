@@ -496,12 +496,33 @@ void CodeGen::generate_expression(Node *node)
 		*os << "  mov rax, 0\n";
 
 		/* 関数を呼び出す時点でのスタックフレームが16の倍数になるように調整 */
-		if(depth % 2 == 0){
+		if (depth % 2 == 0)
+		{
 			*os << "  call " << node->_func_name << "\n";
-		}else{
+		}
+		else
+		{
 			*os << "  sub rsp, 8\n";
 			*os << "  call " << node->_func_name << "\n";
 			*os << "  add rsp, 8\n";
+		}
+
+		/* x86-64において関数の戻り値がchar/bool, shortのときraxの上位48 または56ビット
+		 * は不定となる。そのため関数の戻り値がchar/bool, shortのとき上位ビットをクリアする。
+		 */
+		switch (node->_ty->_kind)
+		{
+		case TypeKind::TY_BOOL:
+			*os << "  movzx eax, al\n";
+			return;
+		case TypeKind::TY_CHAR:
+			*os << "  movzx eax, al\n";
+			return;
+		case TypeKind::TY_SHORT:
+			*os << "  movzx eax, ax\n";
+			return;
+		default:
+			break;
 		}
 
 		return;
