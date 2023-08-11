@@ -291,7 +291,7 @@ unique_ptr<Object> Node::parse(Token *token)
  * @see expression compound-statement expression-statement
  *
  * @details 下記のEBNF規則に従う。 @n
- * statement = "return" expression ";" @n
+ * statement = "return" expression? ";" @n
  * 			 | "if" "(" expression ")" statement ("else" statement)? @n
  *      	 | "switch" "(" expression ")" statement @n
  *  	     | "case" const-expr ":" statement @n
@@ -309,8 +309,14 @@ unique_ptr<Node> Node::statement(Token **next_token, Token *current_token)
 	/* return */
 	if (current_token->is_equal("return"))
 	{
-		/* "return"の次はexpresionがくる */
 		auto node = make_unique<Node>(NodeKind::ND_RETURN, current_token);
+
+		/* 戻り値なし */
+		if(consume(next_token, current_token->_next.get(), ";")){
+			return node;
+		}
+
+		/* 戻り値をもつ */
 		auto expr = expression(&current_token, current_token->_next.get());
 
 		/* 最後は';'で終わるはず */

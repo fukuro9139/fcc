@@ -641,8 +641,11 @@ void CodeGen::generate_statement(Node *node)
 		generate_statement(node->_lhs.get());
 		return;
 	case NodeKind::ND_RETURN:
-		/* return の後の式を評価 */
-		generate_expression(node->_lhs.get());
+		/* return の後に式が存在する場合、戻り値を評価 */
+		if(node->_lhs){
+			generate_expression(node->_lhs.get());
+		}
+		
 		/* エピローグまでjmpする */
 		*os << "  jmp .L.return." << current_func->_name << "\n";
 		return;
