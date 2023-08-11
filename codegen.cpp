@@ -494,7 +494,16 @@ void CodeGen::generate_expression(Node *node)
 			pop(arg_regs64[i]);
 		}
 		*os << "  mov rax, 0\n";
-		*os << "  call " << node->_func_name << "\n";
+
+		/* 関数を呼び出す時点でのスタックフレームが16の倍数になるように調整 */
+		if(depth % 2 == 0){
+			*os << "  call " << node->_func_name << "\n";
+		}else{
+			*os << "  sub rsp, 8\n";
+			*os << "  call " << node->_func_name << "\n";
+			*os << "  add rsp 8\n";
+		}
+
 		return;
 	}
 
