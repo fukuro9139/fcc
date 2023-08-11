@@ -642,10 +642,11 @@ void CodeGen::generate_statement(Node *node)
 		return;
 	case NodeKind::ND_RETURN:
 		/* return の後に式が存在する場合、戻り値を評価 */
-		if(node->_lhs){
+		if (node->_lhs)
+		{
 			generate_expression(node->_lhs.get());
 		}
-		
+
 		/* エピローグまでjmpする */
 		*os << "  jmp .L.return." << current_func->_name << "\n";
 		return;
@@ -775,8 +776,15 @@ void CodeGen::emit_data(const unique_ptr<Object> &program)
 			continue;
 		}
 
-		/* グローバル変数であることを宣言 */
-		*os << "  .globl " << var->_name << "\n";
+		/* staticなグローバル変数であるか */
+		if (var->_is_static)
+		{
+			*os << "  .local " << var->_name << "\n";
+		}
+		else
+		{
+			*os << "  .globl " << var->_name << "\n";
+		}
 
 		/* アライメントの指定 */
 		*os << "  .align " << var->_align << "\n";

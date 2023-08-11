@@ -1,6 +1,7 @@
 #include "test.h"
 
 int g1, g2[4];
+static int g3 = 3;
 
 int main()
 {
@@ -66,6 +67,8 @@ int main()
 	{
 		void *x;
 	}
+
+	ASSERT(3, g3);
 
 	printf("OK\n");
 	return 0;

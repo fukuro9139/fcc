@@ -3124,6 +3124,7 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAtt
 		auto ty = declarator(&token, token, base);
 		auto var = Object::new_gvar(ty->_token->_str, ty);
 		var->_is_definition = !attr->_is_extern;
+		var->_is_static = attr->_is_static;
 
 		/* アライン指定 */
 		if (attr->_align)

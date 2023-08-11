@@ -77,6 +77,7 @@ Object *Object::new_gvar(const string &name, shared_ptr<Type> ty)
 {
 	auto var = new_var(name, ty);
 	var->_next = move(globals);
+	var->_is_static = true;
 	var->_is_definition = true;
 	globals = move(var);
 	return globals.get();
