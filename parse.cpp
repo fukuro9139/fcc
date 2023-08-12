@@ -51,7 +51,11 @@ Node::Node(const NodeKind &kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs,
 Node::Node(const NodeKind &kind, unique_ptr<Node> &&lhs, Token *token)
 	: _kind(kind), _lhs(move(lhs)), _token(token) {}
 
-Node::Node(const int64_t &val, Token *token) : _kind(NodeKind::ND_NUM), _val(val), _token(token) {}
+Node::Node(const int64_t &val, Token *token)
+	: _kind(NodeKind::ND_NUM), _val(val), _token(token) {}
+
+Node::Node(const int64_t &val, const shared_ptr<Type> &ty, Token *token)
+	: _kind(NodeKind::ND_NUM), _val(val), _token(token), _ty(ty) {}
 
 Node::Node(const Object *var, Token *token) : _kind(NodeKind::ND_VAR), _var(var), _token(token) {}
 
@@ -110,7 +114,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
 	}
 
 	/* ptr + 数 */
-	rhs = make_unique<Node>(NodeKind::ND_MUL, move(rhs), new_long(lhs->_ty->_base->_size, token), token);
+	rhs = make_unique<Node>(NodeKind::ND_MUL, move(rhs), make_unique<Node>(lhs->_ty->_base->_size, Type::LONG_BASE, token), token);
 	return make_unique<Node>(NodeKind::ND_ADD, move(lhs), move(rhs), token);
 }
 
@@ -140,7 +144,7 @@ unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
 	/* ptr - 数 */
 	if (lhs->_ty->_base && !rhs->_ty->_base)
 	{
-		rhs = make_unique<Node>(NodeKind::ND_MUL, move(rhs), new_long(lhs->_ty->_base->_size, token), token);
+		rhs = make_unique<Node>(NodeKind::ND_MUL, move(rhs), make_unique<Node>(lhs->_ty->_base->_size, Type::LONG_BASE, token), token);
 		Type::add_type(rhs.get());
 		auto node = make_unique<Node>(NodeKind::ND_SUB, move(lhs), move(rhs), token);
 		return node;
@@ -151,7 +155,7 @@ unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
 	{
 		int sz = lhs->_ty->_base->_size;
 		auto node = make_unique<Node>(NodeKind::ND_SUB, move(lhs), move(rhs), token);
-		node->_ty = Type::INT_BASE;
+		node->_ty = Type::LONG_BASE;
 		return make_unique<Node>(NodeKind::ND_DIV, move(node), make_unique<Node>(sz, token), token);
 	}
 
@@ -209,20 +213,6 @@ Object *Node::new_string_literal(const string &str)
 	obj->_init_data[str.size()] = '\0';
 
 	return obj;
-}
-
-/**
- * @brief long型の数値ノードを作成する
- *
- * @param val 数値
- * @param token 対応するトークン
- * @return long型の数値ノード
- */
-unique_ptr<Node> Node::new_long(const int64_t &val, Token *token)
-{
-	auto node = make_unique<Node>(val, token);
-	node->_ty = Type::LONG_BASE;
-	return node;
 }
 
 /**
@@ -2934,7 +2924,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		/* sizeof演算子の対象の型情報を読む */
 		auto ty = type_name(&current_token, current_token->_next->_next.get());
 		*next_token = skip(current_token, ")");
-		return make_unique<Node>(ty->_size, start);
+		return make_unique<Node>(ty->_size, Type::ULONG_BASE, start);
 	}
 
 	/* sizeof演算子（対象が式） */
@@ -2945,7 +2935,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		/* sizeofの対象の型を決定 */
 		Type::add_type(node.get());
 		/* 型のサイズの数値ノードを返す */
-		return make_unique<Node>(node->_ty->_size, current_token);
+		return make_unique<Node>(node->_ty->_size, Type::ULONG_BASE, current_token);
 	}
 
 	/* _Alignof演算子(型) */
@@ -2953,7 +2943,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	{
 		auto ty = type_name(&current_token, current_token->_next->_next.get());
 		*next_token = skip(current_token, ")");
-		return make_unique<Node>(ty->_align, current_token);
+		return make_unique<Node>(ty->_align, Type::ULONG_BASE, current_token);
 	}
 
 	/* _Alignof演算子(変数) */
@@ -2961,7 +2951,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	{
 		auto node = unary(next_token, current_token->_next.get());
 		Type::add_type(node.get());
-		return make_unique<Node>(node->_ty->_align, current_token);
+		return make_unique<Node>(node->_ty->_align, Type::ULONG_BASE, current_token);
 	}
 
 	/* トークンが識別子の場合 */

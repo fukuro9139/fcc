@@ -143,6 +143,7 @@ public:
 	Node(const NodeKind &kind, unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, Token *token);
 	Node(const NodeKind &kind, unique_ptr<Node> &&lhs, Token *token);
 	Node(const int64_t &val, Token *token);
+	Node(const int64_t &val, const shared_ptr<Type> &ty, Token *token);
 	Node(const Object *var, Token *token);
 
 	/**************************/
@@ -162,7 +163,6 @@ private:
 	static Object *new_string_literal(const string &str);
 	static Object *new_anonymous_gvar(shared_ptr<Type> &ty);
 	static string new_unique_name();
-	static unique_ptr<Node> new_long(const int64_t &val, Token *token);
 	static unique_ptr<Node> new_inc_dec(unique_ptr<Node> &&node, Token *token, int addend);
 	static unique_ptr<Node> statement(Token **next_token, Token *current_token);
 	static unique_ptr<Initializer> initializer(Token **next_token, Token *current_token, shared_ptr<Type> ty, shared_ptr<Type> &new_ty);
