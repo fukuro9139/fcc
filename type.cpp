@@ -113,9 +113,8 @@ void Type::add_type(Node *node)
 
 	switch (node->_kind)
 	{
-	/* int型にしても値が変わらないならint型、変わる場合はlong型 */
 	case NodeKind::ND_NUM:
-		node->_ty = (node->_val == (int)node->_val) ? INT_BASE : LONG_BASE;
+		node->_ty = INT_BASE;
 		return;
 	/* 演算結果の型は大きいほうの型にあわせる */
 	case NodeKind::ND_ADD:

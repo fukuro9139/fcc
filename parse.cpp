@@ -3000,6 +3000,7 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	if (TokenKind::TK_NUM == current_token->_kind)
 	{
 		auto node = make_unique<Node>(current_token->_value, current_token);
+		node->_ty = current_token->_ty;
 		*next_token = current_token->_next.get();
 		return node;
 	}

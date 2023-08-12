@@ -13,6 +13,9 @@
 
 #include "common.hpp"
 
+/* 前方宣言 */
+class Type;
+
 /** @brief トークンの種類 */
 enum class TokenKind
 {
@@ -36,6 +39,7 @@ public:
 	unique_ptr<Token> _next;			 /*!< 次のトークン */
 	TokenKind _kind = TokenKind::TK_EOF; /*!< トークンの型 */
 	int64_t _value = 0;					 /*!< kindがTK_NUMの場合、その数値 */
+	shared_ptr<Type> _ty;				 /*!< kindがTK_NUMの場合、数値の型 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	string _str = "";					 /*!< トークンが表す文字列 */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
@@ -65,7 +69,6 @@ private:
 
 	/* 静的メンバ関数 (private) */
 
-	static bool start_with(const string &str, const string &op);
 	static unique_ptr<Token> read_int_literal(string::const_iterator &start);
 	static unique_ptr<Token> read_char_literal(string::const_iterator &start);
 	static size_t read_punct(string &&str);

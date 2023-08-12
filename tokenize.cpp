@@ -11,6 +11,7 @@
 
 #include "tokenize.hpp"
 #include "object.hpp"
+#include "type.hpp"
 #include "input.hpp"
 
 /** 入力文字列 */
@@ -488,7 +489,7 @@ unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
 	int64_t val = 0;
 	try
 	{
-		val = std::stoll(string(itr, current_input.cend()), &idx, base);
+		val = std::stoull(string(itr, current_input.cend()), &idx, base);
 	}
 	catch (const std::invalid_argument &e)
 	{
@@ -498,6 +499,47 @@ unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
 	/* 変換した数値の桁数だけイテレーターを進める */
 	itr += idx;
 
+	/* 現在のイテレータ位置から末尾までの文字数 */
+	int res = current_input.end() - itr;
+
+	/* 数値の次の3文字（サフィックスの可能性がある）を取り出す */
+	string suffix = string(itr, itr + std::min(3, res));
+
+	bool u = false, l = false;
+
+	/* サフィックス(U, L, LL)を読み取る */
+	if (suffix.starts_with("LLU") || suffix.starts_with("LLu") ||
+		suffix.starts_with("llU") || suffix.starts_with("llu") ||
+		suffix.starts_with("ULL") || suffix.starts_with("Ull") ||
+		suffix.starts_with("uLL") || suffix.starts_with("ull"))
+	{
+		u = l = true;
+		itr += 3;
+	}
+	else if (suffix.starts_with("LU") || suffix.starts_with("Lu") ||
+			 suffix.starts_with("lU") || suffix.starts_with("lu") ||
+			 suffix.starts_with("UL") || suffix.starts_with("uL") ||
+			 suffix.starts_with("Ul") || suffix.starts_with("ul"))
+	{
+		u = l = true;
+		itr += 2;
+	}
+	else if (suffix.starts_with("LL") || suffix.starts_with("ll"))
+	{
+		l = true;
+		itr += 2;
+	}
+	else if (res != 0 && ('L' == *itr || 'l' == *itr))
+	{
+		l = true;
+		itr += 1;
+	}
+	else if (res != 0 && ('U' == *itr || 'u' == *itr))
+	{
+		u = true;
+		itr += 1;
+	}
+
 	/* 数値変換完了位置の次の文字が数字またはアルファベットの場合、エラー
 	 * 例：0xfg, 123A, 0b1115, 012345f
 	 */
@@ -506,10 +548,55 @@ unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
 		error_at("無効な数値です", itr - current_input.begin());
 	}
 
+	shared_ptr<Type> ty;
+	if ('0' != *start)
+	{
+		if (l && u)
+		{
+			ty = Type::ULONG_BASE;
+		}
+		else if (l)
+		{
+			ty = Type::LONG_BASE;
+		}
+		else if (u)
+		{
+			ty = (val >> 32) ? Type::ULONG_BASE : Type::UINT_BASE;
+		}
+		else
+		{
+			ty = (val >> 31) ? Type::LONG_BASE : Type::INT_BASE;
+		}
+	}
+	else
+	{
+		if (l && u)
+		{
+			ty = Type::ULONG_BASE;
+		}
+		else if (l)
+		{
+			ty = (val >> 63) ? Type::ULONG_BASE : Type::LONG_BASE;
+		}
+		else if (u)
+			ty = (val >> 32) ? Type::ULONG_BASE : Type::UINT_BASE;
+		else if (val >> 63)
+			ty = Type::ULONG_BASE;
+		else if (val >> 32)
+			ty = Type::LONG_BASE;
+		else if (val >> 31)
+			ty = Type::UINT_BASE;
+		else
+			ty = Type::INT_BASE;
+	}
+
+	auto token = make_unique<Token>(val, start - current_input.begin());
+	token->_ty = ty;
+
 	/* 入力イテレーターを進める */
 	start = itr;
 
-	return make_unique<Token>(val, start - current_input.begin());
+	return token;
 }
 
 /**
@@ -550,6 +637,7 @@ unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
 
 	auto token = make_unique<Token>(c, start - current_input.begin());
 	token->_str = string(start, pos + 1);
+	token->_ty = Type::INT_BASE;
 	return token;
 }
 
@@ -610,19 +698,6 @@ bool Token::is_typename() const
 }
 
 /**
- * @brief 文字列の先頭がopと一致するか
- *
- * @param first 文字列の開始位置のイテレーター
- * @param last 文字列の末端位置のイテレーター
- * @param op 比較する文字列
- * @return 一致:true, 不一致:false
- */
-bool Token::start_with(const string &str, const string &op)
-{
-	return str.size() >= op.size() && std::equal(op.begin(), op.end(), str.begin());
-}
-
-/**
  * @brief 文字列の先頭がパンクチュエーターかどうか判定しその長さを返す
  *
  * @details パンクチュエーターでなければ0を返す。判定は長さの長いパンクチュエーターから行われる。
@@ -634,7 +709,7 @@ size_t Token::read_punct(string &&str)
 {
 	for (const auto &kw : punctuators)
 	{
-		if (start_with(str, kw))
+		if (str.starts_with(kw))
 		{
 			return kw.size();
 		}
