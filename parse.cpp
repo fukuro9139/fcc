@@ -2121,73 +2121,102 @@ int64_t Node::evaluate(Node *node)
  */
 int64_t Node::evaluate2(Node *node, string *label)
 {
-	Type::add_type(node);
-
-	const std::unordered_map<NodeKind, std::function<int64_t()>> eval_funcs = {
-		{NodeKind::ND_ADD, [&]()
+	static const std::unordered_map<NodeKind, std::function<int64_t(Node *, string *)>> eval_funcs = {
+		{NodeKind::ND_ADD, [](Node *node, string *label)
 		 { return evaluate2(node->_lhs.get(), label) + evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_SUB, [&]()
+		{NodeKind::ND_SUB, [](Node *node, string *label)
 		 { return evaluate2(node->_lhs.get(), label) - evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_MUL, [&]()
+		{NodeKind::ND_MUL, [](Node *node, string *label)
 		 { return evaluate(node->_lhs.get()) * evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_DIV, [&]()
-		 { return evaluate(node->_lhs.get()) / evaluate(node->_rhs.get()); }},
+		{NodeKind::ND_DIV, [](Node *node, string *label) -> int64_t
+		 {
+			 if (node->_ty->_is_unsigned)
+			 {
+				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) / evaluate(node->_rhs.get());
+			 }
+			 return evaluate(node->_lhs.get()) / evaluate(node->_rhs.get());
+		 }},
 
-		{NodeKind::ND_NEG, [&]()
+		{NodeKind::ND_NEG, [](Node *node, string *label)
 		 { return -evaluate(node->_lhs.get()); }},
 
-		{NodeKind::ND_MOD, [&]()
-		 { return evaluate(node->_lhs.get()) % evaluate(node->_rhs.get()); }},
+		{NodeKind::ND_MOD, [](Node *node, string *label) -> int64_t
+		 {
+			 if (node->_ty->_is_unsigned)
+			 {
+				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) % evaluate(node->_rhs.get());
+			 }
+			 return evaluate(node->_lhs.get()) % evaluate(node->_rhs.get());
+		 }},
 
-		{NodeKind::ND_BITAND, [&]()
+		{NodeKind::ND_BITAND, [](Node *node, string *label)
 		 { return evaluate(node->_lhs.get()) & evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_BITOR, [&]()
+		{NodeKind::ND_BITOR, [](Node *node, string *label)
 		 { return evaluate(node->_lhs.get()) | evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_BITXOR, [&]()
+		{NodeKind::ND_BITXOR, [](Node *node, string *label)
 		 { return evaluate(node->_lhs.get()) ^ evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_SHL, [&]()
+		{NodeKind::ND_SHL, [](Node *node, string *label)
 		 { return evaluate(node->_lhs.get()) << evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_SHR, [&]()
-		 { return evaluate(node->_lhs.get()) >> evaluate(node->_rhs.get()); }},
+		{NodeKind::ND_SHR, [](Node *node, string *label) -> int64_t
+		 {
+			 if (node->_ty->_is_unsigned && node->_ty->_size == 8)
+			 {
+				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) >> evaluate(node->_rhs.get());
+			 }
 
-		{NodeKind::ND_EQ, [&]() -> int64_t
+			 return evaluate(node->_lhs.get()) >> evaluate(node->_rhs.get());
+		 }},
+
+		{NodeKind::ND_EQ, [](Node *node, string *label) -> int64_t
 		 { return evaluate(node->_lhs.get()) == evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_NE, [&]() -> int64_t
+		{NodeKind::ND_NE, [](Node *node, string *label) -> int64_t
 		 { return evaluate(node->_lhs.get()) != evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_LT, [&]() -> int64_t
-		 { return evaluate(node->_lhs.get()) < evaluate(node->_rhs.get()); }},
+		{NodeKind::ND_LT, [](Node *node, string *label) -> int64_t
+		 {
+			 if (node->_ty->_is_unsigned)
+			 {
+				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) < evaluate(node->_rhs.get());
+			 }
+			 return evaluate(node->_lhs.get()) < evaluate(node->_rhs.get());
+		 }},
 
-		{NodeKind::ND_LE, [&]() -> int64_t
-		 { return evaluate(node->_lhs.get()) <= evaluate(node->_rhs.get()); }},
+		{NodeKind::ND_LE, [](Node *node, string *label) -> int64_t
+		 {
+			 if (node->_ty->_is_unsigned)
+			 {
+				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) <= evaluate(node->_rhs.get());
+			 }
+			 return evaluate(node->_lhs.get()) <= evaluate(node->_rhs.get());
+		 }},
 
-		{NodeKind::ND_COND, [&]()
+		{NodeKind::ND_COND, [](Node *node, string *label)
 		 { return evaluate(node->_condition.get()) ? evaluate2(node->_then.get(), label) : evaluate2(node->_else.get(), label); }},
 
-		{NodeKind::ND_COMMA, [&]()
+		{NodeKind::ND_COMMA, [](Node *node, string *label)
 		 { return evaluate2(node->_rhs.get(), label); }},
 
-		{NodeKind::ND_NOT, [&]() -> int64_t
+		{NodeKind::ND_NOT, [](Node *node, string *label) -> int64_t
 		 { return !evaluate(node->_lhs.get()); }},
 
-		{NodeKind::ND_BITNOT, [&]()
+		{NodeKind::ND_BITNOT, [](Node *node, string *label)
 		 { return ~evaluate(node->_lhs.get()); }},
 
-		{NodeKind::ND_LOGAND, [&]() -> int64_t
+		{NodeKind::ND_LOGAND, [](Node *node, string *label) -> int64_t
 		 { return evaluate(node->_lhs.get()) && evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_LOGOR, [&]() -> int64_t
+		{NodeKind::ND_LOGOR, [](Node *node, string *label) -> int64_t
 		 { return evaluate(node->_lhs.get()) || evaluate(node->_rhs.get()); }},
 
-		{NodeKind::ND_CAST, [&]() -> int64_t
+		{NodeKind::ND_CAST, [](Node *node, string *label) -> int64_t
 		 {
 			 uint64_t val = evaluate2(node->_lhs.get(), label);
 			 if (node->_ty->is_integer())
@@ -2195,11 +2224,11 @@ int64_t Node::evaluate2(Node *node, string *label)
 				 switch (node->_ty->_size)
 				 {
 				 case 1:
-					 return static_cast<uint8_t>(val);
+					 return node->_ty->_is_unsigned ? static_cast<uint8_t>(val) : static_cast<int8_t>(val);
 				 case 2:
-					 return static_cast<uint16_t>(val);
+					 return node->_ty->_is_unsigned ? static_cast<uint16_t>(val) : static_cast<int16_t>(val);
 				 case 4:
-					 return static_cast<uint32_t>(val);
+					 return node->_ty->_is_unsigned ? static_cast<uint32_t>(val) : static_cast<int32_t>(val);
 				 default:
 					 break;
 				 }
@@ -2207,10 +2236,10 @@ int64_t Node::evaluate2(Node *node, string *label)
 			 return val;
 		 }},
 
-		{NodeKind::ND_ADDR, [&]()
+		{NodeKind::ND_ADDR, [](Node *node, string *label)
 		 { return evaluate_rval(node->_lhs.get(), label); }},
 
-		{NodeKind::ND_MEMBER, [&]()
+		{NodeKind::ND_MEMBER, [](Node *node, string *label)
 		 {
 			 if (!label)
 			 {
@@ -2222,7 +2251,7 @@ int64_t Node::evaluate2(Node *node, string *label)
 			 }
 			 return evaluate_rval(node->_lhs.get(), label) + node->_member->_offset;
 		 }},
-		{NodeKind::ND_VAR, [&]() -> int64_t
+		{NodeKind::ND_VAR, [](Node *node, string *label) -> int64_t
 		 {
 			 if (!label)
 			 {
@@ -2236,14 +2265,16 @@ int64_t Node::evaluate2(Node *node, string *label)
 			 return 0;
 		 }},
 
-		{NodeKind::ND_NUM, [&]()
+		{NodeKind::ND_NUM, [](Node *node, string *label)
 		 { return node->_val; }},
 	};
+
+	Type::add_type(node);
 
 	auto it = eval_funcs.find(node->_kind);
 	if (eval_funcs.end() != it)
 	{
-		return it->second();
+		return it->second(node, label);
 	}
 	error_token("コンパイル時に定数ではありません", node->_token);
 	return 0;
