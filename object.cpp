@@ -285,7 +285,11 @@ void Object::create_params_lvars(shared_ptr<Type> &param)
 	if (param)
 	{
 		create_params_lvars(param->_next);
-		new_lvar(param->_token->_str, param);
+		/* 引数名が存在しないときエラー */
+		if(!param->_name){
+			error_token("引数名がありません", param->_name_pos);
+		}
+		new_lvar(param->_name->_str, param);
 	}
 }
 

@@ -43,7 +43,7 @@ Type::Type(const shared_ptr<Type> &base, const int &size, const int &align)
 	: _kind(TypeKind::TY_PTR), _base(base), _size(size), _align(align) {}
 
 Type::Type(Token *token, const shared_ptr<Type> &return_ty)
-	: _kind(TypeKind::TY_FUNC), _token(token), _return_ty(return_ty) {}
+	: _kind(TypeKind::TY_FUNC), _name(token), _return_ty(return_ty) {}
 
 /**
  * @brief ty1とty2のうちサイズの大きいほうの型を返す。ポインタ型優先
@@ -297,7 +297,7 @@ shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
  */
 shared_ptr<Type> Type::func_type(const shared_ptr<Type> &return_ty)
 {
-	return make_shared<Type>(return_ty->_token, return_ty);
+	return make_shared<Type>(return_ty->_name, return_ty);
 }
 
 /**

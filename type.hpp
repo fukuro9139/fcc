@@ -57,7 +57,8 @@ public:
 	 */
 	shared_ptr<Type> _base;
 
-	Token *_token = nullptr; /*!< 変数に対応するトークン */
+	Token *_name = nullptr;		/*!< 変数に対応するトークン */
+	Token *_name_pos = nullptr; /*!< エラー出力用 */
 
 	/* 配列 */
 	int _array_length = 0; /*!< 配列の長さ */

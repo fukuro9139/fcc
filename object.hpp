@@ -33,6 +33,7 @@ public:
 
 	unique_ptr<Object> _next; /*!< 次のオブジェクト */
 	string _name = "";		  /*!< 名前 */
+	Token *_token = nullptr;  /*!< 参照用トークン */
 	shared_ptr<Type> _ty;	  /* 型 */
 	bool _is_local = false;	  /*!< ローカル変数であるか */
 	int _align = 0;			  /*!< アライメント */

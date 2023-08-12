@@ -677,8 +677,13 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	/* 型を判定 */
 	auto ty = declarator(&token, token, base);
 
+	/* 関数名がなければエラー */
+	if(!ty->_name){
+		error_token("関数名がありません", ty->_name_pos);
+	}
+
 	/* 新しい関数を生成する。 */
-	auto fn = Object::new_gvar(ty->_token->_str, ty);
+	auto fn = Object::new_gvar(ty->_name->_str, ty);
 	/* 関数であるフラグをセット */
 	fn->_is_function = true;
 
@@ -765,6 +770,10 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 		{
 			error_token("変数がvoid型で宣言されています", current_token);
 		}
+		/* 変数名が省略されていたらエラー */
+		if(!ty->_name){
+			error_token("変数名が宣言されていません", ty->_name_pos);
+		}
 
 		/* static指定されたローカル変数 */
 		if (attr && attr->_is_static)
@@ -772,7 +781,7 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 			/* ブローバル変数として仮名をつけて登録 */
 			auto var = new_anonymous_gvar(ty);
 			/* ローカル変数に名前を登録してグローバル変数のオブジェクトを参照 */
-			Object::push_scope(ty->_token->_str)->_var = var;
+			Object::push_scope(ty->_name->_str)->_var = var;
 
 			/* 初期化式を持つ場合 */
 			if (current_token->is_equal("="))
@@ -782,7 +791,7 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 			}
 		}
 
-		const auto var = Object::new_lvar(ty->_token->_str, ty);
+		const auto var = Object::new_lvar(ty->_name->_str, ty);
 
 		/* アライン指定がある場合 */
 		if (attr && attr->_align)
@@ -802,12 +811,12 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 			/* 変数の型が不完全 */
 			if (var->_ty->_size < 0)
 			{
-				error_token("変数の型が不完全です", ty->_token);
+				error_token("変数の型が不完全です", ty->_name);
 			}
 
 			if (TypeKind::TY_VOID == var->_ty->_kind)
 			{
-				error_token("変数がvoid型で宣言されています", ty->_token);
+				error_token("変数がvoid型で宣言されています", ty->_name);
 			}
 		};
 	}
@@ -1414,9 +1423,9 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 		/* 関数の引数では、T型の配列はT型へのポインタとして解釈する。例： *argv[] は **argv に変換される */
 		if (TypeKind::TY_ARRAY == ty2->_kind)
 		{
-			auto token = ty2->_token;
+			auto token = ty2->_name;
 			ty2 = Type::pointer_to(ty2->_base);
-			ty2->_token = token;
+			ty2->_name = token;
 		}
 		cur->_next = make_shared<Type>(*ty2);
 		cur = cur->_next.get();
@@ -1528,17 +1537,21 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 		return declarator(&current_token, start->_next.get(), ty);
 	}
 
-	/* トークンの種類が識別子でないときエラー */
-	if (TokenKind::TK_IDENT != current_token->_kind)
-	{
-		error_token("識別子ではありません", current_token);
+	Token *name = nullptr;
+	Token *name_pos = current_token;
+
+	/* 変数名があれば変数名を設定 */
+	if (TokenKind::TK_IDENT == current_token->_kind){
+		name = current_token;
+		current_token = current_token->_next.get();
 	}
 
 	/* 関数か変数か */
-	ty = type_suffix(next_token, current_token->_next.get(), move(ty));
+	ty = type_suffix(next_token, current_token, move(ty));
 
 	/* 参照トークンを設定 */
-	ty->_token = current_token;
+	ty->_name = name;
+	ty->_name_pos = name_pos;
 
 	return ty;
 }
@@ -1709,7 +1722,13 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 			auto mem = make_shared<Member>();
 			/* メンバ名部分を読み込む */
 			mem->_ty = declarator(&current_token, current_token, base);
-			mem->_token = mem->_ty->_token;
+			
+			/* メンバ名がなければエラー */
+			if(!mem->_ty->_name){
+				error_token("メンバ名がありません", mem->_ty->_name_pos);
+			}
+			
+			mem->_token = mem->_ty->_name;
 			mem->_idx = idx++;
 			/* アライン指定がある場合はそちらを優先 */
 			mem->_align = attr._align ? attr._align : mem->_ty->_align;
@@ -3068,7 +3087,12 @@ Token *Node::parse_typedef(Token *token, shared_ptr<Type> &base)
 		first = false;
 
 		auto ty = declarator(&token, token, base);
-		Object::push_scope(ty->_token->_str)->type_def = ty;
+		/* typedefの対象の名前がない場合はエラー */
+		if(!ty->_name){
+			error_token("typedefする型名がありません", ty->_name_pos);
+		}
+
+		Object::push_scope(ty->_name->_str)->type_def = ty;
 	}
 	return token;
 }
@@ -3281,7 +3305,13 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAtt
 
 		/* 最終的な型を決定する */
 		auto ty = declarator(&token, token, base);
-		auto var = Object::new_gvar(ty->_token->_str, ty);
+
+		/* 変数名がない場合はエラー */
+		if(!ty->_name){
+			error_token("変数名がありません", ty->_name_pos);
+		}
+
+		auto var = Object::new_gvar(ty->_name->_str, ty);
 		var->_is_definition = !attr->_is_extern;
 		var->_is_static = attr->_is_static;
 
