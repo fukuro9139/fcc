@@ -678,7 +678,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	auto ty = declarator(&token, token, base);
 
 	/* 関数名がなければエラー */
-	if(!ty->_name){
+	if (!ty->_name)
+	{
 		error_token("関数名がありません", ty->_name_pos);
 	}
 
@@ -771,7 +772,8 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 			error_token("変数がvoid型で宣言されています", current_token);
 		}
 		/* 変数名が省略されていたらエラー */
-		if(!ty->_name){
+		if (!ty->_name)
+		{
 			error_token("変数名が宣言されていません", ty->_name_pos);
 		}
 
@@ -1277,18 +1279,19 @@ unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token
  */
 void Node::write_buf(unsigned char buf[], int64_t val, int sz, int offset)
 {
-	union Value
+	/* 数値の内部表現を見るための共用体 */
+	union
 	{
 		int64_t val;
 		unsigned char byte[8];
-	};
+	} v;
 
 	if (sz > 8)
 	{
 		unreachable();
 	}
 
-	Value v = {val};
+	v.val = val;
 	for (int i = 0; i < sz; ++i)
 	{
 		buf[offset + i] = v.byte[i];
@@ -1457,7 +1460,8 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 shared_ptr<Type> Node::array_dimensions(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
 {
 	/* static, restrictを無視する */
-	while(current_token->is_equal("static") || current_token->is_equal("restrict")){
+	while (current_token->is_equal("static") || current_token->is_equal("restrict"))
+	{
 		current_token = current_token->_next.get();
 	}
 
@@ -1541,7 +1545,8 @@ shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shar
 	Token *name_pos = current_token;
 
 	/* 変数名があれば変数名を設定 */
-	if (TokenKind::TK_IDENT == current_token->_kind){
+	if (TokenKind::TK_IDENT == current_token->_kind)
+	{
 		name = current_token;
 		current_token = current_token->_next.get();
 	}
@@ -1722,12 +1727,13 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 			auto mem = make_shared<Member>();
 			/* メンバ名部分を読み込む */
 			mem->_ty = declarator(&current_token, current_token, base);
-			
+
 			/* メンバ名がなければエラー */
-			if(!mem->_ty->_name){
+			if (!mem->_ty->_name)
+			{
 				error_token("メンバ名がありません", mem->_ty->_name_pos);
 			}
-			
+
 			mem->_token = mem->_ty->_name;
 			mem->_idx = idx++;
 			/* アライン指定がある場合はそちらを優先 */
@@ -3052,7 +3058,13 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	/* トークンが数値の場合 */
 	if (TokenKind::TK_NUM == current_token->_kind)
 	{
-		auto node = make_unique<Node>(current_token->_value, current_token);
+		unique_ptr<Node> node;
+		if(current_token->_ty->is_flonum()){
+			node = make_unique<Node>(NodeKind::ND_NUM, current_token);
+			node->_fval = current_token->_fval;
+		}else{
+			node = make_unique<Node>(current_token->_val, current_token);
+		}
 		node->_ty = current_token->_ty;
 		*next_token = current_token->_next.get();
 		return node;
@@ -3088,7 +3100,8 @@ Token *Node::parse_typedef(Token *token, shared_ptr<Type> &base)
 
 		auto ty = declarator(&token, token, base);
 		/* typedefの対象の名前がない場合はエラー */
-		if(!ty->_name){
+		if (!ty->_name)
+		{
 			error_token("typedefする型名がありません", ty->_name_pos);
 		}
 
@@ -3307,7 +3320,8 @@ Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAtt
 		auto ty = declarator(&token, token, base);
 
 		/* 変数名がない場合はエラー */
-		if(!ty->_name){
+		if (!ty->_name)
+		{
 			error_token("変数名がありません", ty->_name_pos);
 		}
 

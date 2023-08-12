@@ -38,7 +38,8 @@ public:
 
 	unique_ptr<Token> _next;			 /*!< 次のトークン */
 	TokenKind _kind = TokenKind::TK_EOF; /*!< トークンの型 */
-	int64_t _value = 0;					 /*!< kindがTK_NUMの場合、その数値 */
+	int64_t _val = 0;					 /*!< kindがTK_NUMの場合、その数値(整数) */
+	double _fval = 0.0;					 /*!< kindがTK_NUMの場合、その数値(浮動小数点) */
 	shared_ptr<Type> _ty;				 /*!< kindがTK_NUMの場合、数値の型 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	string _str = "";					 /*!< トークンが表す文字列 */
@@ -69,7 +70,8 @@ private:
 
 	/* 静的メンバ関数 (private) */
 
-	static unique_ptr<Token> read_int_literal(string::const_iterator &start);
+	static unique_ptr<Token> read_number(const string::const_iterator &start);
+	static unique_ptr<Token> read_int_literal(const string::const_iterator &start);
 	static unique_ptr<Token> read_char_literal(string::const_iterator &start);
 	static size_t read_punct(string &&str);
 	static char read_escaped_char(string::const_iterator &new_pos, string::const_iterator &&pos);

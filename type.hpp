@@ -22,6 +22,8 @@ enum class TypeKind
 	TY_SHORT,  /*!< short型 */
 	TY_INT,	   /*!< int型 */
 	TY_LONG,   /*!< long型 */
+	TY_FLOAT,  /*!< float型 */
+	TY_DOUBLE, /*!< double型 */
 	TY_ENUM,   /*!< enum型 */
 	TY_PTR,	   /*!< ポインター型 */
 	TY_FUNC,   /*!< 関数 */
@@ -84,6 +86,7 @@ public:
 	/* メンバ関数 (public) */
 
 	bool is_integer() const;
+	bool is_flonum() const;
 
 	/* 静的メンバ関数 (public) */
 
@@ -109,4 +112,6 @@ public:
 	static const shared_ptr<Type> USHORT_BASE; /*!< unsignd short型 */
 	static const shared_ptr<Type> UINT_BASE;   /*!< unsigned int型 */
 	static const shared_ptr<Type> ULONG_BASE;  /*!< unsigned long型 */
+	static const shared_ptr<Type> FLOAT_BASE;  /*!< float型 */
+	static const shared_ptr<Type> DOUBLE_BASE; /*!< double型 */
 };

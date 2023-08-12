@@ -115,7 +115,8 @@ public:
 	unique_ptr<Node> _args;	   /*!< 引数  */
 
 	/* 数値 */
-	int64_t _val = 0; /*!< kindがND_NUMの場合のみ使う、数値の値 */
+	int64_t _val = 0;	/*!< kindがND_NUMの場合のみ使う、数値の値(整数) */
+	double _fval = 0.0; /*!< kindがND_NUMの場合のみ使う、数値の値(浮動小数点) */
 
 	/* 変数 */
 	const Object *_var = nullptr; /*!< kindがND_VARの場合のみ使う、 オブジェクトの情報*/

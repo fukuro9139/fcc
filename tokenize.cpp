@@ -159,7 +159,7 @@ void error_token(string &&msg, Token *token)
 
 Token::Token() = default;
 Token::Token(const TokenKind &kind, const int &location) : _kind(kind), _location(location) {}
-Token::Token(const int64_t &value, const int &location) : _kind(TokenKind::TK_NUM), _location(location), _value(move(value)) {}
+Token::Token(const int64_t &value, const int &location) : _kind(TokenKind::TK_NUM), _location(location), _val(move(value)) {}
 Token::Token(const TokenKind &kind, const int &location, string &&str) : _kind(kind), _location(location), _str(move(str)) {}
 
 /**
@@ -234,20 +234,17 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 		}
 
 		/* 数値 */
-		if (std::isdigit(*itr))
+		if (std::isdigit(*itr) || ('.' == *itr && std::isdigit(*(itr + 1))))
 		{
-			/* 数値変換する。変換にした数値を持つ数値トークンを生成し */
-			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
-			current_token->_next = read_int_literal(itr);
+			current_token->_next = read_number(itr);
 			current_token = current_token->_next.get();
+			itr += current_token->_str.size();
 			continue;
 		}
 
 		/* 文字列リテラル */
 		if ('"' == *itr)
 		{
-			/* 文字列リテラルを読み込む。読み取った文字列をもつトークンを生成し */
-			/* current_tokenに繋ぎcurrent_tokenを一つ進める */
 			current_token->_next = read_string_literal(itr);
 			current_token = current_token->_next.get();
 			continue;
@@ -469,13 +466,76 @@ char Token::read_escaped_char(string::const_iterator &new_pos, string::const_ite
 }
 
 /**
- * @brief int型の数値を読み込む。
- * 入力イテレーターは数値変換できた文字の次の文字まで進める。
+ * @brief 数値を読み込む
  *
- * @param itr 開始位置
+ * @param start 開始位置
  * @return 数値トークン
  */
-unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
+unique_ptr<Token> Token::read_number(const string::const_iterator &start)
+{
+	unique_ptr<Token> token;
+
+	/* '.'から始まる場合は必ず小数である */
+	if ('.' != *start)
+	{
+		/* 整数値として読んでみる */
+		token = read_int_literal(start);
+
+		/* これらが整数値の後についていなければ整数 */
+		constexpr std::string_view float_mark = ".eEfF";
+		if (float_mark.find(*(start + token->_str.size())) == string::npos)
+		{
+			return token;
+		}
+	}
+
+	/* そうでなければ小数である */
+	size_t idx = 0;
+	double val = 0;
+	auto itr = start;
+
+	try
+	{
+		val = std::stod(string(start, current_input.cend()), &idx);
+	}
+	catch (const std::invalid_argument &e)
+	{
+		error_at("無効な数値です", start - current_input.begin());
+	}
+
+	/* 変換した数値の桁数だけイテレーターを進める */
+	itr += idx;
+
+	shared_ptr<Type> ty;
+	if ('f' == *itr || 'F' == *itr)
+	{
+		ty = Type::FLOAT_BASE;
+		++itr;
+	}
+	else if ('l' == *itr || 'L' == *itr)
+	{
+		ty = Type::DOUBLE_BASE;
+		++itr;
+	}
+	else
+	{
+		ty = Type::DOUBLE_BASE;
+	}
+
+	token = make_unique<Token>(TokenKind::TK_NUM, start - current_input.begin(), string(start, itr));
+	token->_fval = val;
+	token->_ty = ty;
+
+	return token;
+}
+
+/**
+ * @brief 整数値を読み込む。
+ *
+ * @param start 開始位置
+ * @return 数値トークン
+ */
+unique_ptr<Token> Token::read_int_literal(const string::const_iterator &start)
 {
 	auto itr = start;
 	int base = 0;
@@ -542,14 +602,6 @@ unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
 		itr += 1;
 	}
 
-	/* 数値変換完了位置の次の文字が数字またはアルファベットの場合、エラー
-	 * 例：0xfg, 123A, 0b1115, 012345f
-	 */
-	if (current_input.end() != itr && std::isalnum(*itr))
-	{
-		error_at("無効な数値です", itr - current_input.begin());
-	}
-
 	shared_ptr<Type> ty;
 	if ('0' != *start)
 	{
@@ -592,11 +644,9 @@ unique_ptr<Token> Token::read_int_literal(string::const_iterator &start)
 			ty = Type::INT_BASE;
 	}
 
-	auto token = make_unique<Token>(val, start - current_input.begin());
+	auto token = make_unique<Token>(TokenKind::TK_NUM, start - current_input.begin(), string(start, itr));
+	token->_val = val;
 	token->_ty = ty;
-
-	/* 入力イテレーターを進める */
-	start = itr;
 
 	return token;
 }
@@ -755,7 +805,7 @@ int64_t Token::get_number() const
 	{
 		error_at("数値ではありません", this->_location);
 	}
-	return this->_value;
+	return this->_val;
 }
 
 /**

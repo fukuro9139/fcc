@@ -336,9 +336,26 @@ void CodeGen::generate_expression(Node *node)
 
 	/* 数値 */
 	case NodeKind::ND_NUM:
+	{	
+		/* 浮動小数点を扱うための共用体 */
+		union { float f32; double f64; uint32_t u32; uint64_t u64; } u;
+
+		if(TypeKind::TY_FLOAT == node->_ty->_kind){
+			u.f32 = node->_fval;
+			*os << "  mov eax, " << u.u32 << " #float " << node->_fval << "\n";
+			*os << "  mov xmm0, rax\n";
+			return;
+		}else if(TypeKind::TY_DOUBLE == node->_ty->_kind){
+			u.f64 = node->_fval;
+			*os << "  mov rax, " << u.u64 << " #double " << node->_fval << "\n";
+			*os << "  mov xmm0, rax\n";
+			return;
+		}
+
 		/* 数値を'rax'に格納 */
 		*os << "  mov rax, " << node->_val << "\n";
 		return;
+	}
 
 	/* 単項演算子の'-' */
 	case NodeKind::ND_NEG:

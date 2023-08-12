@@ -25,7 +25,8 @@ const shared_ptr<Type> Type::UCHAR_BASE = make_shared<Type>(TypeKind::TY_CHAR, 1
 const shared_ptr<Type> Type::USHORT_BASE = make_shared<Type>(TypeKind::TY_SHORT, 2, 2, true);
 const shared_ptr<Type> Type::UINT_BASE = make_shared<Type>(TypeKind::TY_INT, 4, 4, true);
 const shared_ptr<Type> Type::ULONG_BASE = make_shared<Type>(TypeKind::TY_LONG, 8, 8, true);
-
+const shared_ptr<Type> Type::FLOAT_BASE = make_shared<Type>(TypeKind::TY_FLOAT, 4, 4);
+const shared_ptr<Type> Type::DOUBLE_BASE = make_shared<Type>(TypeKind::TY_DOUBLE, 8, 8);
 const shared_ptr<Type> Type::BOOL_BASE = make_shared<Type>(TypeKind::TY_BOOL, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
@@ -61,20 +62,24 @@ shared_ptr<Type> Type::get_common_type(shared_ptr<Type> ty1, shared_ptr<Type> ty
 	}
 
 	/* 算術演算の結果はint型以上とする */
-	if(ty1->_size <4){
+	if (ty1->_size < 4)
+	{
 		ty1 = Type::INT_BASE;
 	}
-	if(ty2->_size <4){
+	if (ty2->_size < 4)
+	{
 		ty2 = Type::INT_BASE;
 	}
 
 	/* サイズが違えばサイズが大きい方を返す */
-	if(ty1->_size != ty2->_size){
-		return(ty1->_size < ty2->_size) ? ty2 : ty1;
+	if (ty1->_size != ty2->_size)
+	{
+		return (ty1->_size < ty2->_size) ? ty2 : ty1;
 	}
 
 	/* サイズが同じ場合は右オペランドがunsignedならunsignedを返す */
-	if(ty2->_is_unsigned){
+	if (ty2->_is_unsigned)
+	{
 		return ty2;
 	}
 
@@ -264,16 +269,26 @@ void Type::add_type(Node *node)
 }
 
 /**
- * @brief 入力された型が整数型かどうか判定
+ * @brief 整数型かどうか判定
  *
  * @param ty 対象の型
  * @return 整数型である:true, 整数型でない:false
  */
 bool Type::is_integer() const
 {
-	const auto k = this->_kind;
-	return TypeKind::TY_CHAR == k || TypeKind::TY_SHORT == k || TypeKind::TY_INT == k ||
-		   TypeKind::TY_LONG == k || TypeKind::TY_BOOL == k || TypeKind::TY_ENUM == k;
+	return TypeKind::TY_CHAR == _kind || TypeKind::TY_SHORT == _kind || TypeKind::TY_INT == _kind ||
+		   TypeKind::TY_LONG == _kind || TypeKind::TY_BOOL == _kind || TypeKind::TY_ENUM == _kind;
+}
+
+/**
+ * @brief 浮動小数点型であるか判定
+ *
+ * @return true 浮動小数点型である
+ * @return false 浮動小数点型ではない
+ */
+bool Type::is_flonum() const
+{
+	return TypeKind::TY_FLOAT == _kind || TypeKind::TY_DOUBLE == _kind;
 }
 
 /**
