@@ -1498,7 +1498,7 @@ shared_ptr<Type> Node::type_suffix(Token **next_token, Token *current_token, sha
  * @details
  * 変数の型は変数名に辿りつくまで確定できない。 @n
  * 例：int a, *b, **c; aはint型、bはint型へのポインタ、cはint型へのポインタへのポインタ @n
- * 下記のEBNF規則に従う。 @n declarator = "*"* ("(" identifier ")" | "(" declarator ")" | identifier) type-suffix
+ * 下記のEBNF規則に従う。 @n declarator = pointers ("(" identifier ")" | "(" declarator ")" | identifier) type-suffix
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @param ty 変数の型の基準
@@ -1506,11 +1506,8 @@ shared_ptr<Type> Node::type_suffix(Token **next_token, Token *current_token, sha
  */
 shared_ptr<Type> Node::declarator(Token **next_token, Token *current_token, shared_ptr<Type> ty)
 {
-	/* "*"の数だけ直前の型へのポインタになる */
-	while (consume(&current_token, current_token, "*"))
-	{
-		ty = Type::pointer_to(ty);
-	}
+	/* ポインター指定を読み取る */
+	ty = pointers(&current_token, current_token, ty);
 
 	/* ネストした型の場合、外側を先に評価する */
 	if (current_token->is_equal("("))
@@ -1789,6 +1786,8 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  * 				| "signed" @n
  * 				| struct-decl | union-decl | typedef-name @n
  * 				| enum-specifier)+ @n
+ *   		    | "const" | "volatile" | "auto" | "register" | "restrict" @n
+ *          	| "__restrict" | "__restrict__" | "_Noreturn")+ @n
  * 型指定子における型名の順番は重要ではない。例えば、`int long static` は `static long int` と同じ意味である。
  * 'long` や `short` が指定されていれば `int` を省略できるので、`static long` と書くこともできる。
  * しかし、`char int` のようなものは有効な型指定子ではなく、型名の組み合わせは限られている。
@@ -1897,6 +1896,15 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 				error_token("typedef, static, externは同時に指定できません", current_token);
 			}
 			current_token = current_token->_next.get();
+			continue;
+		}
+
+		/* これらのキーワードは認識するが無視する */
+		if (consume(&current_token, current_token, "const") || consume(&current_token, current_token, "volatile") ||
+			consume(&current_token, current_token, "auto") || consume(&current_token, current_token, "register") ||
+			consume(&current_token, current_token, "restrict") || consume(&current_token, current_token, "__restrict") ||
+			consume(&current_token, current_token, "__restrict__") || consume(&current_token, current_token, "_Noreturn"))
+		{
 			continue;
 		}
 
@@ -3061,6 +3069,34 @@ Token *Node::parse_typedef(Token *token, shared_ptr<Type> &base)
 }
 
 /**
+ * @brief ポインタ指定と型修飾子を読み取る
+ *
+ * @param next_token 残りのトークンを返すための参照
+ * @param current_token 現在処理しているトークン
+ * @param ty 型指定子の型
+ * @return 読み取った型
+ * @details 下記のEBNF規則に従う。 @n pointers = ("*" ("const" | "volatile" | "restrict")*)*
+ */
+shared_ptr<Type> Node::pointers(Token **next_token, Token *current_token, shared_ptr<Type> ty)
+{
+	/* "*"の数だけその前までの型に対するポインター */
+	while (consume(&current_token, current_token, "*"))
+	{
+		ty = Type::pointer_to(ty);
+		
+		/* これらの修飾子は無視する */
+		while (current_token->is_equal("const") || current_token->is_equal("volatile") ||
+			   current_token->is_equal("restrict") || current_token->is_equal("__restrict") || current_token->is_equal("__restrict__"))
+		{
+			current_token = current_token->_next.get();
+		}
+	}
+
+	*next_token = current_token;
+	return ty;
+}
+
+/**
  * @brief 識別子をもたない仮想的な変数宣言として型情報を読む
  *
  * @param next_token 残りのトークンを返すための参照
@@ -3069,14 +3105,10 @@ Token *Node::parse_typedef(Token *token, shared_ptr<Type> &base)
  * @return 読み取った型
  * @details 下記のEBNF規則に従う。 @n abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
  */
-shared_ptr<Type> Node::abstract_declarator(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
+shared_ptr<Type> Node::abstract_declarator(Token **next_token, Token *current_token, shared_ptr<Type> ty)
 {
-	/* "*"の数だけその前までの型に対するポインター */
-	while (current_token->is_equal("*"))
-	{
-		ty = Type::pointer_to(ty);
-		current_token = current_token->_next.get();
-	}
+	/* ポインター指定を読み取る */
+	ty = pointers(&current_token, current_token, ty);
 
 	/* ネストしている型 */
 	if (current_token->is_equal("("))
@@ -3084,12 +3116,12 @@ shared_ptr<Type> Node::abstract_declarator(Token **next_token, Token *current_to
 		auto start = current_token;
 		auto dummy = make_shared<Type>();
 		/* ネストの中を飛ばす */
-		abstract_declarator(&current_token, start->_next.get(), move(dummy));
+		abstract_declarator(&current_token, start->_next.get(), dummy);
 		current_token = skip(current_token, ")");
 		/* ネストの外側の型を読み込む */
 		ty = type_suffix(next_token, current_token, move(ty));
 		/* ネストの外側の型をベースとして内側の型を読む */
-		return abstract_declarator(&current_token, start->_next.get(), move(ty));
+		return abstract_declarator(&current_token, start->_next.get(), ty);
 	}
 	return type_suffix(next_token, current_token, move(ty));
 }
@@ -3105,7 +3137,7 @@ shared_ptr<Type> Node::abstract_declarator(Token **next_token, Token *current_to
 shared_ptr<Type> Node::type_name(Token **next_token, Token *current_token)
 {
 	auto ty = declspec(&current_token, current_token, nullptr);
-	return abstract_declarator(next_token, current_token, move(ty));
+	return abstract_declarator(next_token, current_token, ty);
 }
 
 /**

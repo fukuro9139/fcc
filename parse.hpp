@@ -220,7 +220,8 @@ private:
 	static unique_ptr<Node> postfix(Token **next_token, Token *current_token);
 	static unique_ptr<Node> primary(Token **next_token, Token *current_token);
 	static Token *parse_typedef(Token *token, shared_ptr<Type> &base);
-	static shared_ptr<Type> abstract_declarator(Token **next_token, Token *current_token, shared_ptr<Type> &&ty);
+	static shared_ptr<Type> pointers(Token **next_token, Token *current_token, shared_ptr<Type> ty);
+	static shared_ptr<Type> abstract_declarator(Token **next_token, Token *current_token, shared_ptr<Type> ty);
 	static shared_ptr<Type> type_name(Token **next_token, Token *current_token);
 	static unique_ptr<Node> function_call(Token **next_token, Token *current_token);
 	static Token *global_variable(Token *token, shared_ptr<Type> &&base, const VarAttr *attr);
