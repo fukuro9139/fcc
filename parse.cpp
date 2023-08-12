@@ -1443,10 +1443,15 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
  * @param ty 宣言されている型
  * @return 配列の型
  * @details
- * 次のEBNF規則に従う。 @n array-dimensions = const-expr? "]" type-suffix
+ * 次のEBNF規則に従う。 @n array-dimensions = ("static" | "restrict")* const-expr? "]" type-suffix
  */
 shared_ptr<Type> Node::array_dimensions(Token **next_token, Token *current_token, shared_ptr<Type> &&ty)
 {
+	/* static, restrictを無視する */
+	while(current_token->is_equal("static") || current_token->is_equal("restrict")){
+		current_token = current_token->_next.get();
+	}
+
 	/* 要素数の指定がない場合は長さを-1にする */
 	if (current_token->is_equal("]"))
 	{
@@ -3083,7 +3088,7 @@ shared_ptr<Type> Node::pointers(Token **next_token, Token *current_token, shared
 	while (consume(&current_token, current_token, "*"))
 	{
 		ty = Type::pointer_to(ty);
-		
+
 		/* これらの修飾子は無視する */
 		while (current_token->is_equal("const") || current_token->is_equal("volatile") ||
 			   current_token->is_equal("restrict") || current_token->is_equal("__restrict") || current_token->is_equal("__restrict__"))
