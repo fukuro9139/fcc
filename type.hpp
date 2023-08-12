@@ -44,9 +44,10 @@ class Type
 public:
 	/* メンバ変数 (public) */
 
-	TypeKind _kind; /*!< 型の種類 */
-	int _size = 1;	/* 型のサイズ */
-	int _align = 1; /*!< アライメント */
+	TypeKind _kind;			   /*!< 型の種類 */
+	int _size = 1;			   /* 型のサイズ */
+	int _align = 1;			   /*!< アライメント */
+	bool _is_unsigned = false; /*!< 符号なしかどうか */
 
 	/**
 	 * @brief kindがTY_PTRまたはTY_ARRAYのとき、参照先の型
@@ -74,6 +75,7 @@ public:
 	/* コンストラクタ */
 	Type();
 	Type(const TypeKind &kind, const int &size, const int &align);
+	Type(const TypeKind &kind, const int &size, const int &align, bool is_unsigned);
 	Type(const TypeKind &kind);
 	Type(const shared_ptr<Type> &base, const int &size, const int &align);
 	Type(Token *token, const shared_ptr<Type> &return_ty);
@@ -85,7 +87,7 @@ public:
 	/* 静的メンバ関数 (public) */
 
 	static void add_type(Node *node);
-	static shared_ptr<Type> get_common_type(const Type *ty1, const Type *ty2);
+	static shared_ptr<Type> get_common_type(shared_ptr<Type> ty1, shared_ptr<Type> ty2);
 	static shared_ptr<Type> pointer_to(const shared_ptr<Type> &base);
 	static shared_ptr<Type> array_of(shared_ptr<Type> base, int length);
 	static shared_ptr<Type> func_type(const shared_ptr<Type> &return_ty);
@@ -96,10 +98,14 @@ public:
 
 	/* 静的メンバ変数 (public) */
 
-	static const shared_ptr<Type> VOID_BASE;  /*!< void型 */
-	static const shared_ptr<Type> BOOL_BASE;  /*!< bool型 */
-	static const shared_ptr<Type> INT_BASE;	  /*!< int型 */
-	static const shared_ptr<Type> LONG_BASE;  /*!< long型 */
-	static const shared_ptr<Type> CHAR_BASE;  /*!< char型 */
-	static const shared_ptr<Type> SHORT_BASE; /*!< short型 */
+	static const shared_ptr<Type> VOID_BASE;   /*!< void型 */
+	static const shared_ptr<Type> BOOL_BASE;   /*!< bool型 */
+	static const shared_ptr<Type> CHAR_BASE;   /*!< char型 */
+	static const shared_ptr<Type> SHORT_BASE;  /*!< short型 */
+	static const shared_ptr<Type> INT_BASE;	   /*!< int型 */
+	static const shared_ptr<Type> LONG_BASE;   /*!< long型 */
+	static const shared_ptr<Type> UCHAR_BASE;  /*!< unsigned char型 */
+	static const shared_ptr<Type> USHORT_BASE; /*!< unsignd short型 */
+	static const shared_ptr<Type> UINT_BASE;   /*!< unsigned int型 */
+	static const shared_ptr<Type> ULONG_BASE;  /*!< unsigned long型 */
 };

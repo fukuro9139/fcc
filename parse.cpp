@@ -1820,15 +1820,25 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	constexpr int LONG = 1 << 10;
 	constexpr int OTHER = 1 << 12;
 	constexpr int SIGNED = 1 << 13;
+	constexpr int UNSIGNED = 1 << 14;
 
-	static const std::unordered_map<string, int> str_to_type = {
-		{"void", VOID},
-		{"_Bool", BOOL},
-		{"char", CHAR},
-		{"short", SHORT},
-		{"int", INT},
-		{"long", LONG},
-		{"signed", SIGNED},
+	static const std::unordered_map<string, void (*)(int &)> add_counter = {
+		{"void", [](int &counter)
+		 { counter += VOID; }},
+		{"_Bool", [](int &counter)
+		 { counter += BOOL; }},
+		{"char", [](int &counter)
+		 { counter += CHAR; }},
+		{"short", [](int &counter)
+		 { counter += SHORT; }},
+		{"int", [](int &counter)
+		 { counter += INT; }},
+		{"long", [](int &counter)
+		 { counter += LONG; }},
+		{"signed", [](int &counter)
+		 { counter |= SIGNED; }},
+		{"unsigned", [](int &counter)
+		 { counter |= UNSIGNED; }},
 	};
 
 	static const std::unordered_map<int, shared_ptr<Type>> int_to_type = {
@@ -1836,13 +1846,18 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{BOOL, Type::BOOL_BASE},
 		{CHAR, Type::CHAR_BASE},
 		{SIGNED + CHAR, Type::CHAR_BASE},
+		{UNSIGNED + CHAR, Type::UCHAR_BASE},
 		{SHORT, Type::SHORT_BASE},
-		{SIGNED + SHORT, Type::SHORT_BASE},
 		{SHORT + INT, Type::SHORT_BASE},
+		{SIGNED + SHORT, Type::SHORT_BASE},
 		{SIGNED + SHORT + INT, Type::SHORT_BASE},
+		{UNSIGNED + SHORT, Type::USHORT_BASE},
+		{UNSIGNED + SHORT + INT, Type::USHORT_BASE},
 		{INT, Type::INT_BASE},
 		{SIGNED, Type::INT_BASE},
 		{SIGNED + INT, Type::INT_BASE},
+		{UNSIGNED, Type::UINT_BASE},
+		{UNSIGNED + INT, Type::UINT_BASE},
 		{LONG, Type::LONG_BASE},
 		{LONG + INT, Type::LONG_BASE},
 		{LONG + LONG, Type::LONG_BASE},
@@ -1851,6 +1866,10 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{SIGNED + LONG + INT, Type::LONG_BASE},
 		{SIGNED + LONG + LONG, Type::LONG_BASE},
 		{SIGNED + LONG + LONG + INT, Type::LONG_BASE},
+		{UNSIGNED + LONG, Type::ULONG_BASE},
+		{UNSIGNED + LONG + INT, Type::ULONG_BASE},
+		{UNSIGNED + LONG + LONG, Type::ULONG_BASE},
+		{UNSIGNED + LONG + LONG + INT, Type::ULONG_BASE},
 	};
 
 	/* それぞれの型名の出現回数を表すカウンタ。
@@ -1942,18 +1961,10 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 			continue;
 		}
 
-		auto it = str_to_type.find(current_token->_str);
-		if (it != str_to_type.end())
+		auto it = add_counter.find(current_token->_str);
+		if (it != add_counter.end())
 		{
-			if ("signed" != it->first)
-			{
-				counter += it->second;
-			}
-			/* signedは複数重ねることができるのでbitorを使う。例: signed signed int x; */
-			else
-			{
-				counter |= it->second;
-			}
+			it->second(counter);
 		}
 		else
 		{

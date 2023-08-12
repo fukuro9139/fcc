@@ -35,15 +35,25 @@ static Object *current_func = nullptr;
 static std::ostream *os = &std::cout;
 
 /* 符号拡張転送 */
-static const string i32i8 = "  movsx eax, al\n";
-static const string i32i16 = "  movsx eax, ax\n";
-static const string i32i64 = "  movsxd rax, eax\n";
+constexpr std::string_view i32i8 = "  movsx eax, al\n";
+constexpr std::string_view i32u8 = "  movzx eax, al\n";
+constexpr std::string_view i32i16 = "  movsx eax, ax\n";
+constexpr std::string_view i32u16 = "  movzx eax, ax\n";
+constexpr std::string_view i32i64 = "  movsxd rax, eax\n";
+constexpr std::string_view u32i64 = "  mov eax, eax\n";
+constexpr std::string_view none = "";
 
-static const string cast_table[4][4] = {
-	{"", "", "", i32i64},		 /* i8 */
-	{i32i8, "", "", i32i64},	 /* i16 */
-	{i32i8, i32i16, "", i32i64}, /* i32 */
-	{i32i8, i32i16, "", ""}};	 /* i64 */
+static const std::string_view cast_table[8][8] = {
+	// i8	 i16	i32  i64   u8	u16    u32   	u64
+	{none, none, none, i32i64, i32u8, i32u16, none, i32i64},	// i8
+	{i32i8, none, none, i32i64, i32u8, i32u16, none, i32i64},	// i16
+	{i32i8, i32i16, none, i32i64, i32u8, i32u16, none, i32i64}, // i32
+	{i32i8, i32i16, none, none, i32u8, i32u16, none, none},		// i64
+	{i32i8, none, none, i32i64, none, none, none, i32i64},		// u8
+	{i32i8, i32i16, none, i32i64, i32u8, none, none, i32i64},	// u16
+	{i32i8, i32i16, none, u32i64, i32u8, i32u16, none, u32i64}, // u32
+	{i32i8, i32i16, none, none, i32u8, i32u16, none, none},		// u64
+};
 
 /*****************/
 /* CodeGen Class */
@@ -60,15 +70,17 @@ TypeID CodeGen::get_TypeId(Type *ty)
 	switch (ty->_kind)
 	{
 	case TypeKind::TY_CHAR:
-		return TypeID::I8;
+		return ty->_is_unsigned ? TypeID::U8 : TypeID::I8;
 	case TypeKind::TY_SHORT:
-		return TypeID::I16;
+		return ty->_is_unsigned ? TypeID::U16 : TypeID::I16;
 	case TypeKind::TY_INT:
-		return TypeID::I32;
+		return ty->_is_unsigned ? TypeID::U32 : TypeID::I32;
+	case TypeKind::TY_LONG:
+		return ty->_is_unsigned ? TypeID::U64 : TypeID::I64;
 	default:
 		break;
 	}
-	return TypeID::I64;
+	return TypeID::U64;
 }
 
 /**
@@ -120,18 +132,20 @@ void CodeGen::load(const Type *ty)
 		return;
 	}
 
-	/* char型およびshort型の値をロードするとき、常にint型のサイズに符号拡張する。
+	/* char型およびshort型の値をロードするとき、常にint型のサイズに拡張する。
 	 * つまり、64ビットレジスタの下位32ビットは常に正しい値が入っているとみなせる。
 	 * このとき上位32ビットレジスタにはごみが残っている可能性がある。
 	 * int型よりサイズの大きな型の値をロードするときは単純にレジスタ全体が置き換えられる。
 	 */
+	string insn = ty->_is_unsigned ? "  movzx" : "  movsx";
+
 	if (1 == ty->_size)
 	{
-		*os << "  movsx eax, BYTE PTR [rax]\n";
+		*os << insn << " eax, BYTE PTR [rax]\n";
 	}
 	else if (2 == ty->_size)
 	{
-		*os << "  movsx eax, WORD PTR [rax]\n";
+		*os << insn << " eax, WORD PTR [rax]\n";
 	}
 	else if (4 == ty->_size)
 	{
@@ -516,10 +530,10 @@ void CodeGen::generate_expression(Node *node)
 			*os << "  movzx eax, al\n";
 			return;
 		case TypeKind::TY_CHAR:
-			*os << "  movsx eax, al\n";
+			*os << (node->_ty->_is_unsigned ? "  movzx" : "  movsx") << " eax, al\n";
 			return;
 		case TypeKind::TY_SHORT:
-			*os << "  movsx eax, ax\n";
+			*os << (node->_ty->_is_unsigned ? "  movzx" : "  movsx") << " eax, ax\n";
 			return;
 		default:
 			break;
@@ -541,19 +555,21 @@ void CodeGen::generate_expression(Node *node)
 	/* 右辺の計算結果を'rdi'にpop */
 	pop("rdi");
 
-	string ax, di;
+	string ax, di, dx;
 
 	/* long型およびポインタに対しては64ビットレジスタを使う */
 	if (TypeKind::TY_LONG == node->_lhs->_ty->_kind || node->_lhs->_ty->_base)
 	{
 		ax = "rax";
 		di = "rdi";
+		dx = "rdx";
 	}
 	/* それ以外は32ビットレジスタを使う */
 	else
 	{
 		ax = "eax";
 		di = "edi";
+		dx = "edx";
 	}
 
 	/* 演算子ノードなら演算命令を出力する */
@@ -576,19 +592,27 @@ void CodeGen::generate_expression(Node *node)
 
 	case NodeKind::ND_DIV:
 	case NodeKind::ND_MOD:
-		if (8 == node->_lhs->_ty->_size)
+		if (node->_ty->_is_unsigned)
 		{
-			/* 'rax'(64ビット)を128ビットに拡張して'rdx'と'rax'にセット */
-			*os << "  cqo\n";
+			*os << "  mov " << dx << ", 0\n";
+			*os << "  div " << di << "\n";
 		}
 		else
 		{
-			/* 'eax'(32ビット)を128ビットに拡張して'rdx'と'rax'にセット */
-			*os << "  cdq\n";
-		}
 
-		/* 'rdx(edx)'と'rax(eax)'を合わせた128ビットの値を'rdi'で割って商を'rax(eax)', 余りを'rdx(edx)'にセット */
-		*os << "  idiv " << di << "\n";
+			if (8 == node->_lhs->_ty->_size)
+			{
+				/* 'rax'(64ビット)を128ビットに拡張して'rdx'と'rax'にセット */
+				*os << "  cqo\n";
+			}
+			else
+			{
+				/* 'eax'(32ビット)を128ビットに拡張して'rdx'と'rax'にセット */
+				*os << "  cdq\n";
+			}
+			/* 'rdx(edx)'と'rax(eax)'を合わせた128ビットの値を'rdi'で割って商を'rax(eax)', 余りを'rdx(edx)'にセット */
+			*os << "  idiv " << di << "\n";
+		}
 
 		if (NodeKind::ND_MOD == node->_kind)
 		{
@@ -624,11 +648,11 @@ void CodeGen::generate_expression(Node *node)
 		}
 		else if (NodeKind::ND_LT == node->_kind)
 		{
-			*os << "  setl al\n";
+			*os << (node->_lhs->_ty->_is_unsigned ? "  setb al\n" : "  setl al\n");
 		}
-		else
+		else if (NodeKind::ND_LE == node->_kind)
 		{
-			*os << "  setle al\n";
+			*os << (node->_lhs->_ty->_is_unsigned ? "  setbe al\n" : "  setle al\n");
 		}
 		*os << "  movzb rax, al\n";
 		return;
@@ -642,7 +666,7 @@ void CodeGen::generate_expression(Node *node)
 	case NodeKind::ND_SHR:
 		/* 右辺の値をrdiからrcxに転送 */
 		*os << "  mov rcx, rdi\n";
-		*os << "  sar " << ax << ", cl\n";
+		*os << (node->_lhs->_ty->_is_unsigned ? "  shr " : "  sar ") << ax << ", cl\n";
 		return;
 
 	default:

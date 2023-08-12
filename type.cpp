@@ -17,19 +17,30 @@
 /**************/
 
 const shared_ptr<Type> Type::VOID_BASE = make_shared<Type>(TypeKind::TY_VOID, 1, 1);
+const shared_ptr<Type> Type::CHAR_BASE = make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
 const shared_ptr<Type> Type::SHORT_BASE = make_shared<Type>(TypeKind::TY_SHORT, 2, 2);
 const shared_ptr<Type> Type::INT_BASE = make_shared<Type>(TypeKind::TY_INT, 4, 4);
 const shared_ptr<Type> Type::LONG_BASE = make_shared<Type>(TypeKind::TY_LONG, 8, 8);
-const shared_ptr<Type> Type::CHAR_BASE = make_shared<Type>(TypeKind::TY_CHAR, 1, 1);
+const shared_ptr<Type> Type::UCHAR_BASE = make_shared<Type>(TypeKind::TY_CHAR, 1, 1, true);
+const shared_ptr<Type> Type::USHORT_BASE = make_shared<Type>(TypeKind::TY_SHORT, 2, 2, true);
+const shared_ptr<Type> Type::UINT_BASE = make_shared<Type>(TypeKind::TY_INT, 4, 4, true);
+const shared_ptr<Type> Type::ULONG_BASE = make_shared<Type>(TypeKind::TY_LONG, 8, 8, true);
+
 const shared_ptr<Type> Type::BOOL_BASE = make_shared<Type>(TypeKind::TY_BOOL, 1, 1);
 
 Type::Type() : _kind(TypeKind::TY_INT) {}
 
-Type::Type(const TypeKind &kind, const int &size, const int &align) : _kind(kind), _size(size), _align(align) {}
+Type::Type(const TypeKind &kind, const int &size, const int &align)
+	: _kind(kind), _size(size), _align(align) {}
 
-Type::Type(const TypeKind &kind) : _kind(kind) {}
+Type::Type(const TypeKind &kind, const int &size, const int &align, bool is_unsigned)
+	: _kind(kind), _size(size), _align(align), _is_unsigned(is_unsigned) {}
 
-Type::Type(const shared_ptr<Type> &base, const int &size, const int &align) : _kind(TypeKind::TY_PTR), _base(base), _size(size), _align(align) {}
+Type::Type(const TypeKind &kind)
+	: _kind(kind) {}
+
+Type::Type(const shared_ptr<Type> &base, const int &size, const int &align)
+	: _kind(TypeKind::TY_PTR), _base(base), _size(size), _align(align) {}
 
 Type::Type(Token *token, const shared_ptr<Type> &return_ty)
 	: _kind(TypeKind::TY_FUNC), _token(token), _return_ty(return_ty) {}
@@ -41,23 +52,33 @@ Type::Type(Token *token, const shared_ptr<Type> &return_ty)
  * @param ty2 右辺の型
  * @return 共通の型
  */
-shared_ptr<Type> Type::get_common_type(const Type *ty1, const Type *ty2)
+shared_ptr<Type> Type::get_common_type(shared_ptr<Type> ty1, shared_ptr<Type> ty2)
 {
 	/* 左辺がポインタなら同じ型へのポインタを返す。 */
 	if (ty1->_base)
 	{
 		return pointer_to(ty1->_base);
 	}
-	/* どちらかの型サイズが8バイトであればlong型 */
-	if (ty1->_size == 8 || ty2->_size == 8)
-	{
-		return LONG_BASE;
+
+	/* 算術演算の結果はint型以上とする */
+	if(ty1->_size <4){
+		ty1 = Type::INT_BASE;
 	}
-	/* どちらも8バイト未満ならint型を返す */
-	else
-	{
-		return INT_BASE;
+	if(ty2->_size <4){
+		ty2 = Type::INT_BASE;
 	}
+
+	/* サイズが違えばサイズが大きい方を返す */
+	if(ty1->_size != ty2->_size){
+		return(ty1->_size < ty2->_size) ? ty2 : ty1;
+	}
+
+	/* サイズが同じ場合は右オペランドがunsignedならunsignedを返す */
+	if(ty2->_is_unsigned){
+		return ty2;
+	}
+
+	return ty1;
 }
 
 /**
@@ -111,7 +132,7 @@ void Type::add_type(Node *node)
 
 	case NodeKind::ND_NEG:
 	{
-		auto ty = get_common_type(INT_BASE.get(), node->_lhs->_ty.get());
+		auto ty = get_common_type(INT_BASE, node->_lhs->_ty);
 		node->_lhs = Node::new_cast(move(node->_lhs), ty);
 		node->_ty = ty;
 		return;
@@ -305,7 +326,7 @@ shared_ptr<Type> Type::array_of(shared_ptr<Type> base, int length)
  */
 void Type::usual_arith_conv(unique_ptr<Node> &lhs, unique_ptr<Node> &rhs)
 {
-	auto ty = Type::get_common_type(lhs->_ty.get(), rhs->_ty.get());
+	auto ty = Type::get_common_type(lhs->_ty, rhs->_ty);
 	lhs = Node::new_cast(move(lhs), ty);
 	rhs = Node::new_cast(move(rhs), ty);
 }
