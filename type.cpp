@@ -284,7 +284,9 @@ bool Type::is_integer() const
  */
 shared_ptr<Type> Type::pointer_to(const shared_ptr<Type> &base)
 {
-	return make_shared<Type>(base, 8, 8);
+	auto ty = make_shared<Type>(base, 8, 8);
+	ty->_is_unsigned = true;
+	return ty;
 }
 
 /**
