@@ -1944,6 +1944,7 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{UNSIGNED + LONG + LONG + INT, Type::ULONG_BASE},
 		{FLOAT, Type::FLOAT_BASE},
 		{DOUBLE, Type::DOUBLE_BASE},
+		{LONG + DOUBLE, Type::DOUBLE_BASE},
 	};
 
 	/* それぞれの型名の出現回数を表すカウンタ。
