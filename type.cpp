@@ -167,14 +167,14 @@ void Type::add_type(Node *node)
 		node->_ty = node->_lhs->_ty;
 		return;
 
-	/* 比較演算の結果はlong型(一番大きい数値型へ合わせてしまう) */
+	/* 比較演算は大きい方の型に合わせて行う、結果はint型とする */
 	case NodeKind::ND_EQ:
 	case NodeKind::ND_NE:
 	case NodeKind::ND_LT:
 	case NodeKind::ND_LE:
 		/* 比較の前に大きいほうの型に合わせる */
 		usual_arith_conv(node->_lhs, node->_rhs);
-		node->_ty = node->_lhs->_ty;
+		node->_ty = Type::INT_BASE;
 		return;
 
 	case NodeKind::ND_FUNCALL:
