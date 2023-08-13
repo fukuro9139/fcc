@@ -381,6 +381,25 @@ void CodeGen::generate_expression(Node *node)
 	case NodeKind::ND_NEG:
 		/* '-'がかかる式を評価 */
 		generate_expression(node->_lhs.get());
+
+		switch (node->_ty->_kind)
+		{
+		case TypeKind::TY_FLOAT:
+			/* 符号ビット(32ビット)を反転 */
+			*os << "  mov rax, 1\n";
+			*os << "  shl rax, 31\n";
+			*os << "  movq xmm1, rax\n";
+			*os << "  xorps xmm0, xmm1\n";
+			return;
+		case TypeKind::TY_DOUBLE:
+			*os << "  mov rax, 1\n";
+			*os << "  shl rax, 63\n";
+			*os << "  movq xmm1, rax\n";
+			*os << "  xorpd xmm0, xmm1\n";
+			return;
+		default:
+			break;
+		}
 		/* 符号を反転させる */
 		*os << "  neg rax\n";
 		return;
@@ -599,6 +618,26 @@ void CodeGen::generate_expression(Node *node)
 
 		switch (node->_kind)
 		{
+		case NodeKind::ND_ADD:
+			/* 'xmm0' = 'xmm0' + 'xmm1' */
+			*os << "  add" << sz << " xmm0, xmm1\n";
+			return;
+
+		case NodeKind::ND_SUB:
+			/* 'xmm0' = 'xmm0' - 'xmm1' */
+			*os << "  sub" << sz << " xmm0, xmm1\n";
+			return;
+
+		case NodeKind::ND_MUL:
+			/* 'xmm0' = 'xmm0' * 'xmm1' */
+			*os << "  mul" << sz << " xmm0, xmm1\n";
+			return;
+
+		case NodeKind::ND_DIV:
+			/* 'xmm0' = 'xmm0' / 'xmm1' */
+			*os << "  div" << sz << " xmm0, xmm1\n";
+			return;
+
 		case NodeKind::ND_EQ:
 		case NodeKind::ND_NE:
 		case NodeKind::ND_LT:
@@ -708,15 +747,15 @@ void CodeGen::generate_expression(Node *node)
 		return;
 
 	case NodeKind::ND_BITAND:
-		*os << "  and rax, rdi\n";
+		*os << "  and " << ax << ", " << di << "\n";
 		return;
 
 	case NodeKind::ND_BITOR:
-		*os << "  or rax, rdi\n";
+		*os << "  or " << ax << ", " << di << "\n";
 		return;
 
 	case NodeKind::ND_BITXOR:
-		*os << "  xor rax, rdi\n";
+		*os << "  xor " << ax << ", " << di << "\n";
 		return;
 
 	case NodeKind::ND_EQ:

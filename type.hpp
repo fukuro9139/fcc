@@ -87,6 +87,7 @@ public:
 
 	bool is_integer() const;
 	bool is_flonum() const;
+	bool is_numeric() const;
 
 	/* 静的メンバ関数 (public) */
 

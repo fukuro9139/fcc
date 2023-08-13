@@ -304,6 +304,17 @@ bool Type::is_flonum() const
 }
 
 /**
+ * @brief 数値であるかどうか
+ *
+ * @return true 数値である
+ * @return false 数値ではない
+ */
+bool Type::is_numeric() const
+{
+	return is_flonum() || is_integer();
+}
+
+/**
  * @brief base型へのポインター型を生成して返す
  *
  * @param base 参照する型

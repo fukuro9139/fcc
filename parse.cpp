@@ -96,7 +96,7 @@ unique_ptr<Node> Node::new_add(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
 	Type::add_type(rhs.get());
 
 	/* 数 + 数 */
-	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
+	if (lhs->_ty->is_numeric() && rhs->_ty->is_numeric())
 	{
 		return make_unique<Node>(NodeKind::ND_ADD, move(lhs), move(rhs), token);
 	}
@@ -136,7 +136,7 @@ unique_ptr<Node> Node::new_sub(unique_ptr<Node> &&lhs, unique_ptr<Node> &&rhs, T
 	Type::add_type(rhs.get());
 
 	/* 数 - 数 */
-	if (lhs->_ty->is_integer() && rhs->_ty->is_integer())
+	if (lhs->_ty->is_numeric() && rhs->_ty->is_numeric())
 	{
 		return make_unique<Node>(NodeKind::ND_SUB, move(lhs), move(rhs), token);
 	}
