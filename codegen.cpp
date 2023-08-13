@@ -232,6 +232,20 @@ void CodeGen::store_gp(const int &r, const int &offset, const int &sz)
  */
 void CodeGen::cmp_zero(const Type *ty)
 {
+	switch (ty->_kind)
+	{
+	case TypeKind::TY_FLOAT:
+		*os << "  xorps xmm1, xmm1\n";
+		*os << "  ucomiss xmm0, xmm1\n";
+		return;
+	case TypeKind::TY_DOUBLE:
+		*os << "  xorpd xmm1, xmm1\n";
+		*os << "  ucomisd xmm0, xmm1\n";
+		return;
+	default:
+		break;
+	}
+
 	if (ty->is_integer() && ty->_size <= 4)
 	{
 		*os << "  cmp eax, 0\n";
@@ -474,7 +488,7 @@ void CodeGen::generate_expression(Node *node)
 		const int c = label_count();
 		/* 条件 */
 		generate_expression(node->_condition.get());
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_condition->_ty.get());
 		*os << "  je .L.else." << c << "\n";
 		/* 条件が真のとき */
 		generate_expression(node->_then.get());
@@ -490,7 +504,7 @@ void CodeGen::generate_expression(Node *node)
 	case NodeKind::ND_NOT:
 		generate_expression(node->_lhs.get());
 		/* 0と比較 */
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_lhs->_ty.get());
 		/* 0と一致なら1, それ以外は0 */
 		*os << "  sete al\n";
 		*os << "  movzx rax, al\n";
@@ -507,11 +521,11 @@ void CodeGen::generate_expression(Node *node)
 	{
 		const int c = label_count();
 		generate_expression(node->_lhs.get());
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_lhs->_ty.get());
 		/* 短絡評価、前半がfalseなら後半は評価しない */
 		*os << "  je .L.false." << c << "\n";
 		generate_expression(node->_rhs.get());
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_rhs->_ty.get());
 		*os << "  je .L.false." << c << "\n";
 		*os << "  mov rax, 1\n";
 		*os << "  jmp .L.end." << c << "\n";
@@ -525,11 +539,11 @@ void CodeGen::generate_expression(Node *node)
 	{
 		const int c = label_count();
 		generate_expression(node->_lhs.get());
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_lhs->_ty.get());
 		/* 短絡評価、前半がtrueなら後半は評価しない */
 		*os << "  jne .L.true." << c << "\n";
 		generate_expression(node->_rhs.get());
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_rhs->_ty.get());
 		*os << "  jne .L.true." << c << "\n";
 		*os << "  mov rax, 0\n";
 		*os << "  jmp .L.end." << c << "\n";
@@ -841,7 +855,7 @@ void CodeGen::generate_statement(Node *node)
 		/* 条件を評価 */
 		generate_expression(node->_condition.get());
 		/* 条件を比較 */
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_condition->_ty.get());
 		/* 条件がfalseなら.L.else.cラベルに飛ぶ */
 		*os << "  je .L.else." << c << "\n";
 		/* trueのときに実行 */
@@ -876,7 +890,7 @@ void CodeGen::generate_statement(Node *node)
 		if (node->_condition)
 		{
 			generate_expression(node->_condition.get());
-			*os << "  cmp rax, 0\n";
+			cmp_zero(node->_condition->_ty.get());
 			*os << "  je " << node->_brk_label << "\n";
 		}
 		/* forの中身 */
@@ -902,7 +916,7 @@ void CodeGen::generate_statement(Node *node)
 		generate_statement(node->_then.get());
 		*os << node->_cont_label << ":\n";
 		generate_expression(node->_condition.get());
-		*os << "  cmp rax, 0\n";
+		cmp_zero(node->_condition->_ty.get());
 		*os << "  jne .L.begin." << c << "\n";
 		*os << node->_brk_label << ":\n";
 		return;
