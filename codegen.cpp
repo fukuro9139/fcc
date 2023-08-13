@@ -593,7 +593,7 @@ void CodeGen::generate_expression(Node *node)
 		/* 左辺を計算 */
 		generate_expression(node->_lhs.get());
 		/* 右辺の計算結果を'rdi'にpop */
-		pop("xmm1");
+		popf("xmm1");
 
 		string sz = (TypeKind::TY_FLOAT == node->_lhs->_ty->_kind) ? "ss" : "sd";
 
