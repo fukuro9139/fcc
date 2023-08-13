@@ -631,14 +631,14 @@ void CodeGen::generate_expression(Node *node)
 		if (TypeKind::TY_FLOAT == node->_ty->_kind)
 		{
 			u.f32 = node->_fval;
-			*os << "  mov eax, " << u.u32 << " ;float " << node->_fval << "\n";
+			*os << "  mov eax, " << u.u32 << " #float " << node->_fval << "\n";
 			*os << "  movq xmm0, rax\n";
 			break;
 		}
 		else if (TypeKind::TY_DOUBLE == node->_ty->_kind)
 		{
 			u.f64 = node->_fval;
-			*os << "  mov rax, " << u.u64 << " ;double " << node->_fval << "\n";
+			*os << "  mov rax, " << u.u64 << " #double " << node->_fval << "\n";
 			*os << "  movq xmm0, rax\n";
 			break;
 		}
