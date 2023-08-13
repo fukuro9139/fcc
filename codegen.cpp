@@ -173,7 +173,7 @@ void CodeGen::store(const Type *ty)
 	case TypeKind::TY_DOUBLE:
 		*os << "  movsd QWORD PTR [rdi], xmm0\n";
 		return;
-	
+
 	default:
 		break;
 	}
@@ -260,6 +260,14 @@ void CodeGen::push()
 	++depth;
 }
 
+/** @brief 'xmm0'の浮動小数点数をスタックにpushする */
+void CodeGen::pushf()
+{
+	*os << "  sub rsp, 8\n";
+	*os << "  movsd [rsp], xmm0\n";
+	++depth;
+}
+
 /**
  * @brief スタックからpopした数値を指定したレジスタにセットする
  *
@@ -268,6 +276,18 @@ void CodeGen::push()
 void CodeGen::pop(const string_view &reg)
 {
 	*os << "  pop " << reg << "\n";
+	--depth;
+}
+
+/**
+ * @brief スタックからpopした浮動小数点数値を指定したレジスタにセットする
+ *
+ * @param reg 数値をセットするレジスタ
+ */
+void CodeGen::popf(const string_view &reg)
+{
+	*os << "  movsd " << reg << ", QWORD PTR [rsp]\n";
+	*os << "  add rsp, 8\n";
 	--depth;
 }
 
@@ -561,6 +581,56 @@ void CodeGen::generate_expression(Node *node)
 
 	default:
 		break;
+	}
+
+	/* 左辺が浮動小数点数の場合 */
+	if (node->_lhs->_ty->is_flonum())
+	{
+		/* 右辺を計算 */
+		generate_expression(node->_rhs.get());
+		/* 計算結果をスタックにpush */
+		pushf();
+		/* 左辺を計算 */
+		generate_expression(node->_lhs.get());
+		/* 右辺の計算結果を'rdi'にpop */
+		pop("xmm1");
+
+		string sz = (TypeKind::TY_FLOAT == node->_lhs->_ty->_kind) ? "ss" : "sd";
+
+		switch (node->_kind)
+		{
+		case NodeKind::ND_EQ:
+		case NodeKind::ND_NE:
+		case NodeKind::ND_LT:
+		case NodeKind::ND_LE:
+			*os << "  ucomi" << sz << "xmm1, xmm0\n";
+			if (NodeKind::ND_EQ == node->_kind)
+			{
+				*os << "  sete al\n";
+				*os << "  setnp dl\n";
+				*os << "  and al, dl\n";
+			}
+			else if (NodeKind::ND_NE == node->_kind)
+			{
+				*os << "  setne al\n";
+				*os << "  setp dl\n";
+				*os << "  or al, dl\n";
+			}
+			else if (NodeKind::ND_LT == node->_kind)
+			{
+				*os << "  seta al\n";
+			}
+			else if (NodeKind::ND_LE == node->_kind)
+			{
+				*os << "  setae al\n";
+			}
+			*os << "  and al, 1\n";
+			*os << "  movzb rax, al\n";
+			return;
+		default:
+			break;
+		}
+		error_token("不正な式です", node->_token);
 	}
 
 	/* 右辺を計算 */

@@ -33,7 +33,9 @@ private:
 	/**************************/
 
 	static void push();
+	static void pushf();
 	static void pop(const string_view &reg);
+	static void popf(const string_view &reg);
 	static void load(const Type *ty);
 	static void store(const Type *ty);
 	static void cmp_zero(const Type *ty);

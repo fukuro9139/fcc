@@ -61,6 +61,18 @@ shared_ptr<Type> Type::get_common_type(shared_ptr<Type> ty1, shared_ptr<Type> ty
 		return pointer_to(ty1->_base);
 	}
 
+	/* 片方がdouble型ならdouble型 */
+	if (TypeKind::TY_DOUBLE == ty1->_kind || TypeKind::TY_DOUBLE == ty2->_kind)
+	{
+		return Type::DOUBLE_BASE;
+	}
+
+	/* 片方がfloat型ならfloat型 */
+	if (TypeKind::TY_FLOAT == ty1->_kind || TypeKind::TY_FLOAT == ty2->_kind)
+	{
+		return Type::FLOAT_BASE;
+	}
+
 	/* 算術演算の結果はint型以上とする */
 	if (ty1->_size < 4)
 	{
