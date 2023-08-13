@@ -283,6 +283,30 @@ void CodeGen::pushf()
 }
 
 /**
+ * @brief 引数をスタックにpushしていく
+ *
+ * @param node
+ */
+void CodeGen::push_args(Node *args)
+{
+	if (args)
+	{
+		push_args(args->_next.get());
+
+		/* 引数を評価 */
+		generate_expression(args);
+		if (args->_ty->is_flonum())
+		{
+			pushf();
+		}
+		else
+		{
+			push();
+		}
+	}
+}
+
+/**
  * @brief スタックからpopした数値を指定したレジスタにセットする
  *
  * @param reg 数値をセットするレジスタ
@@ -296,11 +320,11 @@ void CodeGen::pop(const string_view &reg)
 /**
  * @brief スタックからpopした浮動小数点数値を指定したレジスタにセットする
  *
- * @param reg 数値をセットするレジスタ
+ * @param reg 数値をセットするレジスタの番号
  */
-void CodeGen::popf(const string_view &reg)
+void CodeGen::popf(int reg)
 {
-	*os << "  movsd " << reg << ", QWORD PTR [rsp]\n";
+	*os << "  movsd xmm" << reg << ", QWORD PTR [rsp]\n";
 	*os << "  add rsp, 8\n";
 	--depth;
 }
@@ -561,23 +585,24 @@ void CodeGen::generate_expression(Node *node)
 	/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
 	{
-		/* 引数の数 */
-		int nargs = 0;
+		/* スタックに入れる */
+		push_args(node->_args.get());
 
+		/* 引数の数(gp:整数, fp:浮動小数点数) */
+		int gp = 0, fp = 0;
+
+		/* 引数をレジスタにセットしていく */
 		for (auto arg = node->_args.get(); arg; arg = arg->_next.get())
 		{
-			/* 引数の値を評価 */
-			generate_expression(arg);
-			/* スタックに入れる */
-			push();
-			++nargs;
+			if (arg->_ty->is_flonum())
+			{
+				popf(fp++);
+			}
+			else
+			{
+				pop(arg_regs64[gp++]);
+			}
 		}
-		/* 引数の値を対応するレジスタにセット */
-		for (int i = nargs - 1; i >= 0; --i)
-		{
-			pop(arg_regs64[i]);
-		}
-		*os << "  mov rax, 0\n";
 
 		/* 関数を呼び出す時点でのスタックフレームが16の倍数になるように調整 */
 		if (depth % 2 == 0)
@@ -626,7 +651,7 @@ void CodeGen::generate_expression(Node *node)
 		/* 左辺を計算 */
 		generate_expression(node->_lhs.get());
 		/* 右辺の計算結果を'rdi'にpop */
-		popf("xmm1");
+		popf(1);
 
 		string sz = (TypeKind::TY_FLOAT == node->_lhs->_ty->_kind) ? "ss" : "sd";
 

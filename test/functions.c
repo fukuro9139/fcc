@@ -116,6 +116,9 @@ unsigned short ushort_fn();
 char schar_fn();
 short sshort_fn();
 
+double add_double(double x, double y);
+float add_float(float x, float y);
+
 int main()
 {
 	ASSERT(3, ret3());
@@ -180,6 +183,9 @@ int main()
 	ASSERT(65528, ushort_fn());
 	ASSERT(-5, schar_fn());
 	ASSERT(-8, sshort_fn());
+
+	ASSERT(6, add_float(2.3, 3.8));
+	ASSERT(6, add_double(2.3, 3.8));
 
 	printf("OK\n");
 	return 0;
