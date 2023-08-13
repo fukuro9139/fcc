@@ -603,7 +603,7 @@ void CodeGen::generate_expression(Node *node)
 		case NodeKind::ND_NE:
 		case NodeKind::ND_LT:
 		case NodeKind::ND_LE:
-			*os << "  ucomi" << sz << "xmm1, xmm0\n";
+			*os << "  ucomi" << sz << " xmm1, xmm0\n";
 			if (NodeKind::ND_EQ == node->_kind)
 			{
 				*os << "  sete al\n";
