@@ -2990,14 +2990,16 @@ unique_ptr<Node> Node::unary(Token **next_token, Token *current_token)
 }
 
 /**
- * @brief 配列の添え字[]または構造体のメンバを読み取る
+ * @brief 型指定子の後に続くpostfixを読み取る
  *
  * @param next_token 残りのトークンを返すための参照
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * postfix = "(" type-name ")" "{" initializer-list "}"
- * 		   | primary ("[" expression "]" | "." identifier | "->" identifier | "++" | "--")*
+ * postfix = "(" type-name ")" "{" initializer-list "}" @n
+ * 		   | identifier "(" func-args ")" postfix-tail* @n
+ * 		   | primary postfix-tail* @n
+ * postfix-tail = "[" expression "]" | "(" func-args ")" | "." identifier | "->" identifier | "++" | "--"
  */
 unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 {
@@ -3029,6 +3031,13 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
 
 	for (;;)
 	{
+		/* 関数 */
+		if (current_token->is_equal("("))
+		{
+			node = function_call(&current_token, current_token->_next.get(), move(node));
+			continue;
+		}
+
 		/* 配列 */
 		if (current_token->is_equal("["))
 		{
@@ -3084,7 +3093,7 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
  * @details 下記のEBNF規則に従う。 @n
  * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | "sizeof" "(" type-name ")" @n
  * 		   | "_Alignof" "(" type-name ")" | "_Alignof" unary  | identifier args? | str | num @n
- * args = "(" ")"
+ * 		   | args = "(" ")" | identifier
  */
 unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 {
@@ -3160,33 +3169,30 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	/* トークンが識別子の場合 */
 	if (TokenKind::TK_IDENT == current_token->_kind)
 	{
-		/* 識別子の後に()がついていたら関数呼び出し */
+		/* 識別子名が登録済みか検索 */
+		const auto sc = Object::find_var(current_token);
+		*next_token = current_token->_next.get();
+
+		/* 識別子名が登録済み */
+		if (sc)
+		{
+			/* 変数 or 関数 */
+			if (sc->_var)
+			{
+				return make_unique<Node>(sc->_var, current_token);
+			}
+			/* 列挙型 */
+			if (sc->enum_ty)
+			{
+				return make_unique<Node>(sc->enum_val, current_token);
+			}
+		}
+
 		if (current_token->_next->is_equal("("))
 		{
-			return function_call(next_token, current_token);
+			error_token("関数が未宣言です", current_token);
 		}
-
-		/* それ以外なら普通の変数か列挙型の定数 */
-		const auto sc = Object::find_var(current_token);
-
-		/* 変数が宣言されていない場合はエラー */
-		if (!sc || (!sc->_var && !sc->enum_ty))
-		{
-			error_token("未宣言の変数です", current_token);
-		}
-		unique_ptr<Node> node;
-		/* 変数 */
-		if (sc->_var)
-		{
-			node = make_unique<Node>(sc->_var, current_token);
-		}
-		/* 列挙型の定数 */
-		else
-		{
-			node = make_unique<Node>(sc->enum_val, current_token);
-		}
-		*next_token = current_token->_next.get();
-		return node;
+		error_token("未定義の変数です", current_token);
 	}
 
 	/* トークンが数値の場合 */
@@ -3326,30 +3332,24 @@ shared_ptr<Type> Node::type_name(Token **next_token, Token *current_token)
  * @param current_token 現在処理しているトークン
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n
- * function_call = identifier "(" (assign ("," assign)*)? ")"
+ * function_call = "(" (assign ("," assign)*)? ")"
  */
-unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
+unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token, unique_ptr<Node> &&fn)
 {
-	auto start = current_token;
+	Type::add_type(fn.get());
 
-	/* 名前を検索 */
-	auto sc = Object::find_var(start);
-	/* 未宣言または関数として定義されていない場合はエラー */
-	if (!sc)
+	/* 関数または関数ポインタではない場合エラー */
+	if (TypeKind::TY_FUNC != fn->_ty->_kind &&
+		(TypeKind::TY_PTR != fn->_ty->_kind || TypeKind::TY_FUNC != fn->_ty->_base->_kind))
 	{
-		error_token("未宣言の関数です", start);
+		error_token("関数ではありません", fn->_token);
 	}
-	if (!sc->_var || sc->_var->_ty->_kind != TypeKind::TY_FUNC)
-	{
-		error_token("関数以外として宣言されています", start);
-	}
-	/* 関数の型 */
-	auto ty = sc->_var->_ty;
+
+	/* 戻り値の型 */
+	auto ty = (TypeKind::TY_FUNC == fn->_ty->_kind) ? fn->_ty : fn->_ty->_base;
+
 	/* 引数の型 */
 	auto param_ty = ty->_params;
-
-	/* 関数の引数を読む、引数は識別子の次の次のトークンから */
-	current_token = current_token->_next->_next.get();
 
 	/* ノードリストの先頭としてダミーのノードを生成 */
 	auto head = make_unique_for_overwrite<Node>();
@@ -3400,9 +3400,7 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 	}
 
 	/* 関数呼び出しノードを作成 */
-	auto node = make_unique<Node>(NodeKind::ND_FUNCALL, start);
-	/* 関数の名前をセット */
-	node->_func_name = move(start->_str);
+	auto node = make_unique<Node>(NodeKind::ND_FUNCALL, move(fn), current_token);
 	/* headの次のノード以降を切り離し返り値用のnodeのargsに繋ぐ */
 	node->_args = move(head->_next);
 	/* 関数の型をセット */

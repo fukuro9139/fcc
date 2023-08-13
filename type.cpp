@@ -130,28 +130,21 @@ void Type::add_type(Node *node)
 
 	switch (node->_kind)
 	{
-	case NodeKind::ND_NUM:
-		node->_ty = INT_BASE;
-		return;
 	/* 演算結果の型は大きいほうの型にあわせる */
 	case NodeKind::ND_ADD:
 	case NodeKind::ND_SUB:
 	case NodeKind::ND_MUL:
 	case NodeKind::ND_DIV:
-	case NodeKind::ND_MOD:
-	case NodeKind::ND_BITAND:
-	case NodeKind::ND_BITOR:
-	case NodeKind::ND_BITXOR:
 		usual_arith_conv(node->_lhs, node->_rhs);
 		node->_ty = node->_lhs->_ty;
-		return;
+		break;
 
 	case NodeKind::ND_NEG:
 	{
 		auto ty = get_common_type(INT_BASE, node->_lhs->_ty);
 		node->_lhs = Node::new_cast(move(node->_lhs), ty);
 		node->_ty = ty;
-		return;
+		break;
 	}
 
 	case NodeKind::ND_ASSIGN:
@@ -165,38 +158,7 @@ void Type::add_type(Node *node)
 			node->_rhs = Node::new_cast(move(node->_rhs), node->_lhs->_ty);
 		}
 		node->_ty = node->_lhs->_ty;
-		return;
-
-	/* 比較演算は大きい方の型に合わせて行う、結果はint型とする */
-	case NodeKind::ND_EQ:
-	case NodeKind::ND_NE:
-	case NodeKind::ND_LT:
-	case NodeKind::ND_LE:
-		/* 比較の前に大きいほうの型に合わせる */
-		usual_arith_conv(node->_lhs, node->_rhs);
-		node->_ty = Type::INT_BASE;
-		return;
-
-	case NodeKind::ND_FUNCALL:
-		node->_ty = Type::LONG_BASE;
-		return;
-
-	case NodeKind::ND_NOT:
-	case NodeKind::ND_LOGAND:
-	case NodeKind::ND_LOGOR:
-		node->_ty = INT_BASE;
-		return;
-
-	case NodeKind::ND_BITNOT:
-	case NodeKind::ND_SHL:
-	case NodeKind::ND_SHR:
-		node->_ty = node->_lhs->_ty;
-		return;
-
-	case NodeKind::ND_VAR:
-		/* オブジェクトの型に一致させる */
-		node->_ty = node->_var->_ty;
-		return;
+		break;
 
 	case NodeKind::ND_COND:
 		/* どちらかがvoid型の場合はvoid型 */
@@ -211,31 +173,35 @@ void Type::add_type(Node *node)
 			usual_arith_conv(node->_then, node->_else);
 			node->_ty = node->_then->_ty;
 		}
-		return;
+		break;
 
 	/* カンマ区切りの型は右辺に一致させる */
 	case NodeKind::ND_COMMA:
 		node->_ty = node->_rhs->_ty;
-		return;
+		break;
 
 	/* 構造体の型はメンバの型 */
 	case NodeKind::ND_MEMBER:
 		node->_ty = node->_member->_ty;
-		return;
+		break;
 
 	/* 参照は参照先へのポインタ型 */
 	case NodeKind::ND_ADDR:
+	{
+		auto ty = node->_lhs->_ty;
+
 		/* 配列型の変数への参照はポインタ型としてみた配列の型と同じ */
-		if (TypeKind::TY_ARRAY == node->_lhs->_ty->_kind)
+		if (TypeKind::TY_ARRAY == ty->_kind)
 		{
 			node->_ty = pointer_to(node->_lhs->_ty->_base);
 		}
 		/* そうでなければ左辺の型へのポインタ */
 		else
 		{
-			node->_ty = pointer_to(node->_lhs->_ty);
+			node->_ty = pointer_to(ty);
 		}
-		return;
+		break;
+	}
 
 	/* デリファレンス */
 	case NodeKind::ND_DEREF:
@@ -251,8 +217,51 @@ void Type::add_type(Node *node)
 		}
 		/* ポインタのベース型 */
 		node->_ty = node->_lhs->_ty->_base;
+		break;
 
-		return;
+	case NodeKind::ND_NOT:
+		node->_ty = INT_BASE;
+		break;
+
+	case NodeKind::ND_BITNOT:
+		node->_ty = node->_lhs->_ty;
+		break;
+
+	case NodeKind::ND_LOGAND:
+	case NodeKind::ND_LOGOR:
+		node->_ty = INT_BASE;
+		break;
+
+	case NodeKind::ND_FUNCALL:
+		node->_ty = Type::LONG_BASE;
+		break;
+
+	case NodeKind::ND_MOD:
+	case NodeKind::ND_BITAND:
+	case NodeKind::ND_BITOR:
+	case NodeKind::ND_BITXOR:
+		usual_arith_conv(node->_lhs, node->_rhs);
+		node->_ty = node->_lhs->_ty;
+		break;
+
+	case NodeKind::ND_SHL:
+	case NodeKind::ND_SHR:
+		node->_ty = node->_lhs->_ty;
+		break;
+
+	/* 比較演算は大きい方の型に合わせて行う、結果はint型とする */
+	case NodeKind::ND_EQ:
+	case NodeKind::ND_NE:
+	case NodeKind::ND_LT:
+	case NodeKind::ND_LE:
+		/* 比較の前に大きいほうの型に合わせる */
+		usual_arith_conv(node->_lhs, node->_rhs);
+		node->_ty = Type::INT_BASE;
+		break;
+
+	case NodeKind::ND_NUM:
+		node->_ty = INT_BASE;
+		break;
 
 	/* ステートメント式 */
 	case NodeKind::ND_STMT_EXPR:
@@ -260,7 +269,7 @@ void Type::add_type(Node *node)
 		/* 中身がなければ何もしない */
 		if (!node->_body)
 		{
-			return;
+			break;
 		}
 		auto stmt = node->_body.get();
 		/* 複文の中を最後まで辿っていく */
@@ -268,13 +277,20 @@ void Type::add_type(Node *node)
 		{
 			stmt = stmt->_next.get();
 		}
+
 		if (NodeKind::ND_EXPR_STMT == stmt->_kind)
 		{
 			node->_ty = stmt->_lhs->_ty;
-			return;
+			break;
 		}
 		error_token("ステートメント式はvoid型の戻り値をサポートしていません", node->_token);
 	}
+
+	case NodeKind::ND_VAR:
+		/* オブジェクトの型に一致させる */
+		node->_ty = node->_var->_ty;
+		break;
+
 	default:
 		break;
 	}

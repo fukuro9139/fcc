@@ -112,6 +112,7 @@ void CodeGen::load(const Type *ty)
 	case TypeKind::TY_DOUBLE:
 		*os << "  movsd xmm0, QWORD PTR [rax]\n";
 		return;
+	case TypeKind::TY_FUNC:
 	case TypeKind::TY_ARRAY:
 	case TypeKind::TY_STRUCT:
 	case TypeKind::TY_UNION:
@@ -378,6 +379,19 @@ void CodeGen::generate_address(Node *node)
 		if (node->_var->_is_local)
 		{
 			*os << "  lea rax, [rbp - " << node->_var->_offset << "]\n";
+			break;
+		}
+		/* 関数。RIP相対アドレッシングを使う */
+		else if (TypeKind::TY_FUNC == node->_ty->_kind)
+		{
+			if (node->_var->_is_definition)
+			{
+				*os << "  lea rax, [rip + " << node->_var->_name << "]\n";
+			}
+			else
+			{
+				*os << "  mov rax, [rip + " << node->_var->_name << "@GOTPCREL\n";
+			}
 		}
 		/* グローバル変数。RIP相対アドレッシングを使う */
 		else
@@ -550,6 +564,8 @@ void CodeGen::generate_expression(Node *node)
 	{
 		/* スタックに入れる */
 		push_args(node->_args.get());
+		/* raxに関数のアドレスを入れる */
+		generate_expression(node->_lhs.get());
 
 		/* 引数の数(gp:整数, fp:浮動小数点数) */
 		int gp = 0, fp = 0;
@@ -568,14 +584,15 @@ void CodeGen::generate_expression(Node *node)
 		}
 
 		/* 関数を呼び出す時点でのスタックフレームが16の倍数になるように調整 */
+		/* raxのアドレスの関数を呼び出す */
 		if (depth % 2 == 0)
 		{
-			*os << "  call " << node->_func_name << "\n";
+			*os << "  call " << "rax" << "\n";
 		}
 		else
 		{
 			*os << "  sub rsp, 8\n";
-			*os << "  call " << node->_func_name << "\n";
+			*os << "  call " << "rax" << "\n";
 			*os << "  add rsp, 8\n";
 		}
 
@@ -614,14 +631,14 @@ void CodeGen::generate_expression(Node *node)
 		if (TypeKind::TY_FLOAT == node->_ty->_kind)
 		{
 			u.f32 = node->_fval;
-			*os << "  mov eax, " << u.u32 << " #float " << node->_fval << "\n";
+			*os << "  mov eax, " << u.u32 << " ;float " << node->_fval << "\n";
 			*os << "  movq xmm0, rax\n";
 			break;
 		}
 		else if (TypeKind::TY_DOUBLE == node->_ty->_kind)
 		{
 			u.f64 = node->_fval;
-			*os << "  mov rax, " << u.u64 << " #double " << node->_fval << "\n";
+			*os << "  mov rax, " << u.u64 << " ;double " << node->_fval << "\n";
 			*os << "  movq xmm0, rax\n";
 			break;
 		}
@@ -1019,7 +1036,7 @@ void CodeGen::generate_statement(Node *node)
 	case NodeKind::ND_GOTO:
 		*os << "  jmp " << node->_unique_label << "\n";
 		break;
-		
+
 	case NodeKind::ND_LABEL:
 		*os << node->_unique_label << ":\n";
 		generate_statement(node->_lhs.get());

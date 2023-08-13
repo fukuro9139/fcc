@@ -110,7 +110,6 @@ public:
 	shared_ptr<Member> _member; /*!< 構造体メンバー */
 
 	/* 関数呼び出し */
-	string _func_name = "";	   /*!< kindがND_FUNCALLの場合のみ使う、呼び出す関数の名前  */
 	shared_ptr<Type> _func_ty; /*!< 関数の型 */
 	unique_ptr<Node> _args;	   /*!< 引数  */
 
@@ -226,7 +225,7 @@ private:
 	static shared_ptr<Type> pointers(Token **next_token, Token *current_token, shared_ptr<Type> ty);
 	static shared_ptr<Type> abstract_declarator(Token **next_token, Token *current_token, shared_ptr<Type> ty);
 	static shared_ptr<Type> type_name(Token **next_token, Token *current_token);
-	static unique_ptr<Node> function_call(Token **next_token, Token *current_token);
+	static unique_ptr<Node> function_call(Token **next_token, Token *current_token, unique_ptr<Node> &&fn);
 	static Token *global_variable(Token *token, shared_ptr<Type> &&base, const VarAttr *attr);
 	static void resolve_goto_label();
 	static bool is_function(Token *token);
