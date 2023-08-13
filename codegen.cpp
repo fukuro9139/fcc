@@ -390,7 +390,7 @@ void CodeGen::generate_address(Node *node)
 			}
 			else
 			{
-				*os << "  mov rax, [rip + " << node->_var->_name << "@GOTPCREL\n";
+				*os << "  mov rax, [rip + " << node->_var->_name << "@GOTPCREL]\n";
 			}
 		}
 		/* グローバル変数。RIP相対アドレッシングを使う */
