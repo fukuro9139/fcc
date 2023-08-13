@@ -82,6 +82,21 @@ private:
 	static void convert_keywords(Token *token);
 	static int from_hex(const char &c);
 	static void add_line_number(Token *token);
+
+	/** 型名 */
+	static constexpr string_view type_names[] = {"void", "_Bool", "char", "short", "int", "long", "float", "double", "struct", "union",
+												 "typedef", "enum", "static", "extern", "_Alignas", "signed", "unsigned",
+												 "const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
+	/** 識別子一覧 */
+	static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",
+											   "struct", "union", "short", "long", "void", "typedef", "_Bool",
+											   "enum", "static", "goto", "break", "continue", "switch", "case",
+											   "default", "extern", "_Alignof", "_Alignas", "do", "signed", "unsigned",
+											   "const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
+
+	/** 区切り文字一覧 */
+	static constexpr string_view punctuators[] = {"<<=", ">>=", "...", "==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=",
+												  "++", "--", "%=", "&=", "|=", "^=", "&&", "||", "<<", ">>"};
 };
 
 /* 汎用関数 */

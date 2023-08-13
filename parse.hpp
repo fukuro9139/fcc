@@ -35,7 +35,7 @@ struct Member
  *
  */
 enum class NodeKind
-{
+ {
 	ND_NULL_EXPR, /*!< 何もしない */
 	ND_ADD,		  /*!< + */
 	ND_SUB,		  /*!< - */

@@ -1837,11 +1837,13 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 	constexpr int SHORT = 1 << 6;
 	constexpr int INT = 1 << 8;
 	constexpr int LONG = 1 << 10;
-	constexpr int OTHER = 1 << 12;
-	constexpr int SIGNED = 1 << 13;
-	constexpr int UNSIGNED = 1 << 14;
+	constexpr int FLOAT = 1 << 12;
+	constexpr int DOUBLE = 1 << 14;
+	constexpr int OTHER = 1 << 16;
+	constexpr int SIGNED = 1 << 17;
+	constexpr int UNSIGNED = 1 << 18;
 
-	static const std::unordered_map<string, void (*)(int &)> add_counter = {
+	static const std::unordered_map<string_view, void (*)(int &)> add_counter = {
 		{"void", [](int &counter)
 		 { counter += VOID; }},
 		{"_Bool", [](int &counter)
@@ -1854,6 +1856,10 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		 { counter += INT; }},
 		{"long", [](int &counter)
 		 { counter += LONG; }},
+		{"float", [](int &counter)
+		 { counter += FLOAT; }},
+		{"double", [](int &counter)
+		 { counter += DOUBLE; }},
 		{"signed", [](int &counter)
 		 { counter |= SIGNED; }},
 		{"unsigned", [](int &counter)
@@ -1889,6 +1895,8 @@ shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAtt
 		{UNSIGNED + LONG + INT, Type::ULONG_BASE},
 		{UNSIGNED + LONG + LONG, Type::ULONG_BASE},
 		{UNSIGNED + LONG + LONG + INT, Type::ULONG_BASE},
+		{FLOAT, Type::FLOAT_BASE},
+		{DOUBLE, Type::DOUBLE_BASE},
 	};
 
 	/* それぞれの型名の出現回数を表すカウンタ。
@@ -3059,10 +3067,13 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 	if (TokenKind::TK_NUM == current_token->_kind)
 	{
 		unique_ptr<Node> node;
-		if(current_token->_ty->is_flonum()){
+		if (current_token->_ty->is_flonum())
+		{
 			node = make_unique<Node>(NodeKind::ND_NUM, current_token);
 			node->_fval = current_token->_fval;
-		}else{
+		}
+		else
+		{
 			node = make_unique<Node>(current_token->_val, current_token);
 		}
 		node->_ty = current_token->_ty;

@@ -114,4 +114,5 @@ public:
 	static const shared_ptr<Type> ULONG_BASE;  /*!< unsigned long型 */
 	static const shared_ptr<Type> FLOAT_BASE;  /*!< float型 */
 	static const shared_ptr<Type> DOUBLE_BASE; /*!< double型 */
+
 };

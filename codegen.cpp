@@ -16,44 +16,11 @@
 /** スタックの深さ */
 static int depth = 0;
 
-/** 64ビット整数レジスタ、前から順に関数の引数を格納される */
-static const vector<string> arg_regs64 = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
-
-/** 整数レジスタの下位32ビットのエイリアス、前から順に関数の引数を格納される */
-static const vector<string> arg_regs32 = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
-
-/** 整数レジスタの下位16ビットのエイリアス、前から順に関数の引数を格納される */
-static const vector<string> arg_regs16 = {"di", "si", "dx", "cx", "r8w", "r9w"};
-
-/** 整数レジスタの下位8ビットのエイリアス、前から順に関数の引数を格納される */
-static const vector<string> arg_regs8 = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
-
 /** 現在処理中の関数*/
 static Object *current_func = nullptr;
 
 /* 入出力 */
 static std::ostream *os = &std::cout;
-
-/* 符号拡張転送 */
-constexpr std::string_view i32i8 = "  movsx eax, al\n";
-constexpr std::string_view i32u8 = "  movzx eax, al\n";
-constexpr std::string_view i32i16 = "  movsx eax, ax\n";
-constexpr std::string_view i32u16 = "  movzx eax, ax\n";
-constexpr std::string_view i32i64 = "  movsxd rax, eax\n";
-constexpr std::string_view u32i64 = "  mov eax, eax\n";
-constexpr std::string_view none = "";
-
-static const std::string_view cast_table[8][8] = {
-	// i8	 i16	i32  i64   u8	u16    u32   	u64
-	{none, none, none, i32i64, i32u8, i32u16, none, i32i64},	// i8
-	{i32i8, none, none, i32i64, i32u8, i32u16, none, i32i64},	// i16
-	{i32i8, i32i16, none, i32i64, i32u8, i32u16, none, i32i64}, // i32
-	{i32i8, i32i16, none, none, i32u8, i32u16, none, none},		// i64
-	{i32i8, none, none, i32i64, none, none, none, i32i64},		// u8
-	{i32i8, i32i16, none, i32i64, i32u8, none, none, i32i64},	// u16
-	{i32i8, i32i16, none, u32i64, i32u8, i32u16, none, u32i64}, // u32
-	{i32i8, i32i16, none, none, i32u8, i32u16, none, none},		// u64
-};
 
 /*****************/
 /* CodeGen Class */
@@ -65,22 +32,34 @@ static const std::string_view cast_table[8][8] = {
  * @param ty 判定する型
  * @return 型のID
  */
-TypeID CodeGen::get_TypeId(Type *ty)
+int CodeGen::get_TypeId(Type *ty)
 {
+	TypeID id = TypeID::U64;
+
 	switch (ty->_kind)
 	{
 	case TypeKind::TY_CHAR:
-		return ty->_is_unsigned ? TypeID::U8 : TypeID::I8;
+		id = ty->_is_unsigned ? TypeID::U8 : TypeID::I8;
+		break;
 	case TypeKind::TY_SHORT:
-		return ty->_is_unsigned ? TypeID::U16 : TypeID::I16;
+		id = ty->_is_unsigned ? TypeID::U16 : TypeID::I16;
+		break;
 	case TypeKind::TY_INT:
-		return ty->_is_unsigned ? TypeID::U32 : TypeID::I32;
+		id = ty->_is_unsigned ? TypeID::U32 : TypeID::I32;
+		break;
 	case TypeKind::TY_LONG:
-		return ty->_is_unsigned ? TypeID::U64 : TypeID::I64;
+		id = ty->_is_unsigned ? TypeID::U64 : TypeID::I64;
+		break;
+	case TypeKind::TY_FLOAT:
+		id = TypeID::F32;
+		break;
+	case TypeKind::TY_DOUBLE:
+		id = TypeID::F64;
+		break;
 	default:
 		break;
 	}
-	return TypeID::U64;
+	return static_cast<int>(id);
 }
 
 /**
@@ -106,8 +85,8 @@ void CodeGen::cast(Type *from, Type *to)
 		return;
 	}
 
-	auto t1 = static_cast<int>(get_TypeId(from));
-	auto t2 = static_cast<int>(get_TypeId(to));
+	auto t1 = get_TypeId(from);
+	auto t2 = get_TypeId(to);
 	if (!cast_table[t1][t2].empty())
 	{
 		*os << cast_table[t1][t2];
@@ -125,11 +104,21 @@ void CodeGen::load(const Type *ty)
 	/* これは一般的に配列全体をレジスタに読み込むことはできないからである。*/
 	/* そのため配列型の変数の評価は配列そのものではなく配列のアドレスとなる。*/
 	/* これは配列型が暗黙に配列の最初の要素へのポインタへ返還されることを示している。 */
-	if (TypeKind::TY_ARRAY == ty->_kind ||
-		TypeKind::TY_STRUCT == ty->_kind ||
-		TypeKind::TY_UNION == ty->_kind)
+	switch (ty->_kind)
 	{
+	case TypeKind::TY_ARRAY:
+	case TypeKind::TY_STRUCT:
+	case TypeKind::TY_UNION:
 		return;
+
+	case TypeKind::TY_FLOAT:
+		*os << "  movss xmm0, DWORD PTR [rax]\n";
+		return;
+	case TypeKind::TY_DOUBLE:
+		*os << "  movsd xmm0, QWORD PTR [rax]\n";
+		return;
+	default:
+		break;
 	}
 
 	/* char型およびshort型の値をロードするとき、常にint型のサイズに拡張する。
@@ -165,15 +154,28 @@ void CodeGen::store(const Type *ty)
 {
 	pop("rdi");
 
-	/* 構造体、共用体の場合は1バイトずつr8b経由でストアする */
-	if (ty->_kind == TypeKind::TY_STRUCT || ty->_kind == TypeKind::TY_UNION)
+	switch (ty->_kind)
 	{
+	/* 構造体、共用体の場合は1バイトずつr8b経由でストアする */
+	case TypeKind::TY_STRUCT:
+	case TypeKind::TY_UNION:
 		for (int i = 0; i < ty->_size; ++i)
 		{
 			*os << "  mov r8b, [rax + " << i << " ]\n";
 			*os << "  mov [rdi + " << i << " ], r8b\n";
 		}
 		return;
+
+	case TypeKind::TY_FLOAT:
+		*os << "  movss DWORD PTR [rdi], xmm0\n";
+		return;
+
+	case TypeKind::TY_DOUBLE:
+		*os << "  movsd QWORD PTR [rdi], xmm0\n";
+		return;
+	
+	default:
+		break;
 	}
 
 	if (1 == ty->_size)
@@ -263,18 +265,7 @@ void CodeGen::push()
  *
  * @param reg 数値をセットするレジスタ
  */
-void CodeGen::pop(string &&reg)
-{
-	*os << "  pop " << reg << "\n";
-	--depth;
-}
-
-/**
- * @brief スタックからpopした数値を指定したレジスタにセットする
- *
- * @param reg 数値をセットするレジスタ
- */
-void CodeGen::pop(const string &reg)
+void CodeGen::pop(const string_view &reg)
 {
 	*os << "  pop " << reg << "\n";
 	--depth;
@@ -336,16 +327,25 @@ void CodeGen::generate_expression(Node *node)
 
 	/* 数値 */
 	case NodeKind::ND_NUM:
-	{	
+	{
 		/* 浮動小数点を扱うための共用体 */
-		union { float f32; double f64; uint32_t u32; uint64_t u64; } u;
+		union
+		{
+			float f32;
+			double f64;
+			uint32_t u32;
+			uint64_t u64;
+		} u;
 
-		if(TypeKind::TY_FLOAT == node->_ty->_kind){
+		if (TypeKind::TY_FLOAT == node->_ty->_kind)
+		{
 			u.f32 = node->_fval;
 			*os << "  mov eax, " << u.u32 << " #float " << node->_fval << "\n";
 			*os << "  movq xmm0, rax\n";
 			return;
-		}else if(TypeKind::TY_DOUBLE == node->_ty->_kind){
+		}
+		else if (TypeKind::TY_DOUBLE == node->_ty->_kind)
+		{
 			u.f64 = node->_fval;
 			*os << "  mov rax, " << u.u64 << " #double " << node->_fval << "\n";
 			*os << "  movq xmm0, rax\n";

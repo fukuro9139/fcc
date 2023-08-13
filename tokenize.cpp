@@ -20,44 +20,6 @@ static string current_input = "";
 /** 入力ファイル */
 static string current_filename = "";
 
-/** 型名 */
-static const std::unordered_set<string> type_names = {"void", "_Bool", "char", "short", "int", "long", "struct", "union",
-													  "typedef", "enum", "static", "extern", "_Alignas", "signed", "unsigned",
-													  "const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
-
-/** 識別子一覧 */
-static const std::unordered_set<string> keywords = {"return", "if", "else", "for", "while", "int", "sizeof", "char",
-													"struct", "union", "short", "long", "void", "typedef", "_Bool",
-													"enum", "static", "goto", "break", "continue", "switch", "case",
-													"default", "extern", "_Alignof", "_Alignas", "do", "signed", "unsigned",
-													"const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
-
-/** 区切り文字一覧 */
-static const vector<string> punctuators =
-	{
-		"<<=",
-		">>=",
-		"...",
-		"==",
-		"!=",
-		"<=",
-		">=",
-		"->",
-		"+=",
-		"-=",
-		"*=",
-		"/=",
-		"++",
-		"--",
-		"%=",
-		"&=",
-		"|=",
-		"^=",
-		"&&",
-		"||",
-		"<<",
-		">>"};
-
 /***********/
 /* 汎用関数 */
 /***********/
@@ -326,7 +288,14 @@ void Token::convert_keywords(Token *token)
  */
 bool Token::is_keyword() const
 {
-	return keywords.count(_str) > 0;
+	for (auto &kw : keywords)
+	{
+		if (kw == _str)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -482,7 +451,7 @@ unique_ptr<Token> Token::read_number(const string::const_iterator &start)
 		token = read_int_literal(start);
 
 		/* これらが整数値の後についていなければ整数 */
-		constexpr std::string_view float_mark = ".eEfF";
+		constexpr string_view float_mark = ".eEfF";
 		if (float_mark.find(*(start + token->_str.size())) == string::npos)
 		{
 			return token;
@@ -736,9 +705,10 @@ bool Token::is_end() const
 bool Token::is_typename() const
 {
 	/* 標準の型指定子 */
-	if (type_names.count(_str))
-	{
-		return true;
+	for(auto &name:type_names){
+		if(name == _str){
+			return true;
+		}
 	}
 
 	/* typedefされた定義を検索する */
