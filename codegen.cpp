@@ -203,6 +203,28 @@ void CodeGen::store(const Type *ty)
  * @param offset ストアするスタック領域のオフセット
  * @param sz データサイズ
  */
+void CodeGen::store_fp(const int &r, const int &offset, const int &sz)
+{
+	switch (sz)
+	{
+	case 4:
+		*os << "  movss DWORD PTR [rbp - " << offset << "], xmm" << r << "\n";
+		break;
+	case 8:
+		*os << "  movsd QWORD PTR [rbp - " << offset << "], xmm" << r << "\n";
+		break;
+	default:
+		unreachable();
+	}
+}
+
+/**
+ * @brief GPレジスタ上の引数の値をスタック領域にストアする
+ *
+ * @param r 何番目の引数か
+ * @param offset ストアするスタック領域のオフセット
+ * @param sz データサイズ
+ */
 void CodeGen::store_gp(const int &r, const int &offset, const int &sz)
 {
 	switch (sz)
@@ -1129,11 +1151,18 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 			*os << "  movsd QWORD PTR [rbp - " << off - 128 << "], xmm7\n";
 		}
 
-		/* 関数の場合、レジスタから引数を受け取って確保してあるスタック領域にローカル変数と同様にストアする */
-		int cnt = 0;
+		/* レジスタから引数を受け取って確保してあるスタック領域にローカル変数と同様にストアする */
+		int gp = 0, fp = 0;
 		for (auto var = fn->_params.get(); var; var = var->_next.get())
 		{
-			store_gp(cnt++, var->_offset, var->_ty->_size);
+			if (var->_ty->is_flonum())
+			{
+				store_fp(fp++, var->_offset, var->_ty->_size);
+			}
+			else
+			{
+				store_gp(gp++, var->_offset, var->_ty->_size);
+			}
 		}
 
 		/* コードを出力 */

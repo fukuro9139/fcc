@@ -39,11 +39,12 @@ private:
 	static void popf(int reg);
 	static void load(const Type *ty);
 	static void store(const Type *ty);
+	static void store_fp(const int &r, const int &offset, const int &sz);
+	static void store_gp(const int &r, const int &offset, const int &sz);
 	static void cmp_zero(const Type *ty);
 	static void generate_address(Node *node);
 	static void generate_expression(Node *node);
 	static void generate_statement(Node *node);
-	static void store_gp(const int &r, const int &offset, const int &sz);
 	static void emit_data(const unique_ptr<Object> &program);
 	static void emit_text(const unique_ptr<Object> &program);
 	static int label_count();
