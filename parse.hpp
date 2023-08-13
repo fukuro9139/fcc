@@ -181,6 +181,7 @@ private:
 	static unique_ptr<Node> lvar_initializer(Token **next_token, Token *current_token, Object *var);
 	static void gvar_initializer(Token **next_token, Token *current_token, Object *var);
 	static void write_buf(unsigned char buf[], int64_t val, int sz, int offset);
+	static void write_fval_buf(unsigned char buf[], double val, int sz, int offset);
 	static Relocation *write_gvar_data(Relocation *cur, Initializer *init, Type *ty, unsigned char buf[], int offset);
 	static unique_ptr<Node> compound_statement(Token **next_token, Token *current_token);
 	static Token *function_definition(Token *token, shared_ptr<Type> &&base, VarAttr *attr);
@@ -203,6 +204,7 @@ private:
 	static int64_t evaluate(Node *node);
 	static int64_t evaluate2(Node *node, string *label);
 	static int64_t evaluate_rval(Node *node, string *label);
+	static double evaluate_double(Node *node);
 	static unique_ptr<Node> to_assign(unique_ptr<Node> &&binary);
 	static unique_ptr<Node> log_or(Token **next_token, Token *current_token);
 	static unique_ptr<Node> conditional(Token **next_token, Token *current_token);

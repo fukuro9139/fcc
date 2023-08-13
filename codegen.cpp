@@ -106,16 +106,15 @@ void CodeGen::load(const Type *ty)
 	/* これは配列型が暗黙に配列の最初の要素へのポインタへ返還されることを示している。 */
 	switch (ty->_kind)
 	{
-	case TypeKind::TY_ARRAY:
-	case TypeKind::TY_STRUCT:
-	case TypeKind::TY_UNION:
-		return;
-
 	case TypeKind::TY_FLOAT:
 		*os << "  movss xmm0, DWORD PTR [rax]\n";
 		return;
 	case TypeKind::TY_DOUBLE:
 		*os << "  movsd xmm0, QWORD PTR [rax]\n";
+		return;
+	case TypeKind::TY_ARRAY:
+	case TypeKind::TY_STRUCT:
+	case TypeKind::TY_UNION:
 		return;
 	default:
 		break;
@@ -156,6 +155,14 @@ void CodeGen::store(const Type *ty)
 
 	switch (ty->_kind)
 	{
+	case TypeKind::TY_FLOAT:
+		*os << "  movss DWORD PTR [rdi], xmm0\n";
+		return;
+
+	case TypeKind::TY_DOUBLE:
+		*os << "  movsd QWORD PTR [rdi], xmm0\n";
+		return;
+
 	/* 構造体、共用体の場合は1バイトずつr8b経由でストアする */
 	case TypeKind::TY_STRUCT:
 	case TypeKind::TY_UNION:
@@ -164,14 +171,6 @@ void CodeGen::store(const Type *ty)
 			*os << "  mov r8b, [rax + " << i << " ]\n";
 			*os << "  mov [rdi + " << i << " ], r8b\n";
 		}
-		return;
-
-	case TypeKind::TY_FLOAT:
-		*os << "  movss DWORD PTR [rdi], xmm0\n";
-		return;
-
-	case TypeKind::TY_DOUBLE:
-		*os << "  movsd QWORD PTR [rdi], xmm0\n";
 		return;
 
 	default:
@@ -231,20 +230,19 @@ void CodeGen::store_gp(const int &r, const int &offset, const int &sz)
 	{
 	case 1:
 		*os << "  mov [rbp - " << offset << "], " << arg_regs8[r] << "\n";
-		return;
+		break;
 	case 2:
 		*os << "  mov [rbp - " << offset << "], " << arg_regs16[r] << "\n";
-		return;
+		break;
 	case 4:
 		*os << "  mov [rbp - " << offset << "], " << arg_regs32[r] << "\n";
-		return;
+		break;
 	case 8:
 		*os << "  mov [rbp - " << offset << "], " << arg_regs64[r] << "\n";
-		return;
-	default:
 		break;
+	default:
+		unreachable();
 	}
-	unreachable();
 }
 
 /**
@@ -361,6 +359,20 @@ void CodeGen::generate_address(Node *node)
 {
 	switch (node->_kind)
 	{
+	case NodeKind::ND_COMMA:
+		generate_expression(node->_lhs.get());
+		generate_address(node->_rhs.get());
+		break;
+
+	case NodeKind::ND_MEMBER:
+		generate_address(node->_lhs.get());
+		*os << "  add rax, " << node->_member->_offset << "\n";
+		break;
+
+	case NodeKind::ND_DEREF:
+		generate_expression(node->_lhs.get());
+		break;
+
 	case NodeKind::ND_VAR:
 		/* ローカル変数 */
 		if (node->_var->_is_local)
@@ -372,23 +384,11 @@ void CodeGen::generate_address(Node *node)
 		{
 			*os << "  lea rax, [rip + " << node->_var->_name << "]\n";
 		}
-
-		return;
-	case NodeKind::ND_DEREF:
-		generate_expression(node->_lhs.get());
-		return;
-	case NodeKind::ND_COMMA:
-		generate_expression(node->_lhs.get());
-		generate_address(node->_rhs.get());
-		return;
-	case NodeKind::ND_MEMBER:
-		generate_address(node->_lhs.get());
-		*os << "  add rax, " << node->_member->_offset << "\n";
-		return;
-	default:
 		break;
+
+	default:
+		error_token("左辺値ではありません", node->_token);
 	}
-	error_token("左辺値ではありません", node->_token);
 }
 
 /**
@@ -403,39 +403,7 @@ void CodeGen::generate_expression(Node *node)
 	{
 	/* NULL */
 	case NodeKind::ND_NULL_EXPR:
-		return;
-
-	/* 数値 */
-	case NodeKind::ND_NUM:
-	{
-		/* 浮動小数点を扱うための共用体 */
-		union
-		{
-			float f32;
-			double f64;
-			uint32_t u32;
-			uint64_t u64;
-		} u;
-
-		if (TypeKind::TY_FLOAT == node->_ty->_kind)
-		{
-			u.f32 = node->_fval;
-			*os << "  mov eax, " << u.u32 << " #float " << node->_fval << "\n";
-			*os << "  movq xmm0, rax\n";
-			return;
-		}
-		else if (TypeKind::TY_DOUBLE == node->_ty->_kind)
-		{
-			u.f64 = node->_fval;
-			*os << "  mov rax, " << u.u64 << " #double " << node->_fval << "\n";
-			*os << "  movq xmm0, rax\n";
-			return;
-		}
-
-		/* 数値を'rax'に格納 */
-		*os << "  mov rax, " << node->_val << "\n";
-		return;
-	}
+		break;
 
 	/* 単項演算子の'-' */
 	case NodeKind::ND_NEG:
@@ -450,44 +418,18 @@ void CodeGen::generate_expression(Node *node)
 			*os << "  shl rax, 31\n";
 			*os << "  movq xmm1, rax\n";
 			*os << "  xorps xmm0, xmm1\n";
-			return;
+			break;
 		case TypeKind::TY_DOUBLE:
 			*os << "  mov rax, 1\n";
 			*os << "  shl rax, 63\n";
 			*os << "  movq xmm1, rax\n";
 			*os << "  xorpd xmm0, xmm1\n";
-			return;
-		default:
 			break;
+		default:
+			/* 符号を反転させる */
+			*os << "  neg rax\n";
 		}
-		/* 符号を反転させる */
-		*os << "  neg rax\n";
-		return;
-
-	/* 変数, 構造体のメンバ */
-	case NodeKind::ND_VAR:
-	case NodeKind::ND_MEMBER:
-	{
-		/* 変数のアドレスを計算 */
-		generate_address(node);
-		/* 変数のアドレスから値をロードする */
-		load(node->_ty.get());
-		return;
-	}
-
-	/* 参照外し */
-	case NodeKind::ND_DEREF:
-		/* 参照先のアドレスを計算 */
-		generate_expression(node->_lhs.get());
-		/* 参照先のアドレスの値をロード */
-		load(node->_ty.get());
-		return;
-
-	/* 参照 */
-	case NodeKind::ND_ADDR:
-		/* アドレスを計算 */
-		generate_address(node->_lhs.get());
-		return;
+		break;
 
 	/* 代入 */
 	case NodeKind::ND_ASSIGN:
@@ -499,34 +441,7 @@ void CodeGen::generate_expression(Node *node)
 		generate_expression(node->_rhs.get());
 		/* raxの値をストアする */
 		store(node->_ty.get());
-		return;
-
-	/* 重複文 */
-	case NodeKind::ND_STMT_EXPR:
-	{
-		for (auto cur = node->_body.get(); cur; cur = cur->_next.get())
-		{
-			generate_statement(cur);
-		}
-		return;
-	}
-
-	/* カンマ区切り */
-	case NodeKind::ND_COMMA:
-		generate_expression(node->_lhs.get());
-		generate_expression(node->_rhs.get());
-		return;
-
-	case NodeKind::ND_MEMZERO:
-		/* 変数が使うメモリサイズ */
-		*os << "  mov rcx, " << node->_var->_ty->_size << "\n";
-		/* 変数のアドレス */
-		*os << "  lea rdi, [rbp - " << node->_var->_offset << "]\n";
-		/* alに0をセット */
-		*os << "  mov al, 0\n";
-		/* 0クリア */
-		*os << "  rep stosb\n";
-		return;
+		break;
 
 	/* 3項演算子 */
 	case NodeKind::ND_COND:
@@ -543,8 +458,38 @@ void CodeGen::generate_expression(Node *node)
 		*os << ".L.else." << c << ":\n";
 		generate_expression(node->_else.get());
 		*os << ".L.end." << c << ":\n";
-		return;
+		break;
 	}
+
+	/* カンマ区切り */
+	case NodeKind::ND_COMMA:
+		generate_expression(node->_lhs.get());
+		generate_expression(node->_rhs.get());
+		break;
+
+	/* 構造体のメンバ */
+	case NodeKind::ND_MEMBER:
+	{
+		/* 変数のアドレスを計算 */
+		generate_address(node);
+		/* 変数のアドレスから値をロードする */
+		load(node->_ty.get());
+		break;
+	}
+
+	/* 参照 */
+	case NodeKind::ND_ADDR:
+		/* アドレスを計算 */
+		generate_address(node->_lhs.get());
+		break;
+
+	/* 参照外し */
+	case NodeKind::ND_DEREF:
+		/* 参照先のアドレスを計算 */
+		generate_expression(node->_lhs.get());
+		/* 参照先のアドレスの値をロード */
+		load(node->_ty.get());
+		break;
 
 	/* ! */
 	case NodeKind::ND_NOT:
@@ -554,13 +499,13 @@ void CodeGen::generate_expression(Node *node)
 		/* 0と一致なら1, それ以外は0 */
 		*os << "  sete al\n";
 		*os << "  movzx rax, al\n";
-		return;
+		break;
 
 	/* ~ */
 	case NodeKind::ND_BITNOT:
 		generate_expression(node->_lhs.get());
 		*os << "  not rax\n";
-		return;
+		break;
 
 	/* && */
 	case NodeKind::ND_LOGAND:
@@ -578,9 +523,10 @@ void CodeGen::generate_expression(Node *node)
 		*os << ".L.false." << c << ":\n";
 		*os << "  mov rax, 0\n";
 		*os << ".L.end." << c << ":\n";
-		return;
+		break;
 	}
 
+	/* || */
 	case NodeKind::ND_LOGOR:
 	{
 		const int c = label_count();
@@ -596,13 +542,8 @@ void CodeGen::generate_expression(Node *node)
 		*os << ".L.true." << c << ":\n";
 		*os << "  mov rax, 1\n";
 		*os << ".L.end." << c << ":\n";
-		return;
+		break;
 	}
-
-	case NodeKind::ND_CAST:
-		generate_expression(node->_lhs.get());
-		cast(node->_lhs->_ty.get(), node->_ty.get());
-		return;
 
 	/* 関数呼び出し */
 	case NodeKind::ND_FUNCALL:
@@ -645,24 +586,99 @@ void CodeGen::generate_expression(Node *node)
 		{
 		case TypeKind::TY_BOOL:
 			*os << "  movzx eax, al\n";
-			return;
+			break;
 		case TypeKind::TY_CHAR:
 			*os << (node->_ty->_is_unsigned ? "  movzx" : "  movsx") << " eax, al\n";
-			return;
+			break;
 		case TypeKind::TY_SHORT:
 			*os << (node->_ty->_is_unsigned ? "  movzx" : "  movsx") << " eax, ax\n";
-			return;
+			break;
 		default:
 			break;
 		}
-
-		return;
-	}
-
-	default:
 		break;
 	}
 
+	/* 数値 */
+	case NodeKind::ND_NUM:
+	{
+		/* 浮動小数点を扱うための共用体 */
+		union
+		{
+			float f32;
+			double f64;
+			uint32_t u32;
+			uint64_t u64;
+		} u;
+
+		if (TypeKind::TY_FLOAT == node->_ty->_kind)
+		{
+			u.f32 = node->_fval;
+			*os << "  mov eax, " << u.u32 << " #float " << node->_fval << "\n";
+			*os << "  movq xmm0, rax\n";
+			break;
+		}
+		else if (TypeKind::TY_DOUBLE == node->_ty->_kind)
+		{
+			u.f64 = node->_fval;
+			*os << "  mov rax, " << u.u64 << " #double " << node->_fval << "\n";
+			*os << "  movq xmm0, rax\n";
+			break;
+		}
+
+		/* 数値を'rax'に格納 */
+		*os << "  mov rax, " << node->_val << "\n";
+		break;
+	}
+
+	/* 重複文 */
+	case NodeKind::ND_STMT_EXPR:
+	{
+		for (auto cur = node->_body.get(); cur; cur = cur->_next.get())
+		{
+			generate_statement(cur);
+		}
+		break;
+	}
+
+	/* 構造体のメンバ */
+	case NodeKind::ND_VAR:
+	{
+		/* メンバのアドレスを計算 */
+		generate_address(node);
+		/* メンバのアドレスから値をロードする */
+		load(node->_ty.get());
+		break;
+	}
+
+	case NodeKind::ND_CAST:
+		generate_expression(node->_lhs.get());
+		cast(node->_lhs->_ty.get(), node->_ty.get());
+		break;
+
+	case NodeKind::ND_MEMZERO:
+		/* 変数が使うメモリサイズ */
+		*os << "  mov rcx, " << node->_var->_ty->_size << "\n";
+		/* 変数のアドレス */
+		*os << "  lea rdi, [rbp - " << node->_var->_offset << "]\n";
+		/* alに0をセット */
+		*os << "  mov al, 0\n";
+		/* 0クリア */
+		*os << "  rep stosb\n";
+		break;
+
+	default:
+		generate_expression2(node);
+	}
+}
+
+/**
+ * @brief 右辺と左辺を持つ式をアセンブリに変換
+ *
+ * @param node 変換対象のAST
+ */
+void CodeGen::generate_expression2(Node *node)
+{
 	/* 左辺が浮動小数点数の場合 */
 	if (node->_lhs->_ty->is_flonum())
 	{
@@ -682,22 +698,22 @@ void CodeGen::generate_expression(Node *node)
 		case NodeKind::ND_ADD:
 			/* 'xmm0' = 'xmm0' + 'xmm1' */
 			*os << "  add" << sz << " xmm0, xmm1\n";
-			return;
+			break;
 
 		case NodeKind::ND_SUB:
 			/* 'xmm0' = 'xmm0' - 'xmm1' */
 			*os << "  sub" << sz << " xmm0, xmm1\n";
-			return;
+			break;
 
 		case NodeKind::ND_MUL:
 			/* 'xmm0' = 'xmm0' * 'xmm1' */
 			*os << "  mul" << sz << " xmm0, xmm1\n";
-			return;
+			break;
 
 		case NodeKind::ND_DIV:
 			/* 'xmm0' = 'xmm0' / 'xmm1' */
 			*os << "  div" << sz << " xmm0, xmm1\n";
-			return;
+			break;
 
 		case NodeKind::ND_EQ:
 		case NodeKind::ND_NE:
@@ -726,11 +742,11 @@ void CodeGen::generate_expression(Node *node)
 			}
 			*os << "  and al, 1\n";
 			*os << "  movzb rax, al\n";
-			return;
-		default:
 			break;
+		default:
+			error_token("不正な式です", node->_token);
 		}
-		error_token("不正な式です", node->_token);
+		return;
 	}
 
 	/* 右辺を計算 */
@@ -765,17 +781,17 @@ void CodeGen::generate_expression(Node *node)
 	case NodeKind::ND_ADD:
 		/* 'rax' = 'rax' + 'rdi' */
 		*os << "  add " << ax << ", " << di << "\n";
-		return;
+		break;
 
 	case NodeKind::ND_SUB:
 		/* 'rax' = 'rax' - 'rdi' */
 		*os << "  sub " << ax << ", " << di << "\n";
-		return;
+		break;
 
 	case NodeKind::ND_MUL:
 		/* 'rax' = 'rax' * 'rdi' */
 		*os << "  imul " << ax << ", " << di << "\n";
-		return;
+		break;
 
 	case NodeKind::ND_DIV:
 	case NodeKind::ND_MOD:
@@ -805,19 +821,31 @@ void CodeGen::generate_expression(Node *node)
 		{
 			*os << "  mov rax, rdx\n";
 		}
-		return;
+		break;
 
 	case NodeKind::ND_BITAND:
 		*os << "  and " << ax << ", " << di << "\n";
-		return;
+		break;
 
 	case NodeKind::ND_BITOR:
 		*os << "  or " << ax << ", " << di << "\n";
-		return;
+		break;
 
 	case NodeKind::ND_BITXOR:
 		*os << "  xor " << ax << ", " << di << "\n";
-		return;
+		break;
+
+	case NodeKind::ND_SHL:
+		/* 右辺の値をrdiからrcxに転送 */
+		*os << "  mov rcx, rdi\n";
+		*os << "  shl " << ax << ", cl\n";
+		break;
+
+	case NodeKind::ND_SHR:
+		/* 右辺の値をrdiからrcxに転送 */
+		*os << "  mov rcx, rdi\n";
+		*os << (node->_lhs->_ty->_is_unsigned ? "  shr " : "  sar ") << ax << ", cl\n";
+		break;
 
 	case NodeKind::ND_EQ:
 	case NodeKind::ND_NE:
@@ -842,25 +870,12 @@ void CodeGen::generate_expression(Node *node)
 			*os << (node->_lhs->_ty->_is_unsigned ? "  setbe al\n" : "  setle al\n");
 		}
 		*os << "  movzb rax, al\n";
-		return;
-
-	case NodeKind::ND_SHL:
-		/* 右辺の値をrdiからrcxに転送 */
-		*os << "  mov rcx, rdi\n";
-		*os << "  shl " << ax << ", cl\n";
-		return;
-
-	case NodeKind::ND_SHR:
-		/* 右辺の値をrdiからrcxに転送 */
-		*os << "  mov rcx, rdi\n";
-		*os << (node->_lhs->_ty->_is_unsigned ? "  shr " : "  sar ") << ax << ", cl\n";
-		return;
+		break;
 
 	default:
-		break;
+		/* エラー */
+		error_token("不正な式です", node->_token);
 	}
-	/* エラー */
-	error_token("不正な式です", node->_token);
 }
 
 /**
@@ -874,13 +889,6 @@ void CodeGen::generate_statement(Node *node)
 
 	switch (node->_kind)
 	{
-	case NodeKind::ND_GOTO:
-		*os << "  jmp " << node->_unique_label << "\n";
-		return;
-	case NodeKind::ND_LABEL:
-		*os << node->_unique_label << ":\n";
-		generate_statement(node->_lhs.get());
-		return;
 	case NodeKind::ND_RETURN:
 		/* return の後に式が存在する場合、戻り値を評価 */
 		if (node->_lhs)
@@ -890,10 +898,8 @@ void CodeGen::generate_statement(Node *node)
 
 		/* エピローグまでjmpする */
 		*os << "  jmp .L.return." << current_func->_name << "\n";
-		return;
-	case NodeKind::ND_EXPR_STMT:
-		generate_expression(node->_lhs.get());
-		return;
+		break;
+
 	case NodeKind::ND_IF:
 	{
 		/* 通し番号を取得 */
@@ -917,7 +923,7 @@ void CodeGen::generate_statement(Node *node)
 			generate_statement(node->_else.get());
 		}
 		*os << ".L.end." << c << ":\n";
-		return;
+		break;
 	}
 
 	/* for or while */
@@ -953,7 +959,7 @@ void CodeGen::generate_statement(Node *node)
 		}
 		*os << "  jmp .L.begin." << c << "\n";
 		*os << node->_brk_label << ":\n";
-		return;
+		break;
 	}
 
 	case NodeKind::ND_DO:
@@ -966,7 +972,7 @@ void CodeGen::generate_statement(Node *node)
 		cmp_zero(node->_condition->_ty.get());
 		*os << "  jne .L.begin." << c << "\n";
 		*os << node->_brk_label << ":\n";
-		return;
+		break;
 	}
 
 	case NodeKind::ND_SWITCH:
@@ -992,13 +998,13 @@ void CodeGen::generate_statement(Node *node)
 		/* 各ケース */
 		generate_statement(node->_then.get());
 		*os << node->_brk_label << ":\n";
-		return;
+		break;
 	}
 
 	case NodeKind::ND_CASE:
 		*os << node->_label << ":\n";
 		generate_statement(node->_lhs.get());
-		return;
+		break;
 
 	case NodeKind::ND_BLOCK:
 	{
@@ -1007,12 +1013,25 @@ void CodeGen::generate_statement(Node *node)
 		{
 			generate_statement(cur);
 		}
-		return;
-	}
-	default:
 		break;
 	}
-	error_token("不正な構文です", node->_token);
+
+	case NodeKind::ND_GOTO:
+		*os << "  jmp " << node->_unique_label << "\n";
+		break;
+		
+	case NodeKind::ND_LABEL:
+		*os << node->_unique_label << ":\n";
+		generate_statement(node->_lhs.get());
+		break;
+
+	case NodeKind::ND_EXPR_STMT:
+		generate_expression(node->_lhs.get());
+		break;
+
+	default:
+		error_token("不正な構文です", node->_token);
+	}
 }
 
 /**

@@ -44,6 +44,7 @@ private:
 	static void cmp_zero(const Type *ty);
 	static void generate_address(Node *node);
 	static void generate_expression(Node *node);
+	static void generate_expression2(Node *node);
 	static void generate_statement(Node *node);
 	static void emit_data(const unique_ptr<Object> &program);
 	static void emit_text(const unique_ptr<Object> &program);

@@ -1270,7 +1270,7 @@ unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token
 }
 
 /**
- * @brief valの内部表現を1バイトずつbuf[offset]に書き込む
+ * @brief 整数valの内部表現を1バイトずつbuf[offset]に書き込む
  *
  * @param buf データの書き込み先
  * @param val 書き込む数値
@@ -1295,6 +1295,46 @@ void Node::write_buf(unsigned char buf[], int64_t val, int sz, int offset)
 	for (int i = 0; i < sz; ++i)
 	{
 		buf[offset + i] = v.byte[i];
+	}
+}
+
+/**
+ * @brief 浮動小数点数valの内部表現を1バイトずつbuf[offset]に書き込む
+ *
+ * @param buf データの書き込み先
+ * @param val 書き込む数値
+ * @param sz 書き込むサイズ（byte）
+ * @param offset 書き込むスタート地点のオフセット
+ */
+void Node::write_fval_buf(unsigned char buf[], double val, int sz, int offset)
+{
+	/* float, double型の数値の内部表現を見るための共用体 */
+	union
+	{
+		float fval;
+		double dval;
+		unsigned char byte[8];
+	} v;
+
+	if (4 == sz)
+	{
+		v.fval = val;
+		for (int i = 0; i < 4; ++i)
+		{
+			buf[offset + i] = v.byte[i];
+		}
+	}
+	else if (8 == sz)
+	{
+		v.dval = val;
+		for (int i = 0; i < 8; ++i)
+		{
+			buf[offset + i] = v.byte[i];
+		}
+	}
+	else
+	{
+		unreachable();
 	}
 }
 
@@ -1335,6 +1375,13 @@ Relocation *Node::write_gvar_data(Relocation *cur, Initializer *init, Type *ty, 
 
 	if (!init->_expr)
 	{
+		return cur;
+	}
+
+	if (ty->is_flonum())
+	{
+		auto val = evaluate_double(init->_expr.get());
+		write_fval_buf(buf, val, ty->_size, offset);
 		return cur;
 	}
 
@@ -2167,163 +2214,239 @@ int64_t Node::evaluate(Node *node)
  */
 int64_t Node::evaluate2(Node *node, string *label)
 {
-	static const std::unordered_map<NodeKind, std::function<int64_t(Node *, string *)>> eval_funcs = {
-		{NodeKind::ND_ADD, [](Node *node, string *label)
-		 { return evaluate2(node->_lhs.get(), label) + evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_SUB, [](Node *node, string *label)
-		 { return evaluate2(node->_lhs.get(), label) - evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_MUL, [](Node *node, string *label)
-		 { return evaluate(node->_lhs.get()) * evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_DIV, [](Node *node, string *label) -> int64_t
-		 {
-			 if (node->_ty->_is_unsigned)
-			 {
-				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) / evaluate(node->_rhs.get());
-			 }
-			 return evaluate(node->_lhs.get()) / evaluate(node->_rhs.get());
-		 }},
-
-		{NodeKind::ND_NEG, [](Node *node, string *label)
-		 { return -evaluate(node->_lhs.get()); }},
-
-		{NodeKind::ND_MOD, [](Node *node, string *label) -> int64_t
-		 {
-			 if (node->_ty->_is_unsigned)
-			 {
-				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) % evaluate(node->_rhs.get());
-			 }
-			 return evaluate(node->_lhs.get()) % evaluate(node->_rhs.get());
-		 }},
-
-		{NodeKind::ND_BITAND, [](Node *node, string *label)
-		 { return evaluate(node->_lhs.get()) & evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_BITOR, [](Node *node, string *label)
-		 { return evaluate(node->_lhs.get()) | evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_BITXOR, [](Node *node, string *label)
-		 { return evaluate(node->_lhs.get()) ^ evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_SHL, [](Node *node, string *label)
-		 { return evaluate(node->_lhs.get()) << evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_SHR, [](Node *node, string *label) -> int64_t
-		 {
-			 if (node->_ty->_is_unsigned && node->_ty->_size == 8)
-			 {
-				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) >> evaluate(node->_rhs.get());
-			 }
-
-			 return evaluate(node->_lhs.get()) >> evaluate(node->_rhs.get());
-		 }},
-
-		{NodeKind::ND_EQ, [](Node *node, string *label) -> int64_t
-		 { return evaluate(node->_lhs.get()) == evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_NE, [](Node *node, string *label) -> int64_t
-		 { return evaluate(node->_lhs.get()) != evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_LT, [](Node *node, string *label) -> int64_t
-		 {
-			 if (node->_ty->_is_unsigned)
-			 {
-				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) < evaluate(node->_rhs.get());
-			 }
-			 return evaluate(node->_lhs.get()) < evaluate(node->_rhs.get());
-		 }},
-
-		{NodeKind::ND_LE, [](Node *node, string *label) -> int64_t
-		 {
-			 if (node->_ty->_is_unsigned)
-			 {
-				 return static_cast<uint64_t>(evaluate(node->_lhs.get())) <= evaluate(node->_rhs.get());
-			 }
-			 return evaluate(node->_lhs.get()) <= evaluate(node->_rhs.get());
-		 }},
-
-		{NodeKind::ND_COND, [](Node *node, string *label)
-		 { return evaluate(node->_condition.get()) ? evaluate2(node->_then.get(), label) : evaluate2(node->_else.get(), label); }},
-
-		{NodeKind::ND_COMMA, [](Node *node, string *label)
-		 { return evaluate2(node->_rhs.get(), label); }},
-
-		{NodeKind::ND_NOT, [](Node *node, string *label) -> int64_t
-		 { return !evaluate(node->_lhs.get()); }},
-
-		{NodeKind::ND_BITNOT, [](Node *node, string *label)
-		 { return ~evaluate(node->_lhs.get()); }},
-
-		{NodeKind::ND_LOGAND, [](Node *node, string *label) -> int64_t
-		 { return evaluate(node->_lhs.get()) && evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_LOGOR, [](Node *node, string *label) -> int64_t
-		 { return evaluate(node->_lhs.get()) || evaluate(node->_rhs.get()); }},
-
-		{NodeKind::ND_CAST, [](Node *node, string *label) -> int64_t
-		 {
-			 uint64_t val = evaluate2(node->_lhs.get(), label);
-			 if (node->_ty->is_integer())
-			 {
-				 switch (node->_ty->_size)
-				 {
-				 case 1:
-					 return node->_ty->_is_unsigned ? static_cast<uint8_t>(val) : static_cast<int8_t>(val);
-				 case 2:
-					 return node->_ty->_is_unsigned ? static_cast<uint16_t>(val) : static_cast<int16_t>(val);
-				 case 4:
-					 return node->_ty->_is_unsigned ? static_cast<uint32_t>(val) : static_cast<int32_t>(val);
-				 default:
-					 break;
-				 }
-			 }
-			 return val;
-		 }},
-
-		{NodeKind::ND_ADDR, [](Node *node, string *label)
-		 { return evaluate_rval(node->_lhs.get(), label); }},
-
-		{NodeKind::ND_MEMBER, [](Node *node, string *label)
-		 {
-			 if (!label)
-			 {
-				 error_token("コンパイル時に定数ではありません", node->_token);
-			 }
-			 if (TypeKind::TY_ARRAY != node->_ty->_kind)
-			 {
-				 error_token("無効な初期化式です", node->_token);
-			 }
-			 return evaluate_rval(node->_lhs.get(), label) + node->_member->_offset;
-		 }},
-		{NodeKind::ND_VAR, [](Node *node, string *label) -> int64_t
-		 {
-			 if (!label)
-			 {
-				 error_token("コンパイル時に定数ではありません", node->_token);
-			 }
-			 if (TypeKind::TY_ARRAY != node->_var->_ty->_kind && TypeKind::TY_FUNC != node->_var->_ty->_kind)
-			 {
-				 error_token("無効な初期化式です", node->_token);
-			 }
-			 *label = node->_var->_name;
-			 return 0;
-		 }},
-
-		{NodeKind::ND_NUM, [](Node *node, string *label)
-		 { return node->_val; }},
-	};
-
 	Type::add_type(node);
 
-	auto it = eval_funcs.find(node->_kind);
-	if (eval_funcs.end() != it)
+	if (node->_ty->is_flonum())
 	{
-		return it->second(node, label);
+		return evaluate_double(node);
 	}
-	error_token("コンパイル時に定数ではありません", node->_token);
-	return 0;
+
+	int64_t ret = 0;
+
+	switch (node->_kind)
+	{
+	case NodeKind::ND_ADD:
+		ret = evaluate2(node->_lhs.get(), label) + evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_SUB:
+		ret = evaluate2(node->_lhs.get(), label) - evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_MUL:
+		ret = evaluate(node->_lhs.get()) * evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_DIV:
+		if (node->_ty->_is_unsigned)
+		{
+			ret = static_cast<uint64_t>(evaluate(node->_lhs.get())) / evaluate(node->_rhs.get());
+		}
+		else
+		{
+			ret = evaluate(node->_lhs.get()) / evaluate(node->_rhs.get());
+		}
+		break;
+	case NodeKind::ND_NEG:
+		ret = -evaluate(node->_lhs.get());
+		break;
+	case NodeKind::ND_COND:
+		ret = evaluate(node->_condition.get()) ? evaluate2(node->_then.get(), label) : evaluate2(node->_else.get(), label);
+		break;
+	case NodeKind::ND_COMMA:
+		ret = evaluate2(node->_rhs.get(), label);
+		break;
+	case NodeKind::ND_MEMBER:
+		if (!label)
+		{
+			error_token("コンパイル時に定数ではありません", node->_token);
+		}
+		if (TypeKind::TY_ARRAY != node->_ty->_kind)
+		{
+			error_token("無効な初期化式です", node->_token);
+		}
+		ret = evaluate_rval(node->_lhs.get(), label) + node->_member->_offset;
+		break;
+	case NodeKind::ND_ADDR:
+		ret = evaluate_rval(node->_lhs.get(), label);
+		break;
+	case NodeKind::ND_NOT:
+		ret = !evaluate(node->_lhs.get());
+		break;
+	case NodeKind::ND_BITNOT:
+		ret = ~evaluate(node->_lhs.get());
+		break;
+	case NodeKind::ND_LOGAND:
+		ret = evaluate(node->_lhs.get()) && evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_LOGOR:
+		ret = evaluate(node->_lhs.get()) || evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_MOD:
+		if (node->_ty->_is_unsigned)
+		{
+			ret = static_cast<uint64_t>(evaluate(node->_lhs.get())) % evaluate(node->_rhs.get());
+		}
+		else
+		{
+			ret = evaluate(node->_lhs.get()) % evaluate(node->_rhs.get());
+		}
+		break;
+	case NodeKind::ND_BITAND:
+		ret = evaluate(node->_lhs.get()) & evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_BITOR:
+		ret = evaluate(node->_lhs.get()) | evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_BITXOR:
+		ret = evaluate(node->_lhs.get()) ^ evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_SHL:
+		ret = evaluate(node->_lhs.get()) << evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_SHR:
+		if (node->_ty->_is_unsigned && node->_ty->_size == 8)
+		{
+			ret = static_cast<uint64_t>(evaluate(node->_lhs.get())) >> evaluate(node->_rhs.get());
+		}
+		else
+		{
+			ret = evaluate(node->_lhs.get()) >> evaluate(node->_rhs.get());
+		}
+		break;
+	case NodeKind::ND_EQ:
+		ret = evaluate(node->_lhs.get()) == evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_NE:
+		ret = evaluate(node->_lhs.get()) != evaluate(node->_rhs.get());
+		break;
+	case NodeKind::ND_LT:
+		if (node->_ty->_is_unsigned)
+		{
+			ret = static_cast<uint64_t>(evaluate(node->_lhs.get())) < evaluate(node->_rhs.get());
+		}
+		else
+		{
+			ret = evaluate(node->_lhs.get()) < evaluate(node->_rhs.get());
+		}
+		break;
+	case NodeKind::ND_LE:
+		if (node->_ty->_is_unsigned)
+		{
+			ret = static_cast<uint64_t>(evaluate(node->_lhs.get())) <= evaluate(node->_rhs.get());
+		}
+		else
+		{
+			ret = evaluate(node->_lhs.get()) <= evaluate(node->_rhs.get());
+		}
+		break;
+	case NodeKind::ND_NUM:
+		ret = node->_val;
+		break;
+	case NodeKind::ND_VAR:
+		if (!label)
+		{
+			error_token("コンパイル時に定数ではありません", node->_token);
+		}
+		if (TypeKind::TY_ARRAY != node->_var->_ty->_kind && TypeKind::TY_FUNC != node->_var->_ty->_kind)
+		{
+			error_token("無効な初期化式です", node->_token);
+		}
+		*label = node->_var->_name;
+		ret = 0;
+		break;
+	case NodeKind::ND_CAST:
+	{
+		uint64_t val = evaluate2(node->_lhs.get(), label);
+		if (node->_ty->is_integer())
+		{
+
+			switch (node->_ty->_size)
+			{
+			case 1:
+				ret = node->_ty->_is_unsigned ? static_cast<uint8_t>(val) : static_cast<int8_t>(val);
+				break;
+			case 2:
+				ret = node->_ty->_is_unsigned ? static_cast<uint16_t>(val) : static_cast<int16_t>(val);
+				break;
+			case 4:
+				ret = node->_ty->_is_unsigned ? static_cast<uint32_t>(val) : static_cast<int32_t>(val);
+				break;
+			default:
+				ret = val;
+				break;
+			}
+		}
+		else
+		{
+			ret = val;
+		}
+		break;
+	}
+	default:
+		error_token("コンパイル時に定数ではありません", node->_token);
+	}
+	return ret;
+}
+
+/**
+ * @brief 浮動小数点数型の定数式を評価する
+ *
+ * @param 評価対象のノード
+ * @return 評価結果
+ */
+double Node::evaluate_double(Node *node)
+{
+	Type::add_type(node);
+
+	if (node->_ty->is_integer())
+	{
+		if (node->_ty->_is_unsigned)
+		{
+			return static_cast<unsigned long>(evaluate(node));
+		}
+		return evaluate(node);
+	}
+
+	double ret = 0.0;
+
+	switch (node->_kind)
+	{
+	case NodeKind::ND_ADD:
+		ret = evaluate_double(node->_lhs.get()) + evaluate_double(node->_rhs.get());
+		break;
+	case NodeKind::ND_SUB:
+		ret = evaluate_double(node->_lhs.get()) - evaluate_double(node->_rhs.get());
+		break;
+	case NodeKind::ND_MUL:
+		ret = evaluate_double(node->_lhs.get()) * evaluate_double(node->_rhs.get());
+		break;
+	case NodeKind::ND_DIV:
+		ret = evaluate_double(node->_lhs.get()) / evaluate_double(node->_rhs.get());
+		break;
+	case NodeKind::ND_NEG:
+		ret = -evaluate_double(node->_lhs.get());
+		break;
+	case NodeKind::ND_COND:
+		ret = evaluate_double(node->_condition.get()) ? evaluate_double(node->_then.get()) : evaluate_double(node->_else.get());
+		break;
+	case NodeKind::ND_COMMA:
+		ret = evaluate_double(node->_rhs.get());
+		break;
+	case NodeKind::ND_NUM:
+		ret = node->_fval;
+		break;
+	case NodeKind::ND_CAST:
+		if (node->_lhs->_ty->is_flonum())
+		{
+			ret = evaluate_double(node->_lhs.get());
+		}
+		else
+		{
+			ret = evaluate(node->_lhs.get());
+		}
+		break;
+	default:
+		error_token("コンパイル時に定数ではありません", node->_token);
+	}
+	return ret;
 }
 
 /**
@@ -2335,25 +2458,27 @@ int64_t Node::evaluate2(Node *node, string *label)
  */
 int64_t Node::evaluate_rval(Node *node, string *label)
 {
+	int64_t ret = 0;
 	switch (node->_kind)
 	{
+	case NodeKind::ND_MEMBER:
+		ret = evaluate_rval(node->_lhs.get(), label) + node->_member->_offset;
+		break;
+	case NodeKind::ND_DEREF:
+		ret = evaluate2(node->_lhs.get(), label);
+		break;
 	case NodeKind::ND_VAR:
 		if (node->_var->_is_local)
 		{
 			error_token("コンパイル時に定数ではありません", node->_token);
 		}
 		*label = node->_var->_name;
-		return 0;
-	case NodeKind::ND_DEREF:
-		return evaluate2(node->_lhs.get(), label);
-	case NodeKind::ND_MEMBER:
-		return evaluate_rval(node->_lhs.get(), label) + node->_member->_offset;
-	default:
 		break;
+	default:
+		error_token("無効な初期化式です", node->_token);
 	}
 
-	error_token("無効な初期化式です", node->_token);
-	return 0;
+	return ret;
 }
 
 /**
