@@ -264,7 +264,7 @@ void CodeGen::push()
 void CodeGen::pushf()
 {
 	*os << "  sub rsp, 8\n";
-	*os << "  movsd [rsp], xmm0\n";
+	*os << "  movsd QWORD PTR [rsp], xmm0\n";
 	++depth;
 }
 
