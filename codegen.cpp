@@ -1115,11 +1115,18 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 		/* 可変長引数関数 */
 		if (fn->_va_area)
 		{
-			int gp = 0;
+			int gp = 0, fp = 0;
 			/* 引数の数を数える */
 			for (auto var = fn->_params.get(); var; var = var->_next.get())
 			{
-				++gp;
+				if (var->_ty->is_flonum())
+				{
+					++fp;
+				}
+				else
+				{
+					++gp;
+				}
 			}
 			int off = fn->_va_area->_offset;
 
@@ -1128,7 +1135,7 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 			 * "..."の前にある引数のサイズを記録しておく。
 			 */
 			*os << "  mov DWORD PTR [rbp - " << off << "], " << gp * 8 << "\n";
-			*os << "  mov DWORD PTR [rbp - " << off - 4 << "], 0\n";
+			*os << "  mov DWORD PTR [rbp - " << off - 4 << "], " << fp * 8 + 48 << "\n";
 
 			/* レジスタの引数をストアしている領域のアドレス */
 			*os << "  mov QWORD PTR [rbp - " << off - 16 << "], rbp\n";
