@@ -59,23 +59,23 @@ private:
 	/** 整数レジスタの下位8ビットのエイリアス、前から順に関数の引数を格納される */
 	static constexpr string_view arg_regs8[6] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
-	/* 符号拡張転送 */
+	/* 転送命令 */
 	static constexpr string_view i32i8 = "  movsx eax, al\n";
 	static constexpr string_view i32u8 = "  movzx eax, al\n";
 	static constexpr string_view i32i16 = "  movsx eax, ax\n";
 	static constexpr string_view i32u16 = "  movzx eax, ax\n";
-	static constexpr string_view i32f32 = "  cvtsi2ssl xmm0, eax\n";
+	static constexpr string_view i32f32 = "  cvtsi2ss xmm0, eax\n";
 	static constexpr string_view i32i64 = "  movsxd rax, eax\n";
-	static constexpr string_view i32f64 = "  cvtsi2sdl xmm0, eax\n";
+	static constexpr string_view i32f64 = "  cvtsi2sd xmm0, eax\n";
 
-	static constexpr string_view u32f32 = "  mov eax, eax; cvtsi2ssq xmm0, rax\n";
+	static constexpr string_view u32f32 = "  mov eax, eax; cvtsi2ss xmm0, rax\n";
 	static constexpr string_view u32i64 = "  mov eax, eax\n";
-	static constexpr string_view u32f64 = "  mov eax, eax; cvtsi2sdq xmm0, rax\n";
+	static constexpr string_view u32f64 = "  mov eax, eax; cvtsi2sd xmm0, rax\n";
 
-	static constexpr string_view i64f32 = "  cvtsi2ssq xmm0, rax\n";
-	static constexpr string_view i64f64 = "  cvtsi2sdq xmm0, rax\n";
+	static constexpr string_view i64f32 = "  cvtsi2ss xmm0, rax\n";
+	static constexpr string_view i64f64 = "  cvtsi2sd xmm0, rax\n";
 
-	static constexpr string_view u64f32 = "  cvtsi2ssq xmm0, rax\n";
+	static constexpr string_view u64f32 = "  cvtsi2ss xmm0, rax\n";
 	static constexpr string_view u64f64 =
 		"  test rax, rax\n"		 /* rax同士でAND演算。最上位ビットが1ならSF=1 */
 		"  js 1f\n"				 /* SF=1のとき参照後に定義された一番近い1ラベルにjump */
@@ -92,25 +92,25 @@ private:
 		"  addsd xmm0, xmm0\n"	 /* xmm0の値を２倍する */
 		"2:\n";
 
-	static constexpr string_view f32i8 = "cvttss2sil eax, xmm0; movsx eax, al\n";
-	static constexpr string_view f32u8 = "cvttss2sil eax, xmm0; movzx eax, al\n";
-	static constexpr string_view f32i16 = "cvttss2sil eax, xmm0; movsx eax, ax\n";
-	static constexpr string_view f32u16 = "cvttss2sil eax, xmm0; movzx eax, ax\n";
-	static constexpr string_view f32i32 = "cvttss2sil eax, xmm0\n";
-	static constexpr string_view f32u32 = "cvttss2siq rax, xmm0\n";
-	static constexpr string_view f32i64 = "cvttss2siq rax, xmm0\n";
-	static constexpr string_view f32u64 = "cvttss2siq rax, xmm0\n";
-	static constexpr string_view f32f64 = "cvtss2sd xmm0, xmm0\n";
+	static constexpr string_view f32i8 = "  cvttss2si eax, xmm0; movsx eax, al\n";
+	static constexpr string_view f32u8 = "  cvttss2si eax, xmm0; movzx eax, al\n";
+	static constexpr string_view f32i16 = "  cvttss2si eax, xmm0; movsx eax, ax\n";
+	static constexpr string_view f32u16 = "  cvttss2si eax, xmm0; movzx eax, ax\n";
+	static constexpr string_view f32i32 = "  cvttss2si eax, xmm0\n";
+	static constexpr string_view f32u32 = "  cvttss2si rax, xmm0\n";
+	static constexpr string_view f32i64 = "  cvttss2si rax, xmm0\n";
+	static constexpr string_view f32u64 = "  cvttss2si rax, xmm0\n";
+	static constexpr string_view f32f64 = "  cvtss2sd xmm0, xmm0\n";
 
-	static constexpr string_view f64i8 = "cvttsd2sil eax, xmm0; movsx eax, al\n";
-	static constexpr string_view f64u8 = "cvttsd2sil eax, xmm0; movzx eax, al\n";
-	static constexpr string_view f64i16 = "cvttsd2sil eax, xmm0; movsx eax, ax\n";
-	static constexpr string_view f64u16 = "cvttsd2sil eax, xmm0; movzx eax, ax\n";
-	static constexpr string_view f64i32 = "cvttsd2sil eax, xmm0\n";
-	static constexpr string_view f64u32 = "cvttsd2siq rax, xmm0\n";
-	static constexpr string_view f64f32 = "cvtsd2ss xmm0, xmm0\n";
-	static constexpr string_view f64i64 = "cvttsd2siq rax, xmm0\n";
-	static constexpr string_view f64u64 = "cvttsd2siq rax, xmm0\n";
+	static constexpr string_view f64i8 = "  cvttsd2si eax, xmm0; movsx eax, al\n";
+	static constexpr string_view f64u8 = "  cvttsd2si eax, xmm0; movzx eax, al\n";
+	static constexpr string_view f64i16 = "  cvttsd2si eax, xmm0; movsx eax, ax\n";
+	static constexpr string_view f64u16 = "  cvttsd2si eax, xmm0; movzx eax, ax\n";
+	static constexpr string_view f64i32 = "  cvttsd2si eax, xmm0\n";
+	static constexpr string_view f64u32 = "  cvttsd2si rax, xmm0\n";
+	static constexpr string_view f64f32 = "  cvttsd2ss xmm0, xmm0\n";
+	static constexpr string_view f64i64 = "  cvttsd2si rax, xmm0\n";
+	static constexpr string_view f64u64 = "  cvttsd2si rax, xmm0\n";
 
 	static constexpr string_view none = "";
 
