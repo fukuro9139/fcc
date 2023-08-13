@@ -66,7 +66,7 @@ Node::Node(const Object *var, Token *token) : _kind(NodeKind::ND_VAR), _var(var)
  * @param ty キャスト後の型
  * @return unique_ptr<Node> 型キャストに対応するノード
  */
-unique_ptr<Node> Node::new_cast(unique_ptr<Node> &&expr, shared_ptr<Type> &ty)
+unique_ptr<Node> Node::new_cast(unique_ptr<Node> &&expr, const shared_ptr<Type> &ty)
 {
 	/* 型を確定 */
 	Type::add_type(expr.get());
@@ -3257,6 +3257,11 @@ unique_ptr<Node> Node::function_call(Token **next_token, Token *current_token)
 			/* 実引数の型を宣言されている仮引数の型でキャストする */
 			arg = new_cast(move(arg), param_ty);
 			param_ty = param_ty->_next;
+		}
+		else if (TypeKind::TY_FLOAT == arg->_ty->_kind)
+		{
+			/* 仮引数のの型情報がないとき、実引数がfloat型ならdouble型に昇格させる */
+			arg = new_cast(move(arg), Type::DOUBLE_BASE);
 		}
 		cur->_next = move(arg);
 		cur = cur->_next.get();

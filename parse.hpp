@@ -152,7 +152,7 @@ public:
 	/**************************/
 
 	static unique_ptr<Object> parse(Token *token);
-	static unique_ptr<Node> new_cast(unique_ptr<Node> &&expr, shared_ptr<Type> &ty);
+	static unique_ptr<Node> new_cast(unique_ptr<Node> &&expr, const shared_ptr<Type> &ty);
 
 private:
 	/***************************/
