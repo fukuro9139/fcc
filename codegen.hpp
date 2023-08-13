@@ -108,7 +108,7 @@ private:
 	static constexpr string_view f64u16 = "  cvttsd2si eax, xmm0; movzx eax, ax\n";
 	static constexpr string_view f64i32 = "  cvttsd2si eax, xmm0\n";
 	static constexpr string_view f64u32 = "  cvttsd2si rax, xmm0\n";
-	static constexpr string_view f64f32 = "  cvttsd2ss xmm0, xmm0\n";
+	static constexpr string_view f64f32 = "  cvtsd2ss xmm0, xmm0\n";
 	static constexpr string_view f64i64 = "  cvttsd2si rax, xmm0\n";
 	static constexpr string_view f64u64 = "  cvttsd2si rax, xmm0\n";
 
