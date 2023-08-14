@@ -24,8 +24,8 @@ private:
     static void run_subprocess(const vector<string> &argv);
     static char *find_file(const char *patern);
     static bool file_exists(const char *path);
-    static char *find_libpath();
-    static char *find_gcc_libpath();
+    static string find_libpath();
+    static string find_gcc_libpath();
 };
 
 #endif /* WINDOWS */
