@@ -48,8 +48,8 @@ all: clean $(TARGET)
 #テスト
 ifeq ($(WINDOWS), 0)
 test/%.exe: $(TARGET) test/%.c
-	$(CC) -o test/tmp_$* -E -P -C test/$*.c
-	./fcc -c -o test/$*.o test/tmp_$*
+	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
+	./fcc -c -o test/$*.o test/tmp_$*.c
 	$(CC) -o $@ test/$*.o -xc test/common
 
 test: $(TESTS)
