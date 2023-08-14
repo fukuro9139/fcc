@@ -197,6 +197,7 @@ string Postprocessor::find_gcc_libpath()
         "/usr/lib/gcc/x86_64-linux-gnu/*/crtbegin.o",
         "/usr/lib/gcc/x86_64-pc-linux-gnu/*/crtbegin.o", /* For Gentoo */
         "/usr/lib/gcc/x86_64-redhat-linux/*/crtbegin.o", /* For Fedora */
+        "/usr/lib/gcc/x86_64-amazon-linux/*/crtbegin.o", /* For Amazon Linux */
     };
 
     for (auto &path : paths)
