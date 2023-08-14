@@ -62,7 +62,7 @@ public:
 
 	/* 静的メンバ関数 (public) */
 
-	static unique_ptr<Token> tokenize_file(const unique_ptr<Input> &in);
+	static unique_ptr<Token> tokenize_file(const string &input_path);
 
 private:
 	/* メンバ関数 (private) */
@@ -70,6 +70,7 @@ private:
 
 	/* 静的メンバ関数 (private) */
 
+	static string read_inputfile(const string &path);
 	static unique_ptr<Token> tokenize(const string &filename, string &&input);
 	static unique_ptr<Token> read_number(const string::const_iterator &start);
 	static unique_ptr<Token> read_int_literal(const string::const_iterator &start);

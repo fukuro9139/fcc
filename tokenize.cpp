@@ -12,6 +12,8 @@
 #include "tokenize.hpp"
 #include "object.hpp"
 #include "type.hpp"
+#include <sstream>
+#include <iterator>
 
 /** 入力文字列 */
 static string current_input = "";
@@ -124,14 +126,62 @@ Token::Token(const int64_t &value, const int &location) : _kind(TokenKind::TK_NU
 Token::Token(const TokenKind &kind, const int &location, string &&str) : _kind(kind), _location(location), _str(move(str)) {}
 
 /**
+ * @brief 入力されたパスのファイルを開いて中身を文字列として返す
+ *
+ * @param path ファイルパス
+ * @return 読み取ったファイルの中身
+ */
+string Token::read_inputfile(const string &path)
+{
+	string input_data;
+
+	if (path == "-")
+	{
+		string buf;
+		/* 標準入力から読み取れなくなるまで読み込みを続ける */
+		while (std::getline(std::cin, buf))
+		{
+			if (buf.empty())
+			{
+				break;
+			}
+			else
+			{
+				input_data += buf;
+			}
+		}
+	}
+	else
+	{
+		std::ifstream ifs(path);
+		if (!ifs)
+		{
+			std::cerr << "ファイルが開けませんでした： " << path << std::endl;
+			exit(1);
+		}
+
+		/* ファイルから読み込む */
+		input_data = std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+	}
+
+	/* ファイルが空または改行で終わっていない場合、'\n'を付け加える */
+	if (input_data.empty() || input_data.back() != '\n')
+	{
+		input_data.push_back('\n');
+	}
+
+	return input_data;
+}
+
+/**
  * @brief 入力されたパスにあるファイルを開いてトークナイズする
  *
  * @param path ファイルパス
  * @return トークナイズした結果のトークンリスト
  */
-unique_ptr<Token> Token::tokenize_file(const unique_ptr<Input> &in)
+unique_ptr<Token> Token::tokenize_file(const string &input_path)
 {
-	return tokenize(in->_input_path, in->read_file());
+	return tokenize(input_path, read_inputfile(input_path));
 }
 
 /**

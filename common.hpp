@@ -11,6 +11,9 @@
 
 #pragma once
 
+/* Windows環境で実行したい場合は定義 */
+#define WINDOWS
+
 #include <iostream>
 #include <fstream>
 #include <cassert>

@@ -587,12 +587,16 @@ void CodeGen::generate_expression(Node *node)
 		/* raxのアドレスの関数を呼び出す */
 		if (depth % 2 == 0)
 		{
-			*os << "  call " << "rax" << "\n";
+			*os << "  call "
+				<< "rax"
+				<< "\n";
 		}
 		else
 		{
 			*os << "  sub rsp, 8\n";
-			*os << "  call " << "rax" << "\n";
+			*os << "  call "
+				<< "rax"
+				<< "\n";
 			*os << "  add rsp, 8\n";
 		}
 
@@ -1228,21 +1232,26 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(const unique_ptr<Object> &program, const unique_ptr<Input> &in)
+void CodeGen::generate_code(const unique_ptr<Object> &program, const string &input_path, const string &output_path)
 {
 	/* ファイルを開くのに成功したら出力先をファイルに変更する */
-	/* ファイルを開くのに失敗したら出力先は標準出力のまま */
-	unique_ptr<std::ostream> ofs(new std::ofstream(in->_output_path));
-	if (!ofs->fail())
+	/* アウトプットパスとして"-"が指定されているまたはファイルを開くのに失敗したら出力先は標準出力のまま */
+	unique_ptr<std::ofstream> ofs;
+
+	if (output_path != "-")
 	{
-		os = ofs.get();
+		ofs = make_unique<std::ofstream>(output_path);
+		if (!ofs->fail())
+		{
+			os = ofs.get();
+		}
 	}
 
 	/* intel記法であることを宣言 */
 	*os << ".intel_syntax noprefix\n";
 
 	/* .fileディレクティブを出力 */
-	*os << ".file 1 \"" << in->_input_path << "\"\n";
+	*os << ".file 1 \"" << input_path << "\"\n";
 
 	/* スタックサイズを計算してセット */
 	Object::assign_lvar_offsets(program);

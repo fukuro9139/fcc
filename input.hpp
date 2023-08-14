@@ -11,26 +11,19 @@
 
 #pragma once
 
-#include <fstream>
-#include <sstream>
-#include <iterator>
 #include "common.hpp"
 
 class Input
 {
 public:
 	/* メンバ変数(public) */
-	const string _input_path = "";
-	const string _output_path = "";
-
-	/* コンストラクタ */
-	Input(const string &in, const string &out);
-
-	/* メンバ関数(public) */
-	string read_file() const;
+	string _input_path = "";	/*!< インプットファイルパス */
+	string _output_path = ""; /*!< アウトプットファイルパス */
+	bool _opt_S = false;			/*!< -Sオプションが指定されているか */
 
 	/* 静的メンバ関数(public) */
 	static unique_ptr<Input> parse_args(const std::vector<std::string> &args);
+	static string replace_extension(const string &path, const string &extn);
 
 private:
 	/* 静的メンバ関数(input) */

@@ -19,23 +19,65 @@
 #include "parse.hpp"
 #include "tokenize.hpp"
 #include "input.hpp"
+#include "assembler.hpp"
+#include "common.hpp"
 
-int main(int argc, char **argv)
+void run_fcc(const string &input_path, const string &output_path)
 {
-	/* 入力をvectorに変換 */
-	vector<string> args(argv, argv + argc);
-	
-	/* 引数を解析してオプションを判断 */
-	auto in = Input::parse_args(args);
-
 	/* 入力ファイルをトークナイズする */
-	auto token = Token::tokenize_file(in);
+	auto token = Token::tokenize_file(input_path);
 
 	/* トークン列をパースし抽象構文木を構築する */
 	auto program = Node::parse(token);
 
 	/* 抽象構文木を巡回しながらコード生成 */
-	CodeGen::generate_code(program, in);
+	CodeGen::generate_code(program, input_path, output_path);
+}
+
+int main(int argc, char **argv)
+{
+	/* 入力をvectorに変換 */
+	vector<string> args(argv, argv + argc);
+
+	/* 引数を解析してオプションを判断 */
+	auto in = Input::parse_args(args);
+
+	/* 出力先 */
+	string output_path;
+
+	/* 出力先の指定があれば指定先 */
+	if (!in->_output_path.empty())
+	{
+		output_path = in->_output_path;
+	}
+	/* 入力が標準入力なら標準出力から出力 */
+	else if (in->_input_path == "-")
+	{
+		output_path = "-";
+	}
+	/* ファイル名は入力ファイルと同じにする */
+	else if (in->_opt_S)
+	{
+		output_path = Input::replace_extension(in->_input_path, ".s");
+	}
+	else
+	{
+		output_path = Input::replace_extension(in->_input_path, ".o");
+	}
+
+	/* -Sオプションがついていれば最終生成物はアセンブリコード */
+	if(in->_opt_S){
+		run_fcc(in->_input_path, output_path);
+	}
+
+#ifndef WINDOWS
+
+	/* それ以外はアセンブルしたファイルを最終生成物とする */
+	else{
+
+	}
+
+#endif /* WINDOWS */
 
 	return 0;
 }

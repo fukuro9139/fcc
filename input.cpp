@@ -11,9 +11,6 @@
 
 #include "input.hpp"
 
-/** @brief コンストラクタ */
-Input::Input(const string &in, const string &out) : _input_path(in), _output_path(out) {}
-
 /**
  * @brief コマンドライン引数を解析する。
  *
@@ -22,7 +19,7 @@ Input::Input(const string &in, const string &out) : _input_path(in), _output_pat
  */
 unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 {
-	string in, out;
+	auto in = make_unique<Input>();
 
 	/* args[0]は実行ファイルのパス */
 	for (size_t i = 1, sz = args.size(); i < sz; ++i)
@@ -39,13 +36,19 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			{
 				usage(1);
 			}
-			out = args[i];
+			in->_output_path = args[i];
+			continue;
+		}
+
+		if ("-S" == args[i])
+		{
+			in->_opt_S = true;
 			continue;
 		}
 
 		if (args[i].starts_with("-o"))
 		{
-			out = args[i].substr(2);
+			in->_output_path = args[i].substr(2);
 			continue;
 		}
 
@@ -59,15 +62,16 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			}
 		}
 
-		in = args[i];
+		in->_input_path = args[i];
 	}
 
-	if (in.size() == 0)
+	if (in->_input_path.empty())
 	{
-		std::cerr << "入力ファイルが存在しません\n";
+		std::cerr << "入力ファイルが指定されていません\n";
 		exit(1);
 	}
-	return make_unique<Input>(in, out);
+
+	return in;
 }
 
 /**
@@ -82,48 +86,20 @@ void Input::usage(int status)
 }
 
 /**
- * @brief 入力ファイルを開いて読み取る
- *
- * @return 入力ファイルの内容をまとめた文字列
+ * @brief ファイル名の拡張子を変更して返す
+ * 
+ * @param path 入力ファイルのパス
+ * @param extn 変更する拡張子
+ * @return ファイルの拡張子を変更したパス
  */
-std::string Input::read_file() const
+string Input::replace_extension(const string &path, const string &extn)
 {
-	string input_data;
+	auto dot_pos = path.find_last_of('.');
 	
-	if (_input_path == "-")
-	{
-		string buf;
-		/* 標準入力から読み取れなくなるまで読み込みを続ける */
-		while (std::getline(std::cin, buf))
-		{
-			if (buf.empty())
-			{
-				break;
-			}
-			else
-			{
-				input_data += buf;
-			}
-		}
-	}
-	else
-	{
-		std::ifstream ifs(_input_path);
-		if (!ifs)
-		{
-			std::cerr << "ファイルが開けませんでした： " << _input_path << std::endl;
-			exit(1);
-		}
-
-		/* ファイルから読み込む */
-		input_data = std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
+	if(dot_pos == string::npos){
+		return path + extn;
 	}
 
-	/* ファイルが空または改行で終わっていない場合、'\n'を付け加える */
-	if (input_data.size() == 0 || input_data.back() != '\n')
-	{
-		input_data.push_back('\n');
-	}
-
-	return input_data;
+	return path.substr(0, dot_pos) + extn;
+    
 }
