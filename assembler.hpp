@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <libgen.h>
+#include <sys/wait.h>
+#include <string.h>
 
 class Assembler
 {
