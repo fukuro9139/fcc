@@ -55,6 +55,16 @@ int main(int argc, char **argv)
 	{
 		output_path = "-";
 	}
+
+#ifdef WINDOWS
+
+	else
+	{
+		output_path = Input::replace_extension(in->_input_path, ".s");
+	}
+
+#else /* WINDOWS */
+
 	/* ファイル名は入力ファイルと同じにする */
 	else if (in->_opt_S)
 	{
@@ -65,16 +75,30 @@ int main(int argc, char **argv)
 		output_path = Input::replace_extension(in->_input_path, ".o");
 	}
 
+#endif /* WINDOWS */
+
+#ifdef WINDOWS
+
+	run_fcc(in->_input_path, output_path);
+
+#else
 	/* -Sオプションがついていれば最終生成物はアセンブリコード */
-	if(in->_opt_S){
+	if (in->_opt_S)
+	{
 		run_fcc(in->_input_path, output_path);
 	}
 
-#ifndef WINDOWS
-
 	/* それ以外はアセンブルしたファイルを最終生成物とする */
-	else{
+	else
+	{
+		/* 一時ファイルを作成 */
+		auto tmpfile = Assembler::create_tmpfile();
 
+		/* アセンブリコードを生成 */
+		run_fcc(in->_input_path, tmpfile);
+
+		/* アセンブル */
+		Assembler::assemble(tmpfile, output_path);
 	}
 
 #endif /* WINDOWS */

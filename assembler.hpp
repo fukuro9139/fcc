@@ -5,12 +5,17 @@
 #ifndef WINDOWS
 
 #include <unistd.h>
+#include <sys/types.h>
 #include <libgen.h>
 
-class Assembler{
-
+class Assembler
+{
+public:
     static void assemble(const string &input_path, const string &output_path);
-};
+    static string create_tmpfile();
 
+private:
+    Assembler();
+};
 
 #endif /* WINDOWS */

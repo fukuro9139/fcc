@@ -49,8 +49,8 @@ all: clean $(TARGET)
 ifeq ($(WINDOWS), 0)
 test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$* -E -P -C test/$*.c
-	./fcc -S -o test/$*.s test/tmp_$*
-	$(CC) -o $@ test/$*.s -xc test/common
+	./fcc -o test/$*.o test/tmp_$*
+	$(CC) -o $@ test/$*.o -xc test/common
 
 test: $(TESTS)
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
