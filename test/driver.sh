@@ -72,7 +72,7 @@ check linker
 # a.out
 rm -f $tmp/a.out
 echo 'int main() {}' > $tmp/foo.c
-(cd $tmp; $OLDPWD/$fcc foo.c)
+(cd $tmp; $OLDPWD/fcc foo.c)
 [ -f $tmp/a.out ]
 check a.out
 
