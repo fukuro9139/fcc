@@ -10,14 +10,15 @@
 #include <sys/wait.h>
 #include <string.h>
 
-class Assembler
+class Postprocessor
 {
 public:
     static void assemble(const string &input_path, const string &output_path);
     static string create_tmpfile();
 
 private:
-    Assembler();
+    Postprocessor();
+    static void run_subprocess(const vector<string> &argv);
 };
 
 #endif /* WINDOWS */

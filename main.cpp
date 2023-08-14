@@ -19,7 +19,7 @@
 #include "parse.hpp"
 #include "tokenize.hpp"
 #include "input.hpp"
-#include "assembler.hpp"
+#include "postprocessor.hpp"
 #include "common.hpp"
 
 void run_fcc(const string &input_path, const string &output_path)
@@ -102,13 +102,13 @@ int main(int argc, char **argv)
 		else
 		{
 			/* 一時ファイルを作成 */
-			auto tmpfile = Assembler::create_tmpfile();
+			auto tmpfile = Postprocessor::create_tmpfile();
 
 			/* アセンブリコードを生成 */
 			run_fcc(input_path, tmpfile);
 
 			/* アセンブル */
-			Assembler::assemble(tmpfile, output_path);
+			Postprocessor::assemble(tmpfile, output_path);
 		}
 
 #endif /* WINDOWS */
