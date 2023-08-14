@@ -170,7 +170,7 @@ bool Postprocessor::file_exists(const char *path)
  *
  * @return ライブラリのパス
  */
-string Postprocessor::find_libpath()
+char *Postprocessor::find_libpath()
 {
     if (file_exists("/usr/lib/x86_64-linux-gnu/crti.o"))
     {
