@@ -49,7 +49,7 @@ all: clean $(TARGET)
 ifeq ($(WINDOWS), 0)
 test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$* -E -P -C test/$*.c
-	./fcc -o test/$*.s test/tmp_$*
+	./fcc -S -o test/$*.s test/tmp_$*
 	$(CC) -o $@ test/$*.s -xc test/common
 
 test: $(TESTS)
@@ -58,7 +58,7 @@ test: $(TESTS)
 else
 test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$* -E -P -C test/$*.c
-	./fcc -o test/$*.s test/tmp_$*
+	./fcc -S -o test/$*.s test/tmp_$*
 
 test: $(TESTS)
 endif
@@ -66,7 +66,7 @@ endif
 #不要ファイル削除
 clean:
 ifeq ($(WINDOWS), 0)
-	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.s test/tmp*
+	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.o test/tmp*
 else
 	del fcc.exe $(OBJS) *.d test\*.s test\tmp*
 endif
