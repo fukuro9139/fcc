@@ -4,7 +4,7 @@ WINDOWS = 0
 DEBUG = 0
 
 ifeq ($(DEBUG), 0)
-OPT = -O2
+OPT = -O2 -w
 else
 OPT = -g
 endif
