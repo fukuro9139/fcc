@@ -10,7 +10,7 @@
  */
 void Postprocessor::assemble(const string &input_path, const string &output_path)
 {
-    vector<string> cmd = {"as", "-c", input_path, "-o", output_path};
+    vector<string> cmd = {"as", "--noexecstack", "-c", input_path, "-o", output_path};
     run_subprocess(cmd);
 }
 
