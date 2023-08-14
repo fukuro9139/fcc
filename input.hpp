@@ -17,7 +17,7 @@ class Input
 {
 public:
 	/* メンバ変数(public) */
-	string _input_path = "";	/*!< インプットファイルパス */
+	vector<string> _inputs;	/*!< インプットファイルパス */
 	string _output_path = ""; /*!< アウトプットファイルパス */
 	bool _opt_S = false;			/*!< -Sオプションが指定されているか */
 

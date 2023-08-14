@@ -42,66 +42,77 @@ int main(int argc, char **argv)
 	/* 引数を解析してオプションを判断 */
 	auto in = Input::parse_args(args);
 
-	/* 出力先 */
-	string output_path;
+	/* 入力ファイルが複数存在するとき出力先は指定できない */
+	if (in->_inputs.size() > 1 && !in->_output_path.empty())
+	{
+		std::cerr << "入力ファイルが複数ある時に-oオプションは指定できません\n";
+		exit(1);
+	}
 
-	/* 出力先の指定があれば指定先 */
-	if (!in->_output_path.empty())
+	for (const auto &input_path : in->_inputs)
 	{
-		output_path = in->_output_path;
-	}
-	/* 入力が標準入力なら標準出力から出力 */
-	else if (in->_input_path == "-")
-	{
-		output_path = "-";
-	}
+
+		/* 出力先 */
+		string output_path;
+
+		/* 出力先の指定があれば指定先 */
+		if (!in->_output_path.empty())
+		{
+			output_path = in->_output_path;
+		}
+		/* 入力が標準入力なら標準出力から出力 */
+		else if (input_path == "-")
+		{
+			output_path = "-";
+		}
 
 #ifdef WINDOWS
 
-	else
-	{
-		output_path = Input::replace_extension(in->_input_path, ".s");
-	}
+		else
+		{
+			output_path = Input::replace_extension(input_path, ".s");
+		}
 
 #else /* WINDOWS */
 
-	/* ファイル名は入力ファイルと同じにする */
-	else if (in->_opt_S)
-	{
-		output_path = Input::replace_extension(in->_input_path, ".s");
-	}
-	else
-	{
-		output_path = Input::replace_extension(in->_input_path, ".o");
-	}
+		/* ファイル名は入力ファイルと同じにする */
+		else if (in->_opt_S)
+		{
+			output_path = Input::replace_extension(input_path, ".s");
+		}
+		else
+		{
+			output_path = Input::replace_extension(input_path, ".o");
+		}
 
 #endif /* WINDOWS */
 
 #ifdef WINDOWS
 
-	run_fcc(in->_input_path, output_path);
+		run_fcc(input_path, output_path);
 
 #else
-	/* -Sオプションがついていれば最終生成物はアセンブリコード */
-	if (in->_opt_S)
-	{
-		run_fcc(in->_input_path, output_path);
-	}
+		/* -Sオプションがついていれば最終生成物はアセンブリコード */
+		if (in->_opt_S)
+		{
+			run_fcc(input_path, output_path);
+		}
 
-	/* それ以外はアセンブルしたファイルを最終生成物とする */
-	else
-	{
-		/* 一時ファイルを作成 */
-		auto tmpfile = Assembler::create_tmpfile();
+		/* それ以外はアセンブルしたファイルを最終生成物とする */
+		else
+		{
+			/* 一時ファイルを作成 */
+			auto tmpfile = Assembler::create_tmpfile();
 
-		/* アセンブリコードを生成 */
-		run_fcc(in->_input_path, tmpfile);
+			/* アセンブリコードを生成 */
+			run_fcc(input_path, tmpfile);
 
-		/* アセンブル */
-		Assembler::assemble(tmpfile, output_path);
-	}
+			/* アセンブル */
+			Assembler::assemble(tmpfile, output_path);
+		}
 
 #endif /* WINDOWS */
+	}
 
 	return 0;
 }

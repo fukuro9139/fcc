@@ -20,6 +20,7 @@
 unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 {
 	auto in = make_unique<Input>();
+	bool stdin_flg = false;
 
 	/* args[0]は実行ファイルのパス */
 	for (size_t i = 1, sz = args.size(); i < sz; ++i)
@@ -60,12 +61,17 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 				std::cerr << "fccでは下記のオプションが使えます\n";
 				usage(1);
 			}
+			if(stdin_flg){
+				std::cerr << "標準入力を指定する'-'は１つのみ有効です\n";
+				usage(1);
+			}
+			stdin_flg = true;
 		}
 
-		in->_input_path = args[i];
+		in->_inputs.emplace_back(args[i]);
 	}
 
-	if (in->_input_path.empty())
+	if (in->_inputs.empty())
 	{
 		std::cerr << "入力ファイルが指定されていません\n";
 		exit(1);
@@ -81,7 +87,8 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
  */
 void Input::usage(int status)
 {
-	std::cerr << "fcc [ -o <path> ] <file>" << std::endl;
+	std::cerr << "fcc [ -o <path> ] [ -S ] <file>\n";
+	std::cerr << "fcc [ -S ] <file1> <file2> ..." << std::endl;
 	exit(status);
 }
 
