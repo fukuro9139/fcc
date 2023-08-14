@@ -4,7 +4,6 @@
 
 #ifndef WINDOWS
 
-#include <format>
 #include <unistd.h>
 #include <sys/types.h>
 #include <libgen.h>

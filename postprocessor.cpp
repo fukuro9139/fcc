@@ -33,15 +33,15 @@ void Postprocessor::run_linker(const vector<string> &inputs, const string &outpu
     cmd.emplace_back("-dynamic-linker");
     cmd.emplace_back("/lib64/ld-linux-x86-64.so.2");
 
-    char *libpath = find_libpath();
-    char *gcc_libpath = find_gcc_libpath();
+    string libpath = find_libpath();
+    string gcc_libpath = find_gcc_libpath();
 
-    cmd.emplace_back(std::format("/crt1.o", libpath));
-    cmd.emplace_back(std::format("%s/crti.o", libpath));
-    cmd.emplace_back(std::format("%s/crtbegin.o", gcc_libpath));
-    cmd.emplace_back(std::format("-L%s", gcc_libpath));
-    cmd.emplace_back(std::format("-L%s", libpath));
-    cmd.emplace_back(std::format("-L%s/..", libpath));
+    cmd.emplace_back(libpath + "/crt1.o");
+    cmd.emplace_back(libpath + "/crti.o");
+    cmd.emplace_back(gcc_libpath + "/crtbegin.o");
+    cmd.emplace_back("-L" + gcc_libpath);
+    cmd.emplace_back("-L" + libpath);
+    cmd.emplace_back("-L" + libpath + "/..");
     cmd.emplace_back("-L/usr/lib64");
     cmd.emplace_back("-L/lib64");
     cmd.emplace_back("-L/usr/lib/x86_64-linux-gnu");
@@ -50,17 +50,18 @@ void Postprocessor::run_linker(const vector<string> &inputs, const string &outpu
     cmd.emplace_back("-L/usr/lib");
     cmd.emplace_back("-L/lib");
 
-    for (auto &input:inputs){
+    for (auto &input : inputs)
+    {
         cmd.emplace_back(input);
     }
-        
+
     cmd.emplace_back("-lc");
     cmd.emplace_back("-lgcc");
     cmd.emplace_back("--as-needed");
     cmd.emplace_back("-lgcc_s");
     cmd.emplace_back("--no-as-needed");
-    cmd.emplace_back(std::format("%s/crtend.o", gcc_libpath));
-    cmd.emplace_back(std::format("%s/crtn.o", libpath));
+    cmd.emplace_back(gcc_libpath + "/crtend.o");
+    cmd.emplace_back(libpath + "/crtn.o");
 
     run_subprocess(cmd);
 }
