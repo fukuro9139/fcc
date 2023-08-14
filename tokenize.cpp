@@ -12,7 +12,6 @@
 #include "tokenize.hpp"
 #include "object.hpp"
 #include "type.hpp"
-#include "input.hpp"
 
 /** 入力文字列 */
 static string current_input = "";
@@ -130,9 +129,9 @@ Token::Token(const TokenKind &kind, const int &location, string &&str) : _kind(k
  * @param path ファイルパス
  * @return トークナイズした結果のトークンリスト
  */
-unique_ptr<Token> Token::tokenize_file(const string &path)
+unique_ptr<Token> Token::tokenize_file(const unique_ptr<Input> &in)
 {
-	return tokenize(path, Input::read_file(path));
+	return tokenize(in->_input_path, in->read_file());
 }
 
 /**
@@ -144,11 +143,11 @@ unique_ptr<Token> Token::tokenize_file(const string &path)
  */
 unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 {
-	/* 入力文字列の保存 */
-	current_input = input;
-
 	/* 入力ファイル名を保存 */
 	current_filename = filename;
+
+	/* 入力文字列の保存 */
+	current_input = input;
 
 	/* スタート地点としてダミーのトークンを作る */
 	unique_ptr<Token> head = make_unique_for_overwrite<Token>();
@@ -705,8 +704,10 @@ bool Token::is_end() const
 bool Token::is_typename() const
 {
 	/* 標準の型指定子 */
-	for(auto &name:type_names){
-		if(name == _str){
+	for (auto &name : type_names)
+	{
+		if (name == _str)
+		{
 			return true;
 		}
 	}

@@ -150,7 +150,7 @@ public:
 	/* 静的メンバ関数 (public) */
 	/**************************/
 
-	static unique_ptr<Object> parse(Token *token);
+	static unique_ptr<Object> parse(const unique_ptr<Token> &list);
 	static unique_ptr<Node> new_cast(unique_ptr<Node> &&expr, const shared_ptr<Type> &ty);
 
 private:

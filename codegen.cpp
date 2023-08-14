@@ -1228,11 +1228,11 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(const unique_ptr<Object> &program, const string &input_path, const string &output_path)
+void CodeGen::generate_code(const unique_ptr<Object> &program, const unique_ptr<Input> &in)
 {
 	/* ファイルを開くのに成功したら出力先をファイルに変更する */
 	/* ファイルを開くのに失敗したら出力先は標準出力のまま */
-	unique_ptr<std::ostream> ofs(new std::ofstream(output_path));
+	unique_ptr<std::ostream> ofs(new std::ofstream(in->_output_path));
 	if (!ofs->fail())
 	{
 		os = ofs.get();
@@ -1242,7 +1242,7 @@ void CodeGen::generate_code(const unique_ptr<Object> &program, const string &inp
 	*os << ".intel_syntax noprefix\n";
 
 	/* .fileディレクティブを出力 */
-	*os << ".file 1 \"" << input_path << "\"\n";
+	*os << ".file 1 \"" << in->_input_path << "\"\n";
 
 	/* スタックサイズを計算してセット */
 	Object::assign_lvar_offsets(program);

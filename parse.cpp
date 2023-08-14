@@ -239,12 +239,14 @@ unique_ptr<Node> Node::new_inc_dec(unique_ptr<Node> &&node, Token *token, int ad
 /**
  * @brief トークン・リストを構文解析して関数ごとにASTを構築する
  *
- * @param token トークン・リストの先頭
+ * @param list トークン・リスト
  * @return 構文解析結果
  * @details program = (typedef | function-definition | global-variable)*
  */
-unique_ptr<Object> Node::parse(Token *token)
+unique_ptr<Object> Node::parse(const unique_ptr<Token> &list)
 {
+	auto token = list.get();
+
 	/* トークンリストを最後まで辿る*/
 	while (TokenKind::TK_EOF != token->_kind)
 	{

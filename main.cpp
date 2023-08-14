@@ -24,17 +24,18 @@ int main(int argc, char **argv)
 {
 	/* 入力をvectorに変換 */
 	vector<string> args(argv, argv + argc);
+	
 	/* 引数を解析してオプションを判断 */
-	Input::parse_args(args);
+	auto in = Input::parse_args(args);
 
 	/* 入力ファイルをトークナイズする */
-	auto token = Token::tokenize_file(Input::opt.input_path);
+	auto token = Token::tokenize_file(in);
 
 	/* トークン列をパースし抽象構文木を構築する */
-	auto program = Node::parse(token.get());
+	auto program = Node::parse(token);
 
 	/* 抽象構文木を巡回しながらコード生成 */
-	CodeGen::generate_code(program, Input::opt.input_path, Input::opt.opt_o);
+	CodeGen::generate_code(program, in);
 
 	return 0;
 }

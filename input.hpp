@@ -11,30 +11,28 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <iostream>
-#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <iterator>
-
-struct Options
-{
-	std::string opt_o = "";
-	std::string input_path = "";
-};
+#include "common.hpp"
 
 class Input
 {
 public:
-	static std::string read_file(const std::string &path);
-	static void parse_args(const std::vector<std::string> &args);
+	/* メンバ変数(public) */
+	const string _input_path = "";
+	const string _output_path = "";
 
-	static Options opt;
+	/* コンストラクタ */
+	Input(const string &in, const string &out);
+
+	/* メンバ関数(public) */
+	string read_file() const;
+
+	/* 静的メンバ関数(public) */
+	static unique_ptr<Input> parse_args(const std::vector<std::string> &args);
 
 private:
-	/* インスタンス化禁止 */
-	Input();
+	/* 静的メンバ関数(input) */
 	static void usage(int status);
 };

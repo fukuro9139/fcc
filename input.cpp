@@ -11,15 +11,19 @@
 
 #include "input.hpp"
 
-Options Input::opt;
+/** @brief コンストラクタ */
+Input::Input(const string &in, const string &out) : _input_path(in), _output_path(out) {}
 
 /**
- * @brief コマンドライン引数を解析する。読み取ったオプションはOptions構造体に格納。
+ * @brief コマンドライン引数を解析する。
  *
  * @param args コマンドライン引数を格納したvector<string>
+ * @return 読み取ったインプット情報を格納したInputオブジェクトのポインタ
  */
-void Input::parse_args(const std::vector<std::string> &args)
+unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 {
+	string in, out;
+
 	/* args[0]は実行ファイルのパス */
 	for (size_t i = 1, sz = args.size(); i < sz; ++i)
 	{
@@ -35,13 +39,13 @@ void Input::parse_args(const std::vector<std::string> &args)
 			{
 				usage(1);
 			}
-			opt.opt_o = args[i];
+			out = args[i];
 			continue;
 		}
 
 		if (args[i].starts_with("-o"))
 		{
-			opt.opt_o = args[i].substr(2);
+			out = args[i].substr(2);
 			continue;
 		}
 
@@ -55,14 +59,15 @@ void Input::parse_args(const std::vector<std::string> &args)
 			}
 		}
 
-		opt.input_path = args[i];
+		in = args[i];
 	}
 
-	if (opt.input_path.size() == 0)
+	if (in.size() == 0)
 	{
 		std::cerr << "入力ファイルが存在しません\n";
 		exit(1);
 	}
+	return make_unique<Input>(in, out);
 }
 
 /**
@@ -77,17 +82,17 @@ void Input::usage(int status)
 }
 
 /**
- * @brief
+ * @brief 入力ファイルを開いて読み取る
  *
- * @param path 入力ファイルのパス
  * @return 入力ファイルの内容をまとめた文字列
  */
-std::string Input::read_file(const std::string &path)
+std::string Input::read_file() const
 {
-	std::string input_data;
-	if (path == "-")
+	string input_data;
+	
+	if (_input_path == "-")
 	{
-		std::string buf;
+		string buf;
 		/* 標準入力から読み取れなくなるまで読み込みを続ける */
 		while (std::getline(std::cin, buf))
 		{
@@ -103,10 +108,10 @@ std::string Input::read_file(const std::string &path)
 	}
 	else
 	{
-		std::ifstream ifs(path);
+		std::ifstream ifs(_input_path);
 		if (!ifs)
 		{
-			std::cerr << "ファイルが開けませんでした： " << path << std::endl;
+			std::cerr << "ファイルが開けませんでした： " << _input_path << std::endl;
 			exit(1);
 		}
 

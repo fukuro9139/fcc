@@ -12,6 +12,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "input.hpp"
 
 /* 前方宣言 */
 class Type;
@@ -61,8 +62,7 @@ public:
 
 	/* 静的メンバ関数 (public) */
 
-	static unique_ptr<Token> tokenize(const string &filename, string &&input);
-	static unique_ptr<Token> tokenize_file(const string &filepath);
+	static unique_ptr<Token> tokenize_file(const unique_ptr<Input> &in);
 
 private:
 	/* メンバ関数 (private) */
@@ -70,6 +70,7 @@ private:
 
 	/* 静的メンバ関数 (private) */
 
+	static unique_ptr<Token> tokenize(const string &filename, string &&input);
 	static unique_ptr<Token> read_number(const string::const_iterator &start);
 	static unique_ptr<Token> read_int_literal(const string::const_iterator &start);
 	static unique_ptr<Token> read_char_literal(string::const_iterator &start);
