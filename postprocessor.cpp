@@ -201,10 +201,10 @@ string Postprocessor::find_gcc_libpath()
 
     for (auto &path : paths)
     {
-        char *path = find_file(path);
-        if (path)
+        char *path_found = find_file(path);
+        if (path_found)
         {
-            return dirname(path);
+            return dirname(path_found);
         }
     }
     std::cerr << "gccライブラリが見つかりません" << endl;
