@@ -61,6 +61,16 @@ shared_ptr<Type> Type::get_common_type(shared_ptr<Type> ty1, shared_ptr<Type> ty
 		return pointer_to(ty1->_base);
 	}
 
+	/* 演算の中に出てくる関数は関数ポインタ */
+	if (TypeKind::TY_FUNC == ty1->_kind)
+	{
+		return pointer_to(ty1);
+	}
+	if (TypeKind::TY_FUNC == ty2->_kind)
+	{
+		return pointer_to(ty2);
+	}
+
 	/* 片方がdouble型ならdouble型 */
 	if (TypeKind::TY_DOUBLE == ty1->_kind || TypeKind::TY_DOUBLE == ty2->_kind)
 	{
