@@ -1470,12 +1470,18 @@ shared_ptr<Type> Node::function_parameters(Token **next_token, Token *current_to
 		auto ty2 = declspec(&current_token, current_token, nullptr);
 		ty2 = declarator(&current_token, current_token, ty2);
 
+		auto name = ty2->_name;
+
 		/* 関数の引数では、T型の配列はT型へのポインタとして解釈する。例： *argv[] は **argv に変換される */
 		if (TypeKind::TY_ARRAY == ty2->_kind)
 		{
-			auto token = ty2->_name;
 			ty2 = Type::pointer_to(ty2->_base);
-			ty2->_name = token;
+			ty2->_name = name;
+		}
+		/* 同様に関数もポインタとして解釈する */
+		else if(TypeKind::TY_FUNC == ty2->_kind){
+			ty2 = Type::pointer_to(ty2);
+			ty2->_name = name;
 		}
 		cur->_next = make_shared<Type>(*ty2);
 		cur = cur->_next.get();
