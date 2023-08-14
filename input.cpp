@@ -47,6 +47,12 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			continue;
 		}
 
+		if ("-c" == args[i])
+		{
+			in->_opt_c = true;
+			continue;
+		}
+
 		if (args[i].starts_with("-o"))
 		{
 			in->_output_path = args[i].substr(2);

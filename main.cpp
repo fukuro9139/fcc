@@ -42,10 +42,13 @@ int main(int argc, char **argv)
 	/* 引数を解析してオプションを判断 */
 	auto in = Input::parse_args(args);
 
+	/* リンクを行うファイル */
+	vector<string> ld_args;
+
 	/* 入力ファイルが複数存在するとき出力先は指定できない */
-	if (in->_inputs.size() > 1 && !in->_output_path.empty())
+	if (in->_inputs.size() > 1 && !in->_output_path.empty() && (in->_opt_c || in->_opt_S))
 	{
-		std::cerr << "入力ファイルが複数ある時に-oオプションは指定できません\n";
+		std::cerr << "入力ファイルが複数ある時に-oオプションは-cまたは-Sオプションと併用できません" << endl;
 		exit(1);
 	}
 
@@ -92,27 +95,71 @@ int main(int argc, char **argv)
 		run_fcc(input_path, output_path);
 
 #else
-		/* -Sオプションがついていれば最終生成物はアセンブリコード */
+		/* 入力ファイルの拡張子が".o"の場合 */
+		if (input_path.ends_with(".o"))
+		{
+			ld_args.emplace_back(input_path);
+			continue;
+		}
+
+		/* 入力ファイルの拡張子が".s"の場合 */
+		if (input_path.ends_with(".s"))
+		{
+			/* -Sオプションが入っていなければアセンブルする */
+			if (!in->_opt_S)
+			{
+				Postprocessor::assemble(input_path, output_path);
+			}
+			continue;
+		}
+
+		/* 入力ファイルの拡張子が".c"以外の場合 */
+		if (!input_path.ends_with(".c") && input_path != "-")
+		{
+			std::cerr << "不明な拡張子です: " << input_path << endl;
+			exit(1);
+		}
+
+		/* -Sオプションが指定されていれば単にコンパイルするだけ */
 		if (in->_opt_S)
 		{
 			run_fcc(input_path, output_path);
+			continue;
 		}
 
-		/* それ以外はアセンブルしたファイルを最終生成物とする */
-		else
+		/* -cオプションが指定されていればコンパイル後アセンブル */
+		if (in->_opt_c)
 		{
 			/* 一時ファイルを作成 */
 			auto tmpfile = Postprocessor::create_tmpfile();
-
 			/* アセンブリコードを生成 */
 			run_fcc(input_path, tmpfile);
-
 			/* アセンブル */
 			Postprocessor::assemble(tmpfile, output_path);
+			continue;
 		}
 
+		/* それ以外はコンパイル、アセンブル、リンクしたファイルを最終生成物とする */
+
+		/* 一時ファイルを作成 */
+		auto tmpfile1 = Postprocessor::create_tmpfile();
+		auto tmpfile2 = Postprocessor::create_tmpfile();
+		/* アセンブリコードを生成 */
+		run_fcc(input_path, tmpfile1);
+		/* アセンブル */
+		Postprocessor::assemble(tmpfile1, tmpfile2);
+		/* リンク対象のリストに追加 */
+		ld_args.emplace_back(tmpfile2);
 #endif /* WINDOWS */
 	}
+
+#ifndef WINDOWS
+	/* リンク */
+	if(!ld_args.empty()){
+		Postprocessor::run_linker(ld_args, in->_output_path.empty() ? "a.out" : in->_output_path);
+	}
+
+#endif /* WINDOWS */
 
 	return 0;
 }

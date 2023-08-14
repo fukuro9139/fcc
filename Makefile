@@ -49,7 +49,7 @@ all: clean $(TARGET)
 ifeq ($(WINDOWS), 0)
 test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$* -E -P -C test/$*.c
-	./fcc -o test/$*.o test/tmp_$*
+	./fcc -c -o test/$*.o test/tmp_$*
 	$(CC) -o $@ test/$*.o -xc test/common
 
 test: $(TESTS)
