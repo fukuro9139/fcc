@@ -109,9 +109,7 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
             push_cond_incl(move(start));
             /* #if の後の条件式が0（偽）であった場合は#endifまでスキップ */
             if(!val){
-                std::cout << "b skip" << endl;
                 token = skip_cond_incl(move(token));
-                std::cout << "a skip" << endl;
             }
             continue;
         }
@@ -249,6 +247,7 @@ unique_ptr<Token> PreProcess::new_eof_token(const Token * src)
 unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
 {
     while(TokenKind::TK_EOF != token->_kind){
+        std::cout << token->_str << endl;
         if(is_hash(token.get()) && token->_next->is_equal("endif")){
             break;
         }
