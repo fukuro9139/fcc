@@ -206,9 +206,7 @@ string Postprocessor::find_gcc_libpath()
         char *path_found = find_file(path);
         if (path_found)
         {
-            string libpath = dirname(path_found);
-            free(path_found);
-            return libpath;
+            return dirname(path_found);
         }
     }
     std::cerr << "gccライブラリが見つかりません" << endl;
