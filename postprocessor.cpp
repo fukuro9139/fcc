@@ -73,7 +73,7 @@ void Postprocessor::run_linker(const vector<string> &inputs, const string &outpu
  */
 string Postprocessor::create_tmpfile()
 {
-    char *path = strdup("/tmp/fcc-XXXXXX");
+    char *path = "/tmp/fcc-XXXXXX";
     int fd = mkstemp(path);
     if (fd == -1)
     {
@@ -137,6 +137,7 @@ void Postprocessor::run_subprocess(const vector<string> &argv)
  *
  * @param pattern 検索パターン
  * @return パターンと一致したパス
+ * @note strdup内でmallocで文字列のメモリ領域を確保している。戻り値は戻り先で開放すること。
  */
 char *Postprocessor::find_file(const char *pattern)
 {
@@ -205,7 +206,9 @@ string Postprocessor::find_gcc_libpath()
         char *path_found = find_file(path);
         if (path_found)
         {
-            return dirname(path_found);
+            string libpath = dirname(path_found);
+            free(path_found);
+            return libpath;
         }
     }
     std::cerr << "gccライブラリが見つかりません" << endl;
