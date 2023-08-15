@@ -273,6 +273,7 @@ unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_pt
         cur = cur->_next.get();
     }
     cur->_next = new_eof_token(current_token.get());
+    std::cout << "copy: " << current_token.get() << endl;
     next_token = move(current_token);
     return move(head->_next);
 }
@@ -288,8 +289,6 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<T
 {
     auto expr = copy_line(next_token, move(current_token->_next));
     auto start = move(current_token);
-
-    std::cout << next_token.get() << endl;
 
     /* #ifの後に条件式がなければエラー */
     if(TokenKind::TK_EOF ==  expr->_kind){
