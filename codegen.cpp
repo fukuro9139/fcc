@@ -1234,18 +1234,8 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
  */
 void CodeGen::generate_code(const unique_ptr<Object> &program, const string &input_path, const string &output_path)
 {
-	/* ファイルを開くのに成功したら出力先をファイルに変更する */
-	/* アウトプットパスとして"-"が指定されているまたはファイルを開くのに失敗したら出力先は標準出力のまま */
-	unique_ptr<std::ofstream> ofs;
 
-	if (output_path != "-")
-	{
-		ofs = make_unique<std::ofstream>(output_path);
-		if (!ofs->fail())
-		{
-			os = ofs.get();
-		}
-	}
+	os = open_file(output_path);
 
 	/* intel記法であることを宣言 */
 	*os << ".intel_syntax noprefix\n";

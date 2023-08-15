@@ -49,5 +49,6 @@ void verror_at(const string &filename, const string &input, string &&msg, const 
 void error_token(string &&msg, Token *token);
 void warn_token(string &&msg, Token *token);
 void run_subprocess(const vector<string> &argv);
+std::ostream *open_file(const string &path);
 
 #define unreachable() error("エラー: " + string(__FILE__) + " : " + std::to_string(__LINE__))

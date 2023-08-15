@@ -66,6 +66,7 @@ public:
 	/* 静的メンバ関数 (public) */
 
 	static unique_ptr<Token> tokenize_file(const string &input_path);
+	static void print_token(const unique_ptr<Token> &token, const string &output_path);
 	static const vector<unique_ptr<File>> &get_input_files();
 	static const File *get_current_file();
 

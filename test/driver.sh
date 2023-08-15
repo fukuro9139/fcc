@@ -76,4 +76,16 @@ echo 'int main() {}' > $tmp/foo.c
 [ -f $tmp/a.out ]
 check a.out
 
+# -E
+echo foo > $tmp/out.h
+echo "#include \"$tmp/out.h\"" > $tmp/out.c
+./fcc -E $tmp/out1.c | grep -q foo
+check -E
+
+echo foo > $tmp/out1.h
+echo "#include \"$tmp/out1.h\"" > $tmp/out1.c
+./fcc -E -o $tmp/out2 $tmp/out1.c
+cat $tmp/out2 | grep -q foo
+check '-E and -o'
+
 echo OK

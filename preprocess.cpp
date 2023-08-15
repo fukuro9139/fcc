@@ -64,12 +64,20 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
                 error_token("ファイル名ではありません", token.get());
             }
 
-            /* 現在のファイル */
-            fs::path src_path = token->_file->_name;
-            /* 文字列リテラルなので前後の'"'を取り除く */
-            const auto name = token->_str.substr(1, token->_str.size() - 2);
-            /* includeするファイルのパスを生成、現在のファイルからの相対パス */
-            const auto inc_path = src_path.replace_filename(name).string();
+            string inc_path;
+            if (token->_str[0] == '/')
+            {
+                inc_path = token->_str;
+            }
+            else
+            {
+                /* 現在のファイル */
+                fs::path src_path = token->_file->_name;
+                /* 文字列リテラルなので前後の'"'を取り除く */
+                const auto name = token->_str.substr(1, token->_str.size() - 2);
+                /* includeするファイルのパスを生成、現在のファイルからの相対パス */
+                inc_path = src_path.replace_filename(name).string();
+            }
             auto token2 = Token::tokenize_file(inc_path);
 
             /* 次の行頭までスキップする */

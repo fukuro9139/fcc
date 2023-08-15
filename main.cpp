@@ -49,13 +49,20 @@ void run_fcc(const vector<string> &args, const string &input_path, const string 
  * @param input_path 入力先
  * @param output_path 出力先
  */
-void fcc(const string &input_path, const string &output_path)
+void fcc(const unique_ptr<Input> &in, const string &input_path, const string &output_path)
 {
 	/* 入力ファイルをトークナイズする */
 	auto token = Token::tokenize_file(input_path);
 
 	/* プリプロセス */
 	token = PreProcess::preprocess(move(token));
+
+	/* -Eオプションが指定されている場合はプリプロセス済ファイルを出力 */
+	if (in->_opt_E)
+	{
+		Token::print_token(token, in->_output_path.empty() ? "-" : in->_output_path);
+		return;
+	}
 
 	/* トークン列をパースし抽象構文木を構築する */
 	auto program = Node::parse(token);
@@ -76,14 +83,14 @@ int main(int argc, char **argv)
 	/* -fccオプションが指定されている場合は-fcc_input, -fcc_outputを入力、出力先としてコンパイルを実行 */
 	if (in->_opt_fcc)
 	{
-		fcc(in->_fcc_input, in->_fcc_output);
+		fcc(in, in->_fcc_input, in->_fcc_output);
 		return 0;
 	}
 
 	/* 入力ファイルが複数存在するとき出力先は指定できない */
-	if (in->_inputs.size() > 1 && !in->_output_path.empty() && (in->_opt_c || in->_opt_S))
+	if (in->_inputs.size() > 1 && !in->_output_path.empty() && (in->_opt_c || in->_opt_S || in->_opt_E))
 	{
-		error("入力ファイルが複数ある時に-oオプションは-cまたは-Sオプションと併用できません");
+		error("入力ファイルが複数ある時に-oオプションは-c, -S, -Eオプションと併用できません");
 	}
 
 	for (const auto &input_path : in->_inputs)
@@ -150,6 +157,11 @@ int main(int argc, char **argv)
 		if (!input_path.ends_with(".c") && input_path != "-")
 		{
 			error("不明な拡張子です: " + input_path);
+		}
+
+		if(in->_opt_E){
+			run_fcc(args, input_path, output_path);
+			continue;
 		}
 
 		/* -Sオプションが指定されていれば単にコンパイルするだけ */

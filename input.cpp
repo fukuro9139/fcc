@@ -53,6 +53,12 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			continue;
 		}
 
+		if ("-E" == args[i])
+		{
+			in->_opt_E = true;
+			continue;
+		}
+
 		if ("-fcc" == args[i])
 		{
 			in->_opt_fcc = true;
@@ -85,7 +91,8 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 				std::cerr << "fccでは下記のオプションが使えます\n";
 				usage(1);
 			}
-			if(stdin_flg){
+			if (stdin_flg)
+			{
 				std::cerr << "標準入力を指定する'-'は１つのみ有効です\n";
 				usage(1);
 			}
@@ -117,7 +124,7 @@ void Input::usage(int status)
 
 /**
  * @brief ファイル名の拡張子を変更して返す
- * 
+ *
  * @param path 入力ファイルのパス
  * @param extn 変更する拡張子
  * @return ファイルの拡張子を変更したパス
@@ -125,11 +132,11 @@ void Input::usage(int status)
 string Input::replace_extension(const string &path, const string &extn)
 {
 	auto dot_pos = path.find_last_of('.');
-	
-	if(dot_pos == string::npos){
+
+	if (dot_pos == string::npos)
+	{
 		return path + extn;
 	}
 
 	return path.substr(0, dot_pos) + extn;
-    
 }

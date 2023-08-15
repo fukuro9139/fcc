@@ -23,6 +23,7 @@ public:
 	string _fcc_output = "";  /*!< -fccオプションが指定されている時の出力先 */
 	bool _opt_S = false;	  /*!< -Sオプションが指定されているか */
 	bool _opt_c = false;	  /*!< -cオプションが指定されているか */
+	bool _opt_E = false;	  /*!< -Eオプションが指定されているか */
 	bool _opt_fcc = false;	  /*!< -fccオプションが指定されているか */
 
 	/* 静的メンバ関数(public) */

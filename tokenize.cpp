@@ -798,3 +798,24 @@ const vector<unique_ptr<File>> &Token::get_input_files()
 {
 	return input_files;
 }
+
+/**
+ * @brief プリプロセスしたトークンを出力する
+ * 
+ * @param token トークンリスト
+ * @param output_path 出力先
+ */
+void Token::print_token(const unique_ptr<Token> &token, const string & output_path)
+{
+	auto os = open_file(output_path);
+
+	int line = 1;
+	for(auto tok = token.get();  TokenKind::TK_EOF != tok->_kind; tok = tok->_next.get()){
+		if(line > 1 && tok->at_begining){
+			*os << "\n";
+		}
+		*os << tok->_str << " ";
+		++line;
+	}
+	*os << endl;
+}

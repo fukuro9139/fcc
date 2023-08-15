@@ -106,16 +106,14 @@ void error_token(string &&msg, Token *token)
 
 /**
  * @brief 警告を出力する
- * 
+ *
  * @param msg 警告メッセージ
  * @param token 対象メッセージ
  */
-void warn_token(string && msg, Token * token)
+void warn_token(string &&msg, Token *token)
 {
     verror_at(token->_file->_name, token->_file->_contents, move(msg), token->_location, token->_line_no);
 }
-
-
 
 /**
  * @brief forkした子プロセスでargvを引数としてexecvpを起動
@@ -217,3 +215,27 @@ void run_subprocess(const vector<string> &argv)
     // delete[] wcmd;
 }
 #endif /* WINDOWS */
+
+/**
+ * @brief ファイルを開いてファイルストリームのポインタを返す。
+ * アウトプットパスとして"-"が指定されているまたはファイルを開くのに失敗したら出力先は標準出力。
+ *
+ * @param path 出力先ファイルパス
+ * @return 出力用ostreamのポインタ
+ */
+std::ostream *open_file(const string &path)
+{
+    static unique_ptr<std::ofstream> os;
+    os = nullptr;
+    /* 出力先が標準出力ではない */
+    if (output_path != "-")
+    {
+        /* ファイルを開く */
+        os = make_unique<std::ofstream>(output_path);
+        if (!os->fail())
+        {
+            return os.get();
+        }
+    }
+    return &std::cout;
+}
