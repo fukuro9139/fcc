@@ -79,7 +79,7 @@ check a.out
 # -E
 echo foo > $tmp/out.h
 echo "#include \"$tmp/out.h\"" > $tmp/out.c
-./fcc -E $tmp/out1.c | grep -q foo
+./fcc -E $tmp/out.c | grep -q foo
 check -E
 
 echo foo > $tmp/out1.h
