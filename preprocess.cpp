@@ -247,7 +247,6 @@ unique_ptr<Token> PreProcess::new_eof_token(const Token * src)
 unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
 {
     while(TokenKind::TK_EOF != token->_kind){
-        std::cout << token->_str << endl;
         if(is_hash(token.get()) && token->_next->is_equal("endif")){
             break;
         }
@@ -289,6 +288,8 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<T
 {
     auto expr = copy_line(next_token, move(current_token->_next));
     auto start = move(current_token);
+
+    std::cout << next_token.get() << endl;
 
     /* #ifの後に条件式がなければエラー */
     if(TokenKind::TK_EOF ==  expr->_kind){
