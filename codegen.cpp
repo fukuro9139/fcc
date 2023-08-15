@@ -12,7 +12,6 @@
  */
 
 #include "codegen.hpp"
-#include "error.hpp"
 
 /** スタックの深さ */
 static int depth = 0;

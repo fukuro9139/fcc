@@ -24,7 +24,6 @@ public:
 
 private:
     PostProcess();
-    static void run_subprocess(const vector<string> &argv);
     static string find_file(const string &patern);
     static bool file_exists(const string &path);
     static string find_libpath();

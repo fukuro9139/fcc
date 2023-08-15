@@ -12,7 +12,6 @@
 #include "tokenize.hpp"
 #include "object.hpp"
 #include "type.hpp"
-#include "error.hpp"
 #include <sstream>
 #include <iterator>
 
@@ -792,10 +791,10 @@ const File *Token::get_current_file()
 
 /**
  * @brief インプットファイルのリストの参照を返す
- * 
+ *
  * @return インプットファイルのリストの参照
  */
-const vector<unique_ptr<File>>& Token::get_input_files()
+const vector<unique_ptr<File>> &Token::get_input_files()
 {
 	return input_files;
 }

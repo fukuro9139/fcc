@@ -11,7 +11,6 @@
 
 #include "type.hpp"
 #include "parse.hpp"
-#include "error.hpp"
 
 /**************/
 /* Type Class */

@@ -4,20 +4,18 @@
  * @brief コンパイル後の処理を行う
  * @version 0.1
  * @date 2023-08-15
- * 
+ *
  * @copyright Copyright (c) 2023  MIT Licence
- * 
+ *
  */
 
 #include "postprocess.hpp"
-#include "error.hpp"
 
 #ifndef WINDOWS
 
 #include <unistd.h>
 #include <sys/types.h>
 #include <libgen.h>
-#include <sys/wait.h>
 #include <string.h>
 #include <glob.h>
 #include <sys/stat.h>
@@ -97,61 +95,13 @@ string PostProcess::create_tmpfile()
     int fd = mkstemp(path);
     if (fd == -1)
     {
-        std::cerr << "\'mkstemp\'コマンドに失敗しました" << endl;
-        exit(1);
+        error("\'mkstemp\'コマンドに失敗しました");
     }
     close(fd);
 
     auto tmp_path = string(path);
     free(path);
     return tmp_path;
-}
-
-/**
- * @brief forkした子プロセスでargvを引数としてexecvpを起動
- *
- * @param argv 引数リスト
- */
-void PostProcess::run_subprocess(const vector<string> &argv)
-{
-    /* 引数の数 + 1 (NULL終端)*/
-    size_t capacity = argv.size() + 1;
-    char **cmd = new char *[capacity];
-
-    /* 引数を一つずつコピーしていく */
-    for (size_t i = 0; i < argv.size(); ++i)
-    {
-        cmd[i] = new char[argv[i].size() + 1];
-        std::char_traits<char>::copy(cmd[i], argv[i].c_str(), argv[i].size() + 1);
-    }
-    cmd[capacity - 1] = nullptr;
-
-    if (fork() == 0)
-    {
-        /* 子プロセスでコマンドを実行する */
-        execvp(cmd[0], cmd);
-        std::cerr << "\'exec\'コマンドが失敗しました" << endl;
-        _exit(1);
-    }
-
-    /* 子プロセスが終了するのを待機 */
-    int status;
-    while (wait(&status) > 0)
-    {
-    }
-
-    if (status != 0)
-    {
-        exit(1);
-    }
-
-    /* 解放 */
-    for (size_t i = 0; i < argv.size(); ++i)
-    {
-        delete[] cmd[i];
-    }
-
-    delete[] cmd;
 }
 
 /**
@@ -204,7 +154,7 @@ string PostProcess::find_libpath()
         return "/usr/lib64";
     }
 
-    error( "ライブラリが見つかりません");
+    error("ライブラリが見つかりません");
 }
 
 /**

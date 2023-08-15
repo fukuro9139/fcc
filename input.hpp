@@ -19,8 +19,11 @@ public:
 	/* メンバ変数(public) */
 	vector<string> _inputs;	  /*!< インプットファイルパス */
 	string _output_path = ""; /*!< アウトプットファイルパス */
+	string _fcc_input = "";	  /*!< -fccオプションが指定されている時の入力先 */
+	string _fcc_output = "";  /*!< -fccオプションが指定されている時の出力先 */
 	bool _opt_S = false;	  /*!< -Sオプションが指定されているか */
 	bool _opt_c = false;	  /*!< -cオプションが指定されているか */
+	bool _opt_fcc = false;	  /*!< -fccオプションが指定されているか */
 
 	/* 静的メンバ関数(public) */
 	static unique_ptr<Input> parse_args(const std::vector<std::string> &args);

@@ -11,7 +11,6 @@
 
 #include "object.hpp"
 #include "parse.hpp"
-#include "error.hpp"
 
 /* Initializerクラス */
 Initializer::Initializer() = default;

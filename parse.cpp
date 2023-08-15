@@ -18,7 +18,6 @@
  */
 
 #include "parse.hpp"
-#include "error.hpp"
 
 /** 現在パースしている関数 */
 static Object *current_function = nullptr;

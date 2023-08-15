@@ -53,6 +53,24 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			continue;
 		}
 
+		if ("-fcc" == args[i])
+		{
+			in->_opt_fcc = true;
+			continue;
+		}
+
+		if ("-fcc-input" == args[i])
+		{
+			in->_fcc_input = args[++i];
+			continue;
+		}
+
+		if ("-fcc-output" == args[i])
+		{
+			in->_fcc_output = args[++i];
+			continue;
+		}
+
 		if (args[i].starts_with("-o"))
 		{
 			in->_output_path = args[i].substr(2);
@@ -79,8 +97,7 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 
 	if (in->_inputs.empty())
 	{
-		std::cerr << "入力ファイルが指定されていません\n";
-		exit(1);
+		error("入力ファイルが指定されていません\n");
 	}
 
 	return in;

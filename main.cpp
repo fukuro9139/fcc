@@ -22,16 +22,37 @@
 #include "postprocess.hpp"
 #include "preprocess.hpp"
 #include "common.hpp"
-#include "error.hpp"
 
-void run_fcc(const string &input_path, const string &output_path)
+/**
+ * @brief -fccオプションを引数に追加した上でで子プロセスとしてfccを起動する。
+ * input_pathのファイルをコンパイルしoutput_pathに出力する。
+ *
+ * @param args もともとの引数
+ * @param input_path 入力先
+ * @param output_path 出力先
+ */
+void run_fcc(const vector<string> &args, const string &input_path, const string &output_path)
+{
+	auto cmd(args);
+	cmd.emplace_back("-fcc");
+	cmd.emplace_back("-fcc-input");
+	cmd.emplace_back(input_path);
+	cmd.emplace_back("-fcc-output");
+	cmd.emplace_back(output_path);
+
+	run_subprocess(cmd);
+}
+
+/**
+ * @brief コンパイルを実行する
+ *
+ * @param input_path 入力先
+ * @param output_path 出力先
+ */
+void fcc(const string &input_path, const string &output_path)
 {
 	/* 入力ファイルをトークナイズする */
 	auto token = Token::tokenize_file(input_path);
-	if (!token)
-	{
-		error("トークナイズに失敗しました: \"" + input_path + "\"");
-	}
 
 	/* プリプロセス */
 	token = PreProcess::preprocess(move(token));
@@ -47,12 +68,17 @@ int main(int argc, char **argv)
 {
 	/* 入力をvectorに変換 */
 	vector<string> args(argv, argv + argc);
-
 	/* 引数を解析してオプションを判断 */
 	auto in = Input::parse_args(args);
-
 	/* リンクを行うファイル */
 	vector<string> ld_args;
+
+	/* -fccオプションが指定されている場合は-fcc_input, -fcc_outputを入力、出力先としてコンパイルを実行 */
+	if (in->_opt_fcc)
+	{
+		fcc(in->_fcc_input, in->_fcc_output);
+		return 0;
+	}
 
 	/* 入力ファイルが複数存在するとき出力先は指定できない */
 	if (in->_inputs.size() > 1 && !in->_output_path.empty() && (in->_opt_c || in->_opt_S))
@@ -62,7 +88,6 @@ int main(int argc, char **argv)
 
 	for (const auto &input_path : in->_inputs)
 	{
-
 		/* 出力先 */
 		string output_path;
 
@@ -100,7 +125,7 @@ int main(int argc, char **argv)
 
 #ifdef WINDOWS
 
-		run_fcc(input_path, output_path);
+		run_fcc(args, input_path, output_path);
 
 #else
 		/* 入力ファイルの拡張子が".o"の場合 */
@@ -130,7 +155,7 @@ int main(int argc, char **argv)
 		/* -Sオプションが指定されていれば単にコンパイルするだけ */
 		if (in->_opt_S)
 		{
-			run_fcc(input_path, output_path);
+			run_fcc(args, input_path, output_path);
 			continue;
 		}
 
@@ -140,7 +165,7 @@ int main(int argc, char **argv)
 			/* 一時ファイルを作成 */
 			auto tmpfile = PostProcess::create_tmpfile();
 			/* アセンブリコードを生成 */
-			run_fcc(input_path, tmpfile);
+			run_fcc(args, input_path, tmpfile);
 			/* アセンブル */
 			PostProcess::assemble(tmpfile, output_path);
 			continue;
@@ -152,7 +177,7 @@ int main(int argc, char **argv)
 		auto tmpfile1 = PostProcess::create_tmpfile();
 		auto tmpfile2 = PostProcess::create_tmpfile();
 		/* アセンブリコードを生成 */
-		run_fcc(input_path, tmpfile1);
+		run_fcc(args, input_path, tmpfile1);
 		/* アセンブル */
 		PostProcess::assemble(tmpfile1, tmpfile2);
 		/* リンク対象のリストに追加 */
