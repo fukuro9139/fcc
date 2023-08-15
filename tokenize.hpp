@@ -65,9 +65,6 @@ public:
 	static unique_ptr<Token> tokenize_file(const string &input_path);
 
 private:
-	/* メンバ関数 (private) */
-	bool is_keyword() const;
-
 	/* 静的メンバ関数 (private) */
 
 	static string read_inputfile(const string &path);
@@ -81,7 +78,6 @@ private:
 	static string::const_iterator string_literal_end(string::const_iterator itr);
 	static bool is_first_char_of_ident(const char &c);
 	static bool is_char_of_ident(const char &c);
-	static void convert_keywords(Token *token);
 	static int from_hex(const char &c);
 	static void add_line_number(Token *token);
 
@@ -89,12 +85,6 @@ private:
 	static constexpr string_view type_names[] = {"void", "_Bool", "char", "short", "int", "long", "float", "double", "struct", "union",
 												 "typedef", "enum", "static", "extern", "_Alignas", "signed", "unsigned",
 												 "const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
-	/** 識別子一覧 */
-	static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",
-											   "struct", "union", "short", "long", "void", "typedef", "_Bool",
-											   "enum", "static", "goto", "break", "continue", "switch", "case",
-											   "default", "extern", "_Alignof", "_Alignas", "do", "signed", "unsigned",
-											   "const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
 
 	/** 区切り文字一覧 */
 	static constexpr string_view punctuators[] = {"<<=", ">>=", "...", "==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=",

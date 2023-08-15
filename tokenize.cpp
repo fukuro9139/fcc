@@ -306,45 +306,8 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 	current_token->_next = make_unique<Token>(TokenKind::TK_EOF, last - first);
 	/* 行数をセットする */
 	add_line_number(head->_next.get());
-	/* キーワードトークンを識別子トークンから分離する */
-	Token::convert_keywords(head->_next.get());
 	/* ダミーの次のトークン以降を切り離して返す */
 	return move(head->_next);
-}
-
-/**
- * @brief トークンを順番にみていってキーワードと一致していれば種類をキーワードに帰る
- *
- * @param token トークン列
- */
-void Token::convert_keywords(Token *token)
-{
-	for (Token *t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
-	{
-		if (TokenKind::TK_IDENT == t->_kind && t->is_keyword())
-		{
-			t->_kind = TokenKind::TK_KEYWORD;
-		}
-	}
-}
-
-/**
- * @brief トークンの識別子がキーワードかどうか判定する
- *
- * @param token 対象のトークン
- * @return true キーワードである
- * @return false キーワードではない
- */
-bool Token::is_keyword() const
-{
-	for (auto &kw : keywords)
-	{
-		if (kw == _str)
-		{
-			return true;
-		}
-	}
-	return false;
 }
 
 /**

@@ -19,13 +19,17 @@
 #include "parse.hpp"
 #include "tokenize.hpp"
 #include "input.hpp"
-#include "postprocessor.hpp"
+#include "postprocess.hpp"
+#include "preprocess.hpp"
 #include "common.hpp"
 
 void run_fcc(const string &input_path, const string &output_path)
 {
 	/* 入力ファイルをトークナイズする */
 	auto token = Token::tokenize_file(input_path);
+
+	/* プリプロセス */
+	token = PreProcess::preprocess(move(token));
 
 	/* トークン列をパースし抽象構文木を構築する */
 	auto program = Node::parse(token);
@@ -108,7 +112,7 @@ int main(int argc, char **argv)
 			/* -Sオプションが入っていなければアセンブルする */
 			if (!in->_opt_S)
 			{
-				Postprocessor::assemble(input_path, output_path);
+				PostProcess::assemble(input_path, output_path);
 			}
 			continue;
 		}
@@ -131,23 +135,23 @@ int main(int argc, char **argv)
 		if (in->_opt_c)
 		{
 			/* 一時ファイルを作成 */
-			auto tmpfile = Postprocessor::create_tmpfile();
+			auto tmpfile = PostProcess::create_tmpfile();
 			/* アセンブリコードを生成 */
 			run_fcc(input_path, tmpfile);
 			/* アセンブル */
-			Postprocessor::assemble(tmpfile, output_path);
+			PostProcess::assemble(tmpfile, output_path);
 			continue;
 		}
 
 		/* それ以外はコンパイル、アセンブル、リンクしたファイルを最終生成物とする */
 
 		/* 一時ファイルを作成 */
-		auto tmpfile1 = Postprocessor::create_tmpfile();
-		auto tmpfile2 = Postprocessor::create_tmpfile();
+		auto tmpfile1 = PostProcess::create_tmpfile();
+		auto tmpfile2 = PostProcess::create_tmpfile();
 		/* アセンブリコードを生成 */
 		run_fcc(input_path, tmpfile1);
 		/* アセンブル */
-		Postprocessor::assemble(tmpfile1, tmpfile2);
+		PostProcess::assemble(tmpfile1, tmpfile2);
 		/* リンク対象のリストに追加 */
 		ld_args.emplace_back(tmpfile2);
 #endif /* WINDOWS */
@@ -156,7 +160,7 @@ int main(int argc, char **argv)
 #ifndef WINDOWS
 	/* リンク */
 	if(!ld_args.empty()){
-		Postprocessor::run_linker(ld_args, in->_output_path.empty() ? "a.out" : in->_output_path);
+		PostProcess::run_linker(ld_args, in->_output_path.empty() ? "a.out" : in->_output_path);
 	}
 
 #endif /* WINDOWS */

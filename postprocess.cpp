@@ -1,6 +1,25 @@
-#include "postprocessor.hpp"
+/**
+ * @file postprocess.cpp
+ * @author K.Fukunaga
+ * @brief コンパイル後の処理を行う
+ * @version 0.1
+ * @date 2023-08-15
+ * 
+ * @copyright Copyright (c) 2023  MIT Licence
+ * 
+ */
+
+#include "postprocess.hpp"
 
 #ifndef WINDOWS
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <libgen.h>
+#include <sys/wait.h>
+#include <string.h>
+#include <glob.h>
+#include <sys/stat.h>
 
 /**
  * @brief 'as'コマンドでアセンブルする
@@ -8,7 +27,7 @@
  * @param input_path 入力先ファイルのパス
  * @param output_path 出力先ファイルのパス
  */
-void Postprocessor::assemble(const string &input_path, const string &output_path)
+void PostProcess::assemble(const string &input_path, const string &output_path)
 {
     vector<string> cmd = {"as", "--noexecstack", "-c", input_path, "-o", output_path};
     run_subprocess(cmd);
@@ -20,7 +39,7 @@ void Postprocessor::assemble(const string &input_path, const string &output_path
  * @param input_path 入力先ファイルのパス
  * @param output_path 出力先ファイルのパス
  */
-void Postprocessor::run_linker(const vector<string> &inputs, const string &output)
+void PostProcess::run_linker(const vector<string> &inputs, const string &output)
 {
     vector<string> cmd;
     cmd.reserve(50);
@@ -71,7 +90,7 @@ void Postprocessor::run_linker(const vector<string> &inputs, const string &outpu
  *
  * @return 作成したファイルのパス
  */
-string Postprocessor::create_tmpfile()
+string PostProcess::create_tmpfile()
 {
     char *path = strdup("/tmp/fcc-XXXXXX");
     int fd = mkstemp(path);
@@ -92,7 +111,7 @@ string Postprocessor::create_tmpfile()
  *
  * @param argv 引数リスト
  */
-void Postprocessor::run_subprocess(const vector<string> &argv)
+void PostProcess::run_subprocess(const vector<string> &argv)
 {
     /* 引数の数 + 1 (NULL終端)*/
     size_t capacity = argv.size() + 1;
@@ -141,7 +160,7 @@ void Postprocessor::run_subprocess(const vector<string> &argv)
  * @return パターンと一致したパス
  * @note strdup内でmallocで文字列のメモリ領域を確保している。戻り値は戻り先で開放すること。
  */
-char *Postprocessor::find_file(const char *pattern)
+char *PostProcess::find_file(const char *pattern)
 {
     char *path = nullptr;
     /* 検索結果を格納するバッファ */
@@ -162,7 +181,7 @@ char *Postprocessor::find_file(const char *pattern)
  * @return true 存在している
  * @return false 存在しない
  */
-bool Postprocessor::file_exists(const char *path)
+bool PostProcess::file_exists(const char *path)
 {
     struct stat st;
     return !stat(path, &st);
@@ -173,7 +192,7 @@ bool Postprocessor::file_exists(const char *path)
  *
  * @return ライブラリのパス
  */
-string Postprocessor::find_libpath()
+string PostProcess::find_libpath()
 {
     if (file_exists("/usr/lib/x86_64-linux-gnu/crti.o"))
     {
@@ -194,7 +213,7 @@ string Postprocessor::find_libpath()
  *
  * @return ライブラリのパス
  */
-string Postprocessor::find_gcc_libpath()
+string PostProcess::find_gcc_libpath()
 {
     constexpr char *paths[] = {
         "/usr/lib/gcc/x86_64-linux-gnu/*/crtbegin.o",

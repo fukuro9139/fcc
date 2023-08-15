@@ -57,8 +57,8 @@ test: $(TESTS)
 	test/driver.sh
 else
 test/%.exe: $(TARGET) test/%.c
-	$(CC) -o test/tmp_$* -E -P -C test/$*.c
-	./fcc -S -o test/$*.s test/tmp_$*
+	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
+	./fcc -S -o test/$*.s test/tmp_$*.c
 
 test: $(TESTS)
 endif

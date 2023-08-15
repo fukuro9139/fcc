@@ -1,18 +1,21 @@
+/**
+ * @file postprocess.hpp
+ * @author K.Fukunaga
+ * @brief コンパイル後の処理を行う
+ * @version 0.1
+ * @date 2023-08-15
+ * 
+ * @copyright Copyright (c) 2023  MIT Licence
+ * 
+ */
+
 #pragma once
 
 #include "common.hpp"
 
 #ifndef WINDOWS
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <libgen.h>
-#include <sys/wait.h>
-#include <string.h>
-#include <glob.h>
-#include <sys/stat.h>
-
-class Postprocessor
+class PostProcess
 {
 public:
     static void assemble(const string &input_path, const string &output_path);
@@ -20,7 +23,7 @@ public:
     static string create_tmpfile();
 
 private:
-    Postprocessor();
+    PostProcess();
     static void run_subprocess(const vector<string> &argv);
     static char *find_file(const char *patern);
     static bool file_exists(const char *path);
