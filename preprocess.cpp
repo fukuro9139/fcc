@@ -268,7 +268,7 @@ unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_pt
     auto head = make_unique_for_overwrite<Token>();
     auto cur = head.get();
 
-    for(; current_token->_at_begining; current_token = move(current_token->_next)){
+    for(; !current_token->_at_begining; current_token = move(current_token->_next)){
         cur->_next = Token::copy_token(current_token.get());
         cur = cur->_next.get();
     }
