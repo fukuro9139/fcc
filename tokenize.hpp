@@ -45,7 +45,7 @@ public:
 	shared_ptr<Type> _ty;				 /*!< kindがTK_NUMの場合、数値の型 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	string _str = "";					 /*!< トークンが表す文字列 */
-	const File *_file = nullptr;				 /*!< トークンが含まれるファイル */
+	const File *_file = nullptr;		 /*!< トークンが含まれるファイル */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 	bool _at_begining = false;			 /*!< トークンが行頭であるか  */
 
@@ -54,6 +54,9 @@ public:
 	Token(const TokenKind &kind, const int &location);
 	Token(const int64_t &value, const int &location);
 	Token(const TokenKind &kind, const int &location, string &&str);
+
+	/* コピーコンストラクタ */
+	Token(const Token &src);
 
 	/* メンバ関数 */
 
@@ -69,6 +72,7 @@ public:
 	static void print_token(const unique_ptr<Token> &token, const string &output_path);
 	static const vector<unique_ptr<File>> &get_input_files();
 	static const File *get_current_file();
+	static unique_ptr<Token> copy_token(const Token *src);
 
 private:
 	/* 静的メンバ関数 (private) */
@@ -114,5 +118,6 @@ struct File
 
 	File(const string &name, const int &file_no, const string &content)
 		: _name(name), _file_no(file_no), _contents(content)
-		{}
+	{
+	}
 };

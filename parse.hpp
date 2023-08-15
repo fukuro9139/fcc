@@ -152,7 +152,8 @@ public:
 
 	static unique_ptr<Object> parse(const unique_ptr<Token> &list);
 	static unique_ptr<Node> new_cast(unique_ptr<Node> &&expr, const shared_ptr<Type> &ty);
-
+	static int64_t const_expr(Token **next_token, Token *current_token);
+	
 private:
 	/***************************/
 	/* 静的メンバ関数 (private) */
@@ -199,7 +200,6 @@ private:
 	static shared_ptr<Type> type_suffix(Token **next_token, Token *current_token, shared_ptr<Type> &&ty);
 	static unique_ptr<Node> expression(Token **next_token, Token *current_token);
 	static unique_ptr<Node> expression_statement(Token **next_token, Token *current_token);
-	static int64_t const_expr(Token **next_token, Token *current_token);
 	static int64_t evaluate(Node *node);
 	static int64_t evaluate2(Node *node, string *label);
 	static int64_t evaluate_rval(Node *node, string *label);

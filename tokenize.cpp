@@ -49,6 +49,10 @@ Token::Token(const TokenKind &kind, const int &location, string &&str)
 	at_begining = false;
 }
 
+Token::Token(const Token &src)
+	: _kind(src._kind), _val(src._val), _fval(src._fval), _ty(src._ty), _location(src._location),
+	  _str(src._str), _file(src._file), _line_no(src._line_no), _at_begining(src._at_begining) {}
+
 /**
  * @brief 入力されたパスのファイルを開いて中身を文字列として返す
  *
@@ -801,21 +805,34 @@ const vector<unique_ptr<File>> &Token::get_input_files()
 
 /**
  * @brief プリプロセスしたトークンを出力する
- * 
+ *
  * @param token トークンリスト
  * @param output_path 出力先
  */
-void Token::print_token(const unique_ptr<Token> &token, const string & output_path)
+void Token::print_token(const unique_ptr<Token> &token, const string &output_path)
 {
 	auto os = open_file(output_path);
 
 	int line = 1;
-	for(auto tok = token.get();  TokenKind::TK_EOF != tok->_kind; tok = tok->_next.get()){
-		if(line > 1 && tok->at_begining){
+	for (auto tok = token.get(); TokenKind::TK_EOF != tok->_kind; tok = tok->_next.get())
+	{
+		if (line > 1 && tok->at_begining)
+		{
 			*os << "\n";
 		}
 		*os << tok->_str << " ";
 		++line;
 	}
 	*os << endl;
+}
+
+/**
+ * @brief _next以外の要素をコピーして新たなトークンを生成し、そのトークンへのポインタを返す。
+ * 
+ * @param src コピー元
+ * @return 生成したトークンへのポインタ
+ */
+unique_ptr<Token> Token::copy_token(const Token* src)
+{
+	return make_unique<Token>(*src);
 }

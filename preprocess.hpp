@@ -11,8 +11,17 @@
 
 #pragma once
 
-#include "tokenize.hpp"
 #include "common.hpp"
+
+class Token;
+
+/** #if関連を表す構造体 */
+struct CondIncl
+{
+    unique_ptr<Token> token /*!< 参照用のトークン */;
+
+    CondIncl();
+};
 
 class PreProcess
 {
@@ -29,6 +38,13 @@ private:
     static void convert_keywords(Token *token);
     static bool is_keyword(const Token *token);
     static bool is_hash(const Token *token);
+    static unique_ptr<Token> new_eof_token(const Token *src);
+    static unique_ptr<Token> skip_cond_incl(unique_ptr<Token> &&token);
+    static unique_ptr<Token> copy_line(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+    static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+    static CondIncl *push_cond_incl(unique_ptr<Token> &&token);
+
+    static vector<unique_ptr<CondIncl>> cond_incl;
 
     /** 識別子一覧 */
     static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",
