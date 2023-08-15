@@ -208,7 +208,7 @@ string Postprocessor::find_gcc_libpath()
         char *path_found = find_file(path);
         if (path_found)
         {
-            string str_path dirname(path_found);
+            string str_path = dirname(path_found);
             free(path_found);
             return str_path;
         }
