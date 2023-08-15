@@ -161,7 +161,7 @@ void PostProcess::run_subprocess(const vector<string> &argv)
  * @return パターンと一致したパス
  * @note strdup内でmallocで文字列のメモリ領域を確保している。戻り値は戻り先で開放すること。
  */
-string PostProcess::find_file(const string &pattern)
+string PostProcess::find_file(const string_view &pattern)
 {
     string path;
     /* 検索結果を格納するバッファ */
@@ -204,7 +204,7 @@ string PostProcess::find_libpath()
         return "/usr/lib64";
     }
 
-    erorr( "ライブラリが見つかりません");
+    error( "ライブラリが見つかりません");
 }
 
 /**
@@ -214,7 +214,7 @@ string PostProcess::find_libpath()
  */
 string PostProcess::find_gcc_libpath()
 {
-    constexpr string paths[] = {
+    constexpr string_view paths[] = {
         "/usr/lib/gcc/x86_64-linux-gnu/*/crtbegin.o",
         "/usr/lib/gcc/x86_64-pc-linux-gnu/*/crtbegin.o", /* For Gentoo */
         "/usr/lib/gcc/x86_64-redhat-linux/*/crtbegin.o", /* For Fedora */
