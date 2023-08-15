@@ -73,7 +73,7 @@ void Postprocessor::run_linker(const vector<string> &inputs, const string &outpu
  */
 string Postprocessor::create_tmpfile()
 {
-    char *path = "/tmp/fcc-XXXXXX";
+    char *path = strdup("/tmp/fcc-XXXXXX");
     int fd = mkstemp(path);
     if (fd == -1)
     {
@@ -82,7 +82,9 @@ string Postprocessor::create_tmpfile()
     }
     close(fd);
 
-    return string(path);
+    auto tmp_path = string(path);
+    free(path);
+    return tmp_path;
 }
 
 /**
@@ -206,7 +208,9 @@ string Postprocessor::find_gcc_libpath()
         char *path_found = find_file(path);
         if (path_found)
         {
-            return dirname(path_found);
+            string str_path dirname(path_found);
+            free(path_found);
+            return str_path;
         }
     }
     std::cerr << "gccライブラリが見つかりません" << endl;
