@@ -12,110 +12,18 @@
 #include "tokenize.hpp"
 #include "object.hpp"
 #include "type.hpp"
+#include "error.hpp"
 #include <sstream>
 #include <iterator>
 
-/** 入力文字列 */
-static string current_input = "";
+/** 入力ファイルのリスト */
+vector<unique_ptr<File>> Token::input_files;
 
 /** 入力ファイル */
-static string current_filename = "";
+const File *Token::current_file = nullptr;
 
 /** 行頭であるか */
-static bool at_begining = false;
-
-/***********/
-/* 汎用関数 */
-/***********/
-
-/**
- * @brief エラーを報告して終了する
- *
- * @param msg エラーメッセージ
- */
-void error(string &&msg)
-{
-	std::cerr << msg << std::endl;
-	exit(1);
-}
-
-/**
- * @brief エラー箇所の位置を受け取ってエラー出力
- *
- * @param msg エラーメッセージ
- * @param location エラー箇所の位置
- */
-void error_at(string &&msg, const int &location)
-{
-
-	/* エラー箇所が含まれる行の行数を取得 */
-	int line_no = 1;
-	for (int l = 0; l < location; ++l)
-	{
-		if (current_input[l] == '\n')
-		{
-			++line_no;
-		}
-	}
-
-	verror_at(move(msg), location, line_no);
-}
-
-/**
- * @brief 下記のフォーマットでエラー箇所を報告して終了する
- * foo.c:10: x = y + 1;
- *               ^ <error message here>
- * @param msg エラーメッセージ
- * @param location エラー箇所
- * @param line_no エラー箇所の行数
- */
-void verror_at(string &&msg, const int &location, const int &line_no)
-{
-	int line_start = location;
-	/* エラー箇所が含まれる行の先頭位置を探す */
-	while (line_start > 0 && current_input[line_start - 1] != '\n')
-	{
-		--line_start;
-	}
-
-	int line_end = location;
-	int max = current_input.end() - current_input.begin();
-	/* エラー箇所が含まれる行の末尾の位置を探す */
-	while (line_end < max - 1 && current_input[line_end + 1] != '\n')
-	{
-		++line_end;
-	}
-
-	/* 行頭の空白をスキップ */
-	while (std::isspace(current_input[line_start]) && line_start < line_end)
-	{
-		++line_start;
-	}
-
-	/* ファイル名 */
-	string filename = current_filename + ":" + std::to_string(line_no) + ": ";
-	int indent = filename.size();
-	std::cerr << filename;
-
-	/* エラー箇所が含まれる行を出力 */
-	std::cerr << current_input.substr(line_start, line_end - line_start + 1) << "\n";
-
-	/* エラーメッセージを出力 */
-	std::cerr << string(indent + location - line_start, ' ') << "^ ";
-	std::cerr << msg << std::endl;
-	exit(1);
-}
-
-/**
- * @brief トークンを受け取ってエラーメッセージを出力
- *
- * @param msg エラーメッセージ
- * @param token エラー箇所を含むトークン
- */
-void error_token(string &&msg, Token *token)
-{
-	verror_at(move(msg), token->_location, token->_line_no);
-}
+bool Token::at_begining = false;
 
 /***************/
 /* Token Class */
@@ -125,19 +33,19 @@ void error_token(string &&msg, Token *token)
 
 Token::Token() = default;
 Token::Token(const TokenKind &kind, const int &location)
-	: _kind(kind), _location(location), _at_begining(at_begining)
+	: _kind(kind), _location(location), _at_begining(at_begining), _file(current_file)
 {
 	at_begining = false;
 }
 
 Token::Token(const int64_t &value, const int &location)
-	: _kind(TokenKind::TK_NUM), _location(location), _val(move(value)), _at_begining(at_begining)
+	: _kind(TokenKind::TK_NUM), _location(location), _val(move(value)), _at_begining(at_begining), _file(current_file)
 {
 	at_begining = false;
 }
 
 Token::Token(const TokenKind &kind, const int &location, string &&str)
-	: _kind(kind), _location(location), _str(move(str)), _at_begining(at_begining)
+	: _kind(kind), _location(location), _str(move(str)), _at_begining(at_begining), _file(current_file)
 {
 	at_begining = false;
 }
@@ -198,7 +106,15 @@ string Token::read_inputfile(const string &path)
  */
 unique_ptr<Token> Token::tokenize_file(const string &input_path)
 {
-	return tokenize(input_path, read_inputfile(input_path));
+	static int file_no = 0;
+	/* ファイルを開いて中身を読み込む */
+	auto content = read_inputfile(input_path);
+	/* File構造体を生成 */
+	auto file = make_unique<File>(input_path, ++file_no, content);
+	/* リストに追加 */
+	input_files.emplace_back(move(file));
+	/* トークナイズ */
+	return tokenize(input_files.back().get());
 }
 
 /**
@@ -208,20 +124,16 @@ unique_ptr<Token> Token::tokenize_file(const string &input_path)
  * @param input 入力文字列
  * @return トークナイズした結果のトークン・リスト
  */
-unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
+unique_ptr<Token> Token::tokenize(const File *file)
 {
-	/* 入力ファイル名を保存 */
-	current_filename = filename;
-
-	/* 入力文字列の保存 */
-	current_input = input;
+	current_file = file;
 
 	/* スタート地点としてダミーのトークンを作る */
 	unique_ptr<Token> head = make_unique_for_overwrite<Token>();
 	auto current_token = head.get();
-	auto itr = current_input.cbegin();
-	const auto first = current_input.cbegin();
-	const auto last = current_input.cend();
+	auto itr = current_file->_contents.cbegin();
+	const auto first = current_file->_contents.cbegin();
+	const auto last = current_file->_contents.cend();
 
 	/* 行頭フラグをセット */
 	at_begining = true;
@@ -347,14 +259,16 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 string::const_iterator Token::string_literal_end(string::const_iterator itr)
 {
 	auto start = itr;
+	const auto first = current_file->_contents.cbegin();
+	const auto last = current_file->_contents.cend();
 
 	/* '"'が出てくるか末尾まで到達するまで読み込み続ける */
-	for (; itr != current_input.end() && *itr != '"'; ++itr)
+	for (; itr != last && *itr != '"'; ++itr)
 	{
 		/* 途中で改行や'\0'が出てきたらエラーとする */
 		if (*itr == '\n' || *itr == '\0')
 		{
-			error_at("文字列が閉じられていません", start - current_input.begin());
+			error_at("文字列が閉じられていません", start - first);
 		}
 		/* エスケープシーケンスは無視する */
 		if (*itr == '\\')
@@ -363,9 +277,9 @@ string::const_iterator Token::string_literal_end(string::const_iterator itr)
 		}
 	}
 	/* 末尾まで'"'が見つからなければエラーとする */
-	if (itr == current_input.end())
+	if (itr == last)
 	{
-		error_at("文字列が閉じられていません", start - current_input.begin());
+		error_at("文字列が閉じられていません", start - first);
 	}
 	return itr;
 }
@@ -401,7 +315,7 @@ unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 	/* 末尾に'"'を付け加える */
 	buf.push_back('"');
 
-	return make_unique<Token>(TokenKind::TK_STR, start - current_input.begin(), move(buf));
+	return make_unique<Token>(TokenKind::TK_STR, start - current_file->_contents.cbegin(), move(buf));
 }
 
 /**
@@ -420,7 +334,7 @@ char Token::read_escaped_char(string::const_iterator &new_pos, string::const_ite
 		++pos;
 		if (!std::isxdigit(*pos))
 		{
-			error_at("無効な16進数エスケープシーケンスです", pos - current_input.begin());
+			error_at("無効な16進数エスケープシーケンスです", pos - current_file->_contents.cbegin());
 		}
 
 		int c = 0;
@@ -505,11 +419,11 @@ unique_ptr<Token> Token::read_number(const string::const_iterator &start)
 
 	try
 	{
-		val = std::stod(string(start, current_input.cend()), &idx);
+		val = std::stod(string(start, current_file->_contents.cend()), &idx);
 	}
 	catch (const std::invalid_argument &e)
 	{
-		error_at("無効な数値です", start - current_input.begin());
+		error_at("無効な数値です", start - current_file->_contents.begin());
 	}
 
 	/* 変換した数値の桁数だけイテレーターを進める */
@@ -531,7 +445,7 @@ unique_ptr<Token> Token::read_number(const string::const_iterator &start)
 		ty = Type::DOUBLE_BASE;
 	}
 
-	token = make_unique<Token>(TokenKind::TK_NUM, start - current_input.begin(), string(start, itr));
+	token = make_unique<Token>(TokenKind::TK_NUM, start - current_file->_contents.begin(), string(start, itr));
 	token->_fval = val;
 	token->_ty = ty;
 
@@ -560,18 +474,18 @@ unique_ptr<Token> Token::read_int_literal(const string::const_iterator &start)
 	int64_t val = 0;
 	try
 	{
-		val = std::stoull(string(itr, current_input.cend()), &idx, base);
+		val = std::stoull(string(itr, current_file->_contents.cend()), &idx, base);
 	}
 	catch (const std::invalid_argument &e)
 	{
-		error_at("無効な数値です", itr - current_input.begin());
+		error_at("無効な数値です", itr - current_file->_contents.cbegin());
 	}
 
 	/* 変換した数値の桁数だけイテレーターを進める */
 	itr += idx;
 
 	/* 現在のイテレータ位置から末尾までの文字数 */
-	int res = current_input.end() - itr;
+	int res = current_file->_contents.cend() - itr;
 
 	/* 数値の次の3文字（サフィックスの可能性がある）を取り出す */
 	string suffix = string(itr, itr + std::min(3, res));
@@ -653,7 +567,7 @@ unique_ptr<Token> Token::read_int_literal(const string::const_iterator &start)
 			ty = Type::INT_BASE;
 	}
 
-	auto token = make_unique<Token>(TokenKind::TK_NUM, start - current_input.begin(), string(start, itr));
+	auto token = make_unique<Token>(TokenKind::TK_NUM, start - current_file->_contents.cbegin(), string(start, itr));
 	token->_val = val;
 	token->_ty = ty;
 
@@ -669,9 +583,9 @@ unique_ptr<Token> Token::read_int_literal(const string::const_iterator &start)
 unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
 {
 	auto pos = start + 1;
-	if (current_input.end() == pos)
+	if (current_file->_contents.cend() == pos)
 	{
-		error_at("文字リテラルが閉じられていません", start - current_input.begin());
+		error_at("文字リテラルが閉じられていません", start - current_file->_contents.cbegin());
 	}
 	char c;
 	/* エスケープされている場合 */
@@ -685,18 +599,18 @@ unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
 	}
 
 	/* ２個めの"'"を探す */
-	while (pos != current_input.end() && *pos != '\'')
+	while (pos != current_file->_contents.cend() && *pos != '\'')
 	{
 		++pos;
 	}
 
 	/* 見つからなければ閉じられていない */
-	if (pos == current_input.end())
+	if (pos == current_file->_contents.cend())
 	{
-		error_at("文字リテラルが閉じられていません", start - current_input.begin());
+		error_at("文字リテラルが閉じられていません", start - current_file->_contents.cbegin());
 	}
 
-	auto token = make_unique<Token>(c, start - current_input.begin());
+	auto token = make_unique<Token>(c, start - current_file->_contents.cbegin());
 	token->_str = string(start, pos + 1);
 	token->_ty = Type::INT_BASE;
 	return token;
@@ -847,7 +761,7 @@ int Token::from_hex(const char &c)
 void Token::add_line_number(Token *token)
 {
 	int pos = 0;
-	const int total = current_input.end() - current_input.begin();
+	const int total = current_file->_contents.end() - current_file->_contents.begin();
 	int n = 1;
 
 	while (token->_kind != TokenKind::TK_EOF && pos != total)
@@ -858,10 +772,30 @@ void Token::add_line_number(Token *token)
 			token = token->_next.get();
 			continue;
 		}
-		if (current_input[pos] == '\n')
+		if (current_file->_contents[pos] == '\n')
 		{
 			++n;
 		}
 		++pos;
 	}
+}
+
+/**
+ * @brief 現在トークナイズしているファイルのポインタを返す
+ *
+ * @return 現在トークナイズしているファイルのポインタ
+ */
+const File *Token::get_current_file()
+{
+	return current_file;
+}
+
+/**
+ * @brief インプットファイルのリストの参照を返す
+ * 
+ * @return インプットファイルのリストの参照
+ */
+const vector<unique_ptr<File>>& Token::get_input_files()
+{
+	return input_files;
 }

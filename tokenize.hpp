@@ -16,6 +16,7 @@
 
 /* 前方宣言 */
 class Type;
+struct File;
 
 /** @brief トークンの種類 */
 enum class TokenKind
@@ -44,6 +45,7 @@ public:
 	shared_ptr<Type> _ty;				 /*!< kindがTK_NUMの場合、数値の型 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	string _str = "";					 /*!< トークンが表す文字列 */
+	const File *_file = nullptr;				 /*!< トークンが含まれるファイル */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 	bool _at_begining = false;			 /*!< トークンが行頭であるか  */
 
@@ -64,12 +66,14 @@ public:
 	/* 静的メンバ関数 (public) */
 
 	static unique_ptr<Token> tokenize_file(const string &input_path);
+	static const vector<unique_ptr<File>> &get_input_files();
+	static const File *get_current_file();
 
 private:
 	/* 静的メンバ関数 (private) */
 
 	static string read_inputfile(const string &path);
-	static unique_ptr<Token> tokenize(const string &filename, string &&input);
+	static unique_ptr<Token> tokenize(const File *file);
 	static unique_ptr<Token> read_number(const string::const_iterator &start);
 	static unique_ptr<Token> read_int_literal(const string::const_iterator &start);
 	static unique_ptr<Token> read_char_literal(string::const_iterator &start);
@@ -90,11 +94,24 @@ private:
 	/** 区切り文字一覧 */
 	static constexpr string_view punctuators[] = {"<<=", ">>=", "...", "==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=",
 												  "++", "--", "%=", "&=", "|=", "^=", "&&", "||", "<<", ">>"};
+
+	/** 入力ファイルのリスト */
+	static vector<unique_ptr<File>> input_files;
+
+	/** 入力ファイル */
+	static const File *current_file;
+
+	/** 行頭であるか */
+	static bool at_begining;
 };
 
-/* 汎用関数 */
+struct File
+{
+	string _name;	  /*!< ファイル名（フルパス） */
+	int _file_no;	  /*!< ファイルの通し番号 */
+	string _contents; /*!< ファイルの中身 */
 
-void error(string &&msg);
-void error_at(string &&msg, const int &location);
-void verror_at(string &&msg, const int &location, const int &line_no);
-void error_token(string &&msg, Token *token);
+	File(const string &name, const int &file_no, const string &content)
+		: _name(name), _file_no(file_no), _contents(content)
+		{}
+};

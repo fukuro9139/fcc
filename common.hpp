@@ -25,6 +25,9 @@
 #include <unordered_set>
 #include <algorithm>
 #include <functional>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 using std::unique_ptr;
 using std::shared_ptr;

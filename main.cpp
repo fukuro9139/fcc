@@ -22,11 +22,16 @@
 #include "postprocess.hpp"
 #include "preprocess.hpp"
 #include "common.hpp"
+#include "error.hpp"
 
 void run_fcc(const string &input_path, const string &output_path)
 {
 	/* 入力ファイルをトークナイズする */
 	auto token = Token::tokenize_file(input_path);
+	if (!token)
+	{
+		error("トークナイズに失敗しました: \"" + input_path + "\"");
+	}
 
 	/* プリプロセス */
 	token = PreProcess::preprocess(move(token));
@@ -52,8 +57,7 @@ int main(int argc, char **argv)
 	/* 入力ファイルが複数存在するとき出力先は指定できない */
 	if (in->_inputs.size() > 1 && !in->_output_path.empty() && (in->_opt_c || in->_opt_S))
 	{
-		std::cerr << "入力ファイルが複数ある時に-oオプションは-cまたは-Sオプションと併用できません" << endl;
-		exit(1);
+		error("入力ファイルが複数ある時に-oオプションは-cまたは-Sオプションと併用できません");
 	}
 
 	for (const auto &input_path : in->_inputs)
@@ -120,8 +124,7 @@ int main(int argc, char **argv)
 		/* 入力ファイルの拡張子が".c"以外の場合 */
 		if (!input_path.ends_with(".c") && input_path != "-")
 		{
-			std::cerr << "不明な拡張子です: " << input_path << endl;
-			exit(1);
+			error("不明な拡張子です: " + input_path);
 		}
 
 		/* -Sオプションが指定されていれば単にコンパイルするだけ */
@@ -159,7 +162,8 @@ int main(int argc, char **argv)
 
 #ifndef WINDOWS
 	/* リンク */
-	if(!ld_args.empty()){
+	if (!ld_args.empty())
+	{
 		PostProcess::run_linker(ld_args, in->_output_path.empty() ? "a.out" : in->_output_path);
 	}
 

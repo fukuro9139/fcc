@@ -10,6 +10,7 @@
  */
 
 #include "postprocess.hpp"
+#include "error.hpp"
 
 #ifndef WINDOWS
 
@@ -160,16 +161,16 @@ void PostProcess::run_subprocess(const vector<string> &argv)
  * @return パターンと一致したパス
  * @note strdup内でmallocで文字列のメモリ領域を確保している。戻り値は戻り先で開放すること。
  */
-char *PostProcess::find_file(const char *pattern)
+string PostProcess::find_file(const string &pattern)
 {
-    char *path = nullptr;
+    string path;
     /* 検索結果を格納するバッファ */
     glob_t buf = {};
     /* 検索 */
-    glob(pattern, 0, nullptr, &buf);
+    glob(pattern.c_str(), 0, nullptr, &buf);
     /* 最後に見つかったパスをコピー */
     if (buf.gl_pathc > 0)
-        path = strdup(buf.gl_pathv[buf.gl_pathc - 1]);
+        path = buf.gl_pathv[buf.gl_pathc - 1];
     globfree(&buf);
     return path;
 }
@@ -181,10 +182,9 @@ char *PostProcess::find_file(const char *pattern)
  * @return true 存在している
  * @return false 存在しない
  */
-bool PostProcess::file_exists(const char *path)
+bool PostProcess::file_exists(const string &path)
 {
-    struct stat st;
-    return !stat(path, &st);
+    return fs::is_regular_file(path);
 }
 
 /**
@@ -204,8 +204,7 @@ string PostProcess::find_libpath()
         return "/usr/lib64";
     }
 
-    std::cerr << "ライブラリが見つかりません" << endl;
-    exit(1);
+    erorr( "ライブラリが見つかりません");
 }
 
 /**
@@ -215,7 +214,7 @@ string PostProcess::find_libpath()
  */
 string PostProcess::find_gcc_libpath()
 {
-    constexpr char *paths[] = {
+    constexpr string paths[] = {
         "/usr/lib/gcc/x86_64-linux-gnu/*/crtbegin.o",
         "/usr/lib/gcc/x86_64-pc-linux-gnu/*/crtbegin.o", /* For Gentoo */
         "/usr/lib/gcc/x86_64-redhat-linux/*/crtbegin.o", /* For Fedora */
@@ -224,16 +223,14 @@ string PostProcess::find_gcc_libpath()
 
     for (auto &path : paths)
     {
-        char *path_found = find_file(path);
-        if (path_found)
+        auto path_found = find_file(path);
+        if (!path_found.empty())
         {
-            string str_path = dirname(path_found);
-            free(path_found);
-            return str_path;
+            fs::path p = path_found;
+            return p.parent_path().string();
         }
     }
-    std::cerr << "gccライブラリが見つかりません" << endl;
-    exit(1);
+    error("gccライブラリが見つかりません");
 }
 
 #endif /* WINDOWS */

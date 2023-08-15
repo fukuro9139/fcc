@@ -12,6 +12,7 @@
  */
 
 #include "codegen.hpp"
+#include "error.hpp"
 
 /** スタックの深さ */
 static int depth = 0;
@@ -412,7 +413,7 @@ void CodeGen::generate_address(Node *node)
  */
 void CodeGen::generate_expression(Node *node)
 {
-	*os << "  .loc 1 " << node->_token->_line_no << "\n";
+	*os << "  .loc " << node->_token->_file->_file_no << " " << node->_token->_line_no << "\n";
 	switch (node->_kind)
 	{
 	/* NULL */
@@ -906,7 +907,7 @@ void CodeGen::generate_expression2(Node *node)
  */
 void CodeGen::generate_statement(Node *node)
 {
-	*os << "  .loc 1 " << node->_token->_line_no << "\n";
+	*os << "  .loc " << node->_token->_file->_file_no << " " << node->_token->_line_no << "\n";
 
 	switch (node->_kind)
 	{
@@ -1251,7 +1252,10 @@ void CodeGen::generate_code(const unique_ptr<Object> &program, const string &inp
 	*os << ".intel_syntax noprefix\n";
 
 	/* .fileディレクティブを出力 */
-	*os << ".file 1 \"" << input_path << "\"\n";
+	auto &input_files = Token::get_input_files();
+	for(auto &file:input_files){
+		*os << ".file " << file->_file_no <<" \"" << file->_name << "\"\n";
+	}
 
 	/* スタックサイズを計算してセット */
 	Object::assign_lvar_offsets(program);
