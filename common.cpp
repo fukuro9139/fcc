@@ -105,6 +105,19 @@ void error_token(string &&msg, Token *token)
 }
 
 /**
+ * @brief 警告を出力する
+ * 
+ * @param msg 警告メッセージ
+ * @param token 対象メッセージ
+ */
+void warn_token(string && msg, Token * token)
+{
+    verror_at(token->_file->_name, token->_file->_contents, move(msg), token->_location, token->_line_no);
+}
+
+
+
+/**
  * @brief forkした子プロセスでargvを引数としてexecvpを起動
  *
  * @param argv 引数リスト

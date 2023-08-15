@@ -25,6 +25,7 @@ private:
     /* 静的メンバ関数(private) */
     static unique_ptr<Token> preprocess2(unique_ptr<Token> &&token);
     static unique_ptr<Token> append(unique_ptr<Token> &&token1, unique_ptr<Token> &&token2);
+    static unique_ptr<Token> skip_line(unique_ptr<Token> &&token);
     static void convert_keywords(Token *token);
     static bool is_keyword(const Token *token);
     static bool is_hash(const Token *token);

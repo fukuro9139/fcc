@@ -59,19 +59,23 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
             token = move(token->_next);
 
             /* '#include'の次はファイル名 */
-            if(TokenKind::TK_STR != token->_kind){
+            if (TokenKind::TK_STR != token->_kind)
+            {
                 error_token("ファイル名ではありません", token.get());
             }
 
             /* 現在のファイル */
             fs::path src_path = token->_file->_name;
             /* 文字列リテラルなので前後の'"'を取り除く */
-            const auto name = token->_str.substr(1, token->_str.size() -2);
+            const auto name = token->_str.substr(1, token->_str.size() - 2);
             /* includeするファイルのパスを生成、現在のファイルからの相対パス */
             const auto inc_path = src_path.replace_filename(name).string();
             auto token2 = Token::tokenize_file(inc_path);
 
-            token = append(move(token2), move(token->_next));
+            /* 次の行頭までスキップする */
+            token = skip_line(move(token->_next));
+            /* includeしたトークンを繋ぐ */
+            token = append(move(token2), move(token));
             continue;
         }
 
@@ -82,29 +86,29 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
     return move(head->_next);
 }
 
-
 /**
  * @brief トークン1の末尾にトークン2を付け加える
- * 
- * @param token1 
- * @param token2 
+ *
+ * @param token1
+ * @param token2
  * @return トークン1の末尾にトークン2を付け加えたトークン
  */
-unique_ptr<Token> PreProcess::append(unique_ptr<Token>&& token1, unique_ptr<Token>&& token2)
+unique_ptr<Token> PreProcess::append(unique_ptr<Token> &&token1, unique_ptr<Token> &&token2)
 {
-    if(!token1 || TokenKind::TK_EOF == token1->_kind){
+    if (!token1 || TokenKind::TK_EOF == token1->_kind)
+    {
         return token2;
     }
 
     auto tok = token1.get();
     /* トークン1を末尾まで辿る */
-    while(TokenKind::TK_EOF != tok->_next->_kind){
+    while (TokenKind::TK_EOF != tok->_next->_kind)
+    {
         tok = tok->_next.get();
     }
     tok->_next = move(token2);
     return token1;
 }
-
 
 /**
  * @brief トークンを順番にみていってキーワードと一致していれば種類をキーワードに帰る
@@ -151,4 +155,26 @@ bool PreProcess::is_keyword(const Token *token)
 bool PreProcess::is_hash(const Token *token)
 {
     return token->_at_begining && token->is_equal("#");
+}
+
+/**
+ * @brief 一部のプリプロセッサディレクティブは次の行の前に余分なトークンを許容する。
+ * この関数では次の行頭までトークンをスキップする
+ *
+ * @param token 確認するトークン
+ * @return 直後の行頭のトークン
+ */
+unique_ptr<Token> PreProcess::skip_line(unique_ptr<Token> &&token)
+{
+    if (token->_at_begining)
+    {
+        return token;
+    }
+
+    warn_token("このトークンは無視されます", token.get());
+    while (!token->_at_begining)
+    {
+        token = move(token->_next);
+    }
+    return token;
 }
