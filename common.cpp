@@ -25,7 +25,7 @@ void error(string &&msg)
 }
 
 /**
- * @brief エラー箇所の位置を受け取ってエラー出力
+ * @brief エラー箇所の位置を受け取ってエラー出力して終了
  *
  * @param msg エラーメッセージ
  * @param location エラー箇所の位置
@@ -45,10 +45,11 @@ void error_at(string &&msg, const int &location)
     }
 
     verror_at(current_file->_name, current_file->_contents, move(msg), location, line_no);
+    exit(1);
 }
 
 /**
- * @brief 下記のフォーマットでエラー箇所を報告して終了する
+ * @brief 下記のフォーマットでエラー箇所を報告する
  * foo.c:10: x = y + 1;
  *               ^ <error message here>
  * @param msg エラーメッセージ
@@ -89,7 +90,6 @@ void verror_at(const string &filename, const string &input, string &&msg, const 
     /* エラーメッセージを出力 */
     std::cerr << string(indent + location - line_start, ' ') << "^ ";
     std::cerr << msg << std::endl;
-    exit(1);
 }
 
 /**
@@ -101,6 +101,7 @@ void verror_at(const string &filename, const string &input, string &&msg, const 
 void error_token(string &&msg, Token *token)
 {
     verror_at(token->_file->_name, token->_file->_contents, move(msg), token->_location, token->_line_no);
+    exit(1);
 }
 
 /**
