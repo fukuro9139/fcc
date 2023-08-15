@@ -4,9 +4,9 @@
  * @brief プリプロセスを行う
  * @version 0.1
  * @date 2023-08-15
- * 
+ *
  * @copyright Copyright (c) 2023 MIT License
- * 
+ *
  */
 
 #include "preprocess.hpp"
@@ -19,8 +19,46 @@
  */
 unique_ptr<Token> PreProcess::preprocess(unique_ptr<Token> &&token)
 {
+    token = preprocess2(move(token));
     convert_keywords(token.get());
     return token;
+}
+
+/**
+ * @brief トークンリストを先頭から巡回してプリプロセスマクロとディレクティブを処理する
+ *
+ * @param トークンリスト
+ * @return 処理後のトークンリスト
+ */
+unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
+{
+    auto head = make_unique_for_overwrite<Token>();
+    auto cur = head.get();
+
+    while (TokenKind::TK_EOF != token->_kind)
+    {
+        /* 行頭'#'でなければそのまま */
+        if (!is_hash(token.get()))
+        {
+            cur->_next = move(token);
+            cur = cur->_next.get();
+            token = move(cur->_next);
+            continue;
+        }
+
+        token = move(token->_next);
+
+        /* '#'のみの行は無視する */
+        if (token->_at_begining)
+        {
+            continue;
+        }
+
+        error_token("無効なプリプロセッサディレクティブです", token.get());
+    }
+
+    cur->_next = move(token);
+    return move(head->_next);
 }
 
 /**
@@ -56,4 +94,16 @@ bool PreProcess::is_keyword(const Token *token)
         }
     }
     return false;
+}
+
+/**
+ * @brief トークンが行頭で'#'であるか
+ *
+ * @param token 対象トークン
+ * @return true 行頭'#'である
+ * @return false 行頭'#'ではない
+ */
+bool PreProcess::is_hash(const Token *token)
+{
+    return token->_at_begining && token->is_equal("#");
 }

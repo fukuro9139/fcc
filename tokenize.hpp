@@ -45,6 +45,7 @@ public:
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	string _str = "";					 /*!< トークンが表す文字列 */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
+	bool _at_begining = false;			 /*!< トークンが行頭であるか  */
 
 	/* コンストラクタ */
 	Token();

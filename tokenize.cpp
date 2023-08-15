@@ -21,6 +21,9 @@ static string current_input = "";
 /** 入力ファイル */
 static string current_filename = "";
 
+/** 行頭であるか */
+static bool at_begining = false;
+
 /***********/
 /* 汎用関数 */
 /***********/
@@ -121,9 +124,23 @@ void error_token(string &&msg, Token *token)
 /* コンストラクタ */
 
 Token::Token() = default;
-Token::Token(const TokenKind &kind, const int &location) : _kind(kind), _location(location) {}
-Token::Token(const int64_t &value, const int &location) : _kind(TokenKind::TK_NUM), _location(location), _val(move(value)) {}
-Token::Token(const TokenKind &kind, const int &location, string &&str) : _kind(kind), _location(location), _str(move(str)) {}
+Token::Token(const TokenKind &kind, const int &location)
+	: _kind(kind), _location(location), _at_begining(at_begining)
+{
+	at_begining = false;
+}
+
+Token::Token(const int64_t &value, const int &location)
+	: _kind(TokenKind::TK_NUM), _location(location), _val(move(value)), _at_begining(at_begining)
+{
+	at_begining = false;
+}
+
+Token::Token(const TokenKind &kind, const int &location, string &&str)
+	: _kind(kind), _location(location), _str(move(str)), _at_begining(at_begining)
+{
+	at_begining = false;
+}
 
 /**
  * @brief 入力されたパスのファイルを開いて中身を文字列として返す
@@ -206,8 +223,19 @@ unique_ptr<Token> Token::tokenize(const string &filename, string &&input)
 	const auto first = current_input.cbegin();
 	const auto last = current_input.cend();
 
+	/* 行頭フラグをセット */
+	at_begining = true;
+
 	while (itr != last)
 	{
+		/* 改行 */
+		if ('\n' == *itr)
+		{
+			at_begining = true;
+			++itr;
+			continue;
+		}
+
 		/* 空白文字をスキップ */
 		if (std::isspace(*itr))
 		{

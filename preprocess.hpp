@@ -25,8 +25,10 @@ private:
 
     PreProcess();
     /* 静的メンバ関数(private) */
+    static unique_ptr<Token> preprocess2(unique_ptr<Token> &&token);
     static void convert_keywords(Token *token);
     static bool is_keyword(const Token *token);
+    static bool is_hash(const Token *token);
 
     /** 識別子一覧 */
     static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",

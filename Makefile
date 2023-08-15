@@ -47,6 +47,10 @@ all: clean $(TARGET)
 
 #テスト
 ifeq ($(WINDOWS), 0)
+test/macro.exe: $(TARGET) test/macro.c
+	./fcc -c -o test/macro.o test/macro.c
+	$(CC) -o $@ test/macro.o -xc test/common
+
 test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
 	./fcc -c -o test/$*.o test/tmp_$*.c
@@ -56,6 +60,9 @@ test: $(TESTS)
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
 	test/driver.sh
 else
+test/macro.exe: $(TARGET) test/macro.c
+	./fcc -c -o test/macro.o test/macro.c
+	
 test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
 	./fcc -S -o test/$*.s test/tmp_$*.c
