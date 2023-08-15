@@ -228,10 +228,10 @@ std::ostream *open_file(const string &path)
     static unique_ptr<std::ofstream> os;
     os = nullptr;
     /* 出力先が標準出力ではない */
-    if (output_path != "-")
+    if (path != "-")
     {
         /* ファイルを開く */
-        os = make_unique<std::ofstream>(output_path);
+        os = make_unique<std::ofstream>(path);
         if (!os->fail())
         {
             return os.get();
