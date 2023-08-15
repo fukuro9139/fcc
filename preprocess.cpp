@@ -286,6 +286,8 @@ unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_pt
  */
 long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<Token>&& current_token)
 {
+    std::cout << "start eval" << endl;
+
     auto expr = copy_line(next_token, move(current_token->_next));
     auto start = move(current_token);
 
@@ -293,6 +295,8 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<T
     if(TokenKind::TK_EOF ==  expr->_kind){
         error_token("条件式が存在しません", start.get());
     }
+
+    std::cout << "before eval" << endl;
 
     Token *rest;
     /* 定数式を評価 */
@@ -302,6 +306,8 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<T
     if(TokenKind::TK_EOF != rest->_kind){
         error_token("余分なトークンが存在します", rest);
     }
+
+    std::cout << "end eval: " << val << endl;
 
     return val;
 }
