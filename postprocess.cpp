@@ -161,7 +161,7 @@ void PostProcess::run_subprocess(const vector<string> &argv)
  * @return パターンと一致したパス
  * @note strdup内でmallocで文字列のメモリ領域を確保している。戻り値は戻り先で開放すること。
  */
-string PostProcess::find_file(const string_view &pattern)
+string PostProcess::find_file(const string &pattern)
 {
     string path;
     /* 検索結果を格納するバッファ */
