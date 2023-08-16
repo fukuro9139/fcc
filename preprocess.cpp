@@ -18,7 +18,6 @@ CondIncl::CondIncl() = default;
 /** #if関連の条件リスト */
 vector<unique_ptr<CondIncl>> PreProcess::cond_incl;
 
-
 /**
  * @brief プリプロセスを行う
  *
@@ -31,7 +30,8 @@ unique_ptr<Token> PreProcess::preprocess(unique_ptr<Token> &&token)
     token = preprocess2(move(token));
 
     /* #ifと#endifの対応を確認 */
-    if(!cond_incl.empty()){
+    if (!cond_incl.empty())
+    {
         error_token("対応する#endifが存在しません", cond_incl.back()->token.get());
     }
 
@@ -104,23 +104,27 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
             continue;
         }
 
-        if(token->is_equal("if")){
+        if (token->is_equal("if"))
+        {
             auto val = evaluate_const_expr(token, move(token));
             push_cond_incl(move(start));
             /* #if の後の条件式が0（偽）であった場合は#endifまでスキップ */
-            if(!val){
+            if (!val)
+            {
                 token = skip_cond_incl(move(token));
             }
             continue;
         }
 
-        if(token->is_equal("endif")){
+        if (token->is_equal("endif"))
+        {
             /* 対になる#ifが存在しないとき */
-            if(cond_incl.empty()){
+            if (cond_incl.empty())
+            {
                 error_token("対応する#ifが存在しません", start.get());
             }
             cond_incl.pop_back();
-            token = skip_line(move(token));
+            token = skip_line(move(token->_next));
             continue;
         }
 
@@ -226,11 +230,11 @@ unique_ptr<Token> PreProcess::skip_line(unique_ptr<Token> &&token)
 
 /**
  * @brief トークンの内容をコピーしてkindをTK_EOF, strを""に変更する
- * 
+ *
  * @param src コピー元
- * @return 生成したトークン 
+ * @return 生成したトークン
  */
-unique_ptr<Token> PreProcess::new_eof_token(const Token * src)
+unique_ptr<Token> PreProcess::new_eof_token(const Token *src)
 {
     auto t = Token::copy_token(src);
     t->_kind = TokenKind::TK_EOF;
@@ -240,14 +244,16 @@ unique_ptr<Token> PreProcess::new_eof_token(const Token * src)
 
 /**
  * @brief #endifが出てくるまでトークンをスキップする
- * 
+ *
  * @param token スキップを開始するトークン
  * @return #endifまたは末尾にあたるトークン
  */
 unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
 {
-    while(TokenKind::TK_EOF != token->_kind){
-        if(is_hash(token.get()) && token->_next->is_equal("endif")){
+    while (TokenKind::TK_EOF != token->_kind)
+    {
+        if (is_hash(token.get()) && token->_next->is_equal("endif"))
+        {
             break;
         }
         token = move(token->_next);
@@ -258,17 +264,18 @@ unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
 /**
  * @brief 次の行頭または末尾までのトークンを全てコピーする。
  * この関数は#if文を評価するためのトークンリストを作成するために用いる。
- * 
+ *
  * @param next_token 次の文頭のトークンを返すための参照
  * @param current_token 開始位置のトークン
  * @return 生成したトークンリスト
  */
-unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_ptr<Token>&& current_token)
+unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
     auto head = make_unique_for_overwrite<Token>();
     auto cur = head.get();
 
-    for(; !current_token->_at_begining; current_token = move(current_token->_next)){
+    for (; !current_token->_at_begining; current_token = move(current_token->_next))
+    {
         cur->_next = Token::copy_token(current_token.get());
         cur = cur->_next.get();
     }
@@ -279,21 +286,20 @@ unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_pt
 
 /**
  * @brief 次の文末までを定数式として評価する
- * 
+ *
  * @param next_token 次の文頭のトークンを返すための参照
  * @param current_token 開始位置のトークン
  * @return 評価結果
  */
-long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<Token>&& current_token)
+long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
+    auto start = current_token.get();
     auto expr = copy_line(next_token, move(current_token->_next));
-    std::cout << "after copy: " << next_token.get() << endl;
-    std::cout << "current: " << current_token.get() << endl;
-    auto start = move(current_token);
 
     /* #ifの後に条件式がなければエラー */
-    if(TokenKind::TK_EOF ==  expr->_kind){
-        error_token("条件式が存在しません", start.get());
+    if (TokenKind::TK_EOF == expr->_kind)
+    {
+        error_token("条件式が存在しません", start);
     }
 
     Token *rest;
@@ -301,21 +307,21 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<T
     auto val = Node::const_expr(&rest, expr.get());
 
     /* 定数式の評価後に余ったトークンがあればエラー */
-    if(TokenKind::TK_EOF != rest->_kind){
+    if (TokenKind::TK_EOF != rest->_kind)
+    {
         error_token("余分なトークンが存在します", rest);
     }
 
     return val;
 }
 
-
 /**
  * @brief #ifをリストに追加する
- * 
+ *
  * @param token #ifに対応するトークン
  * @return 追加したCondIncl構造体のポインタ
  */
-CondIncl * PreProcess::push_cond_incl(unique_ptr<Token>&& token)
+CondIncl *PreProcess::push_cond_incl(unique_ptr<Token> &&token)
 {
     auto ci = make_unique<CondIncl>();
     ci->token = move(token);
