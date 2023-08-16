@@ -506,7 +506,7 @@ Token *PreProcess::add_macro(const unique_ptr<Token> &token, unique_ptr<Token> &
  */
 bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	if (!current_token->_hideset || current_token->_hideset->contains(current_token->_str))
+	if (current_token->_hideset && current_token->_hideset->contains(current_token->_str))
 	{
 		next_token = move(current_token);
 		return false;
