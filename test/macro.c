@@ -138,6 +138,7 @@ int main()
 	m = 6;
 #endif
 	assert(5, m, "m");
+#undef M
 
 #define M 5
 #if M - 5
