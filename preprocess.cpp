@@ -59,10 +59,10 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 	while (TokenKind::TK_EOF != token->_kind)
 	{
 		/* マクロであれば展開する */
-		if(expand_macro(token, move(token))){
+		if (expand_macro(token, move(token)))
+		{
 			continue;
 		}
-
 
 		/* 行頭'#'でなければそのまま */
 		if (!is_hash(token))
@@ -115,9 +115,11 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			continue;
 		}
 
-		if(token->is_equal("define")){
+		if (token->is_equal("define"))
+		{
 			token = move(token->_next);
-			if(TokenKind::TK_IDENT != token->_kind){
+			if (TokenKind::TK_IDENT != token->_kind)
+			{
 				error_token("マクロ名は識別子である必要があります", token.get());
 			}
 			/* マクロを登録する */
@@ -126,8 +128,18 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			continue;
 		}
 
-
-
+		if (token->is_equal("undef"))
+		{
+			token = move(token->_next);
+			if (TokenKind::TK_IDENT != token->_kind)
+			{
+				error_token("マクロ名は識別子である必要があります", token.get());
+			}
+			/* マクロを削除する */
+			delete_macro(token->_str);
+			token = skip_line(move(token->_next));
+			continue;
+		}
 
 		if (token->is_equal("if"))
 		{
@@ -504,4 +516,17 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next__token, unique_ptr<Token> 
 	/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
 	next__token = append(move(head->_next), move(current_token->_next));
 	return true;
+}
+
+/**
+ * @brief マクロを削除する。マクロが定義されていない場合はなにしない。
+ *
+ * @param name 削除するマクロの名前
+ */
+void PreProcess::delete_macro(const string &name)
+{
+	if (macros.contains(name))
+	{
+		macros.erase(name);
+	}
 }
