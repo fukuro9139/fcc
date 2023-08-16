@@ -288,8 +288,8 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token>& next_token, unique_ptr<T
 {
     auto expr = copy_line(next_token, move(current_token->_next));
     std::cout << "after copy: " << next_token.get() << endl;
+    std::cout << "current: " << current_token.get() << endl;
     auto start = move(current_token);
-    std::cout << "start move: " << next_token.get() << endl;
 
     /* #ifの後に条件式がなければエラー */
     if(TokenKind::TK_EOF ==  expr->_kind){
