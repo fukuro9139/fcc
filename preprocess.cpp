@@ -252,6 +252,13 @@ unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
 {
     while (TokenKind::TK_EOF != token->_kind)
     {
+        /* #if 0にネストされた#if~#endifはスキップする */
+        if (is_hash(token.get()) && token->_next->is_equal("if"))
+        {
+            token = skip_cond_incl(move(token->_next->_next));
+            token = move(token->_next);
+        }
+
         if (is_hash(token.get()) && token->_next->is_equal("endif"))
         {
             break;

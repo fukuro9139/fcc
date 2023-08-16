@@ -16,8 +16,14 @@ int main()
     assert(7, include2, "include2");
 
 #if 0
+
 #include "/no/such/file"
+
   assert(0, 1, "1");
+
+#if nested
+
+#endif
 #endif
     int m = 0;
 #if 1
