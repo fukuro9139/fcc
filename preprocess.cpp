@@ -128,7 +128,7 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
             /* else節に入ったので種類を変える */
             cond_incl.back()->_ctx = BlockKind::IN_ELSE;
             /* #elseと同じ行のトークンを無視 */
-            token = skip_line(move(token));
+            token = skip_line(move(token->_next));
 
             /* #if節の方が有効な場合,else節はスキップ */
             if(cond_incl.back()->_included){
