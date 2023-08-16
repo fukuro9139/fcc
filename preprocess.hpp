@@ -19,7 +19,8 @@ class Token;
 enum class BlockKind
 {
     IN_THEN,
-    IN_ELSE
+    IN_ELIF,
+    IN_ELSE,
 };
 
 /** #if関連を表す構造体 */

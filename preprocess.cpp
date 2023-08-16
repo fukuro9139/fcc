@@ -118,10 +118,31 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
             continue;
         }
 
+        if (token->is_equal("elif"))
+        {
+            /* 対になる#ifが存在しないまたは直前が#elseのときエラー */
+            if (cond_incl.empty() || BlockKind::IN_ELSE == cond_incl.back()->_ctx)
+            {
+                error_token("対応する#ifが存在しません", start.get());
+            }
+            /* #elif節に入ったので種類を変える */
+            cond_incl.back()->_ctx = BlockKind::IN_ELIF;
+
+            /* 直前の節の条件式が偽である、かつこの節の条件式が真であるとき */
+            if(!cond_incl.back()->_included && evaluate_const_expr(token, move(token))){
+                cond_incl.back()->_included = true;
+            }
+            /* それ以外はスキップ */
+            else{
+                token = skip_cond_incl(move(token));
+            }
+            continue;
+        }
+
         if (token->is_equal("else"))
         {
             /* 対になる#ifが存在しないまたは直前が#elseのときエラー */
-            if (cond_incl.empty() ||  BlockKind::IN_ELSE == cond_incl.back()->_ctx)
+            if (cond_incl.empty() || BlockKind::IN_ELSE == cond_incl.back()->_ctx)
             {
                 error_token("対応する#ifが存在しません", start.get());
             }
@@ -131,7 +152,8 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
             token = skip_line(move(token->_next));
 
             /* #if節の方が有効な場合,else節はスキップ */
-            if(cond_incl.back()->_included){
+            if (cond_incl.back()->_included)
+            {
                 token = skip_cond_incl(move(token));
             }
             continue;
@@ -280,9 +302,9 @@ unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
             continue;
         }
 
-        if (is_hash(token.get()) &&
-                (token->_next->is_equal("else")) ||
-            token->_next->is_equal("endif"))
+        if (
+            is_hash(token.get()) &&
+            (token->_next->is_equal("else") || token->_next->is_equal("endif") || token->_next->is_equal("elif")))
         {
             break;
         }
