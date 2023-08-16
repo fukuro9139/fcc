@@ -146,7 +146,7 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			auto val = evaluate_const_expr(token, move(token));
 			push_cond_incl(move(start), val);
 			/* #if の後の条件式が0（偽）であった場合は#endifまでスキップ */
-			if (!val)
+			if (val == 0)
 			{
 				token = skip_cond_incl(move(token));
 			}
@@ -164,7 +164,7 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			cond_incl.back()->_ctx = BlockKind::IN_ELIF;
 
 			/* 直前の節の条件式が偽である、かつこの節の条件式が真であるとき */
-			if (!cond_incl.back()->_included && evaluate_const_expr(token, move(token)))
+			if (!cond_incl.back()->_included && evaluate_const_expr(token, move(token)) != 0)
 			{
 				cond_incl.back()->_included = true;
 			}
@@ -409,7 +409,11 @@ unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_pt
 long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	auto start = current_token.get();
+	/* 文末までのトークンをコピー */
 	auto expr = copy_line(next_token, move(current_token->_next));
+	
+	/* 定数式の中のマクロを展開 */
+	expr = preprocess2(move(expr));
 
 	/* #ifの後に条件式がなければエラー */
 	if (TokenKind::TK_EOF == expr->_kind)
