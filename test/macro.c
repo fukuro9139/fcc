@@ -129,7 +129,9 @@ int main()
 #undef five
 #undef END
 
-	if (0){}
+	if (0)
+	{
+	}
 
 #define M 5
 #if M
@@ -147,6 +149,18 @@ int main()
 	m = 5;
 #endif
 	assert(5, m, "m");
+
+	int M5 = 6;
+#define M5 M5 + 3
+	assert(9, M5, "M5");
+
+#define M6 M5 + 3
+	assert(12, M6, "M6");
+
+	int M7 = 3;
+#define M7 M8 * 5
+#define M8 M7 + 2
+	assert(13, M7, "M7");
 
 	printf("OK\n");
 	return 0;

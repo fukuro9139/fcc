@@ -4,7 +4,7 @@
  * @brief プリプロセスを行う
  * @version 0.1
  * @date 2023-08-15
- * 
+ *
  * プリプロセッサーは入力としてトークンのリストを受け取り、出力として新しいトークンのリストを返す。
  * プリプロセスは再帰的なマクロがあったとしてもそれが停止することが保証されるように設計されている。
  * マクロは各トークンに対して一度だけ適用される。
@@ -421,7 +421,7 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<T
 	auto start = current_token.get();
 	/* 文末までのトークンをコピー */
 	auto expr = copy_line(next_token, move(current_token->_next));
-	
+
 	/* 定数式の中のマクロを展開 */
 	expr = preprocess2(move(expr));
 
@@ -504,14 +504,22 @@ Token *PreProcess::add_macro(const unique_ptr<Token> &token, unique_ptr<Token> &
  * @return true トークンがマクロである
  * @return false マクロを展開できない
  */
-bool PreProcess::expand_macro(unique_ptr<Token> &next__token, unique_ptr<Token> &&current_token)
+bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
+	if (!current_token->_hideset || current_token->_hideset->contains(current_token->_str))
+	{
+		next_token = move(current_token);
+		return false;
+	}
+
 	auto m = find_macro(current_token);
 	if (!m)
 	{
-		next__token = move(current_token);
+		next_token = move(current_token);
 		return false;
 	}
+
+	auto name = current_token->_str;
 
 	/* マクロの展開先のトークンリストをコピーする */
 	auto head = make_unique_for_overwrite<Token>();
@@ -523,24 +531,29 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next__token, unique_ptr<Token> 
 		cur->_next = Token::copy_token(m);
 		m = m->_next.get();
 		cur = cur->_next.get();
+		/* hidesetに展開するマクロ名を追加 */
+		add_hideset(cur->_hideset, name);
 	}
 	/* EOFトークンをコピー */
 	cur->_next = Token::copy_token(m);
 
 	/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
-	next__token = append(move(head->_next), move(current_token->_next));
+	next_token = append(move(head->_next), move(current_token->_next));
 	return true;
 }
 
 /**
- * @brief マクロを削除する。マクロが定義されていない場合はなにしない。
+ * @brief hidesetにマクロ名を追加する
  *
- * @param name 削除するマクロの名前
+ * @param hs 対象となるhideset
+ * @param name 追加するマクロの名前
  */
-void PreProcess::delete_macro(const string &name)
+void PreProcess::add_hideset(Hideset &hs, const string &name)
 {
-	if (macros.contains(name))
+	/* hsが空なら新しく作成する */
+	if (!hs)
 	{
-		macros.erase(name);
+		hs = make_unique<std::unordered_set<string>>();
 	}
+	hs->insert(name);
 }

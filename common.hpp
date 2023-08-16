@@ -29,6 +29,8 @@
 
 namespace fs = std::filesystem;
 
+using Hideset = std::unique_ptr<std::unordered_set<std::string>>;
+
 using std::unique_ptr;
 using std::shared_ptr;
 using std::make_unique;

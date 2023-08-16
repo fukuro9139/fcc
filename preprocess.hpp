@@ -56,10 +56,10 @@ private:
 	static Token *find_macro(const unique_ptr<Token> &token);
 	static Token *add_macro(const unique_ptr<Token> &token, unique_ptr<Token> &&body);
     static void delete_macro(const string &name);
-	static bool expand_macro(unique_ptr<Token> &next__token, unique_ptr<Token> &&current_token);
+	static bool expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+    static void add_hideset(Hideset &hs, const string &name);
 	static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
-
 	static vector<unique_ptr<CondIncl>> cond_incl;
 	static std::unordered_map<string, unique_ptr<Token>> macros;
 
