@@ -269,12 +269,15 @@ unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_pt
     auto cur = head.get();
 
     for(; !current_token->_at_begining; current_token = move(current_token->_next)){
+        std::cout << "src: " << current_token.get() << endl;
         cur->_next = Token::copy_token(current_token.get());
         cur = cur->_next.get();
+        std::cout << "dst: " << cur << endl;
     }
     cur->_next = new_eof_token(current_token.get());
     next_token = move(current_token);
-    std::cout << "end copy: " << next_token.get() <<endl;
+    std::cout << "copy: " << cur->_next.get() << endl;
+    std::cout << "next: " << next_token.get() << endl;
     return move(head->_next);
 }
 
