@@ -169,7 +169,7 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			/* #ifdef節に入る */
 			push_cond_incl(move(start), defined);
 			/* 余分なトークンを飛ばす */
-			token = skip_line(move(token));
+			token = skip_line(move(token->_next->_next));
 			/* 定義されていなければ節を飛ばす */
 			if (!defined)
 			{
@@ -184,7 +184,7 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			/* #ifndef節に入る */
 			push_cond_incl(move(start), !defined);
 			/* 余分なトークンを飛ばす */
-			token = skip_line(move(token));
+			token = skip_line(move(token->_next->_next));
 			/* 定義されていれば節を飛ばす */
 			if (defined)
 			{
