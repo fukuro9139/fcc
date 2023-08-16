@@ -1,7 +1,7 @@
 /**
  * @file common.hpp
  * @author K.Fukunaga
- * @brief 共通のインクルード、using宣言
+ * @brief 共通のインクルード、using宣言、汎用で使う関数の宣言
  * @version 0.1
  * @date 2023-07-30
  * 

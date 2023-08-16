@@ -51,7 +51,13 @@ Token::Token(const TokenKind &kind, const int &location, string &&str)
 
 Token::Token(const Token &src)
 	: _kind(src._kind), _val(src._val), _fval(src._fval), _ty(src._ty), _location(src._location),
-	  _str(src._str), _file(src._file), _line_no(src._line_no), _at_begining(src._at_begining) {}
+	  _str(src._str), _file(src._file), _line_no(src._line_no), _at_begining(src._at_begining)
+{
+	if (src._hideset)
+	{
+		_hideset = make_unique<std::unordered_set<string>>(*src._hideset);
+	}
+}
 
 /**
  * @brief 入力されたパスのファイルを開いて中身を文字列として返す

@@ -1,3 +1,14 @@
+/**
+ * @file common.cpp
+ * @author K.Fukunaga
+ * @brief 汎用で使う関数の定義
+ * @version 0.1
+ * @date 2023-08-16
+ * 
+ * @copyright Copyright (c) 2023 MIT License
+ * 
+ */
+
 #include "common.hpp"
 #include "tokenize.hpp"
 
