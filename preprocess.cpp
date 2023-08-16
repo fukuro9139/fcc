@@ -14,6 +14,8 @@
 #include "parse.hpp"
 
 CondIncl::CondIncl() = default;
+CondIncl::CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included)
+    : _token(move(token)), _ctx(ctx), _included(included) {}
 
 /** #if関連の条件リスト */
 vector<unique_ptr<CondIncl>> PreProcess::cond_incl;
@@ -32,7 +34,7 @@ unique_ptr<Token> PreProcess::preprocess(unique_ptr<Token> &&token)
     /* #ifと#endifの対応を確認 */
     if (!cond_incl.empty())
     {
-        error_token("対応する#endifが存在しません", cond_incl.back()->token.get());
+        error_token("対応する#endifが存在しません", cond_incl.back()->_token.get());
     }
 
     /* 識別子を認識 */
@@ -107,10 +109,29 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
         if (token->is_equal("if"))
         {
             auto val = evaluate_const_expr(token, move(token));
-            push_cond_incl(move(start));
+            push_cond_incl(move(start), val);
             /* #if の後の条件式が0（偽）であった場合は#endifまでスキップ */
             if (!val)
             {
+                token = skip_cond_incl(move(token));
+            }
+            continue;
+        }
+
+        if (token->is_equal("else"))
+        {
+            /* 対になる#ifが存在しないまたは直前が#elseのときエラー */
+            if (cond_incl.empty() ||  BlockKind::IN_ELSE == cond_incl.back()->_ctx)
+            {
+                error_token("対応する#ifが存在しません", start.get());
+            }
+            /* else節に入ったので種類を変える */
+            cond_incl.back()->_ctx = BlockKind::IN_ELSE;
+            /* #elseと同じ行のトークンを無視 */
+            token = skip_line(move(token));
+
+            /* #if節の方が有効な場合,else節はスキップ */
+            if(cond_incl.back()->_included){
                 token = skip_cond_incl(move(token));
             }
             continue;
@@ -243,7 +264,7 @@ unique_ptr<Token> PreProcess::new_eof_token(const Token *src)
 }
 
 /**
- * @brief #endifが出てくるまでトークンをスキップする
+ * @brief #elseまたは#endifが出てくるまでトークンをスキップする
  *
  * @param token スキップを開始するトークン
  * @return #endifまたは末尾にあたるトークン
@@ -255,13 +276,41 @@ unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
         /* #if 0にネストされた#if~#endifはスキップする */
         if (is_hash(token.get()) && token->_next->is_equal("if"))
         {
-            token = skip_cond_incl(move(token->_next->_next));
-            token = move(token->_next);
+            token = skip_cond_incl2(move(token->_next->_next));
+            continue;
+        }
+
+        if (is_hash(token.get()) &&
+                (token->_next->is_equal("else")) ||
+            token->_next->is_equal("endif"))
+        {
+            break;
+        }
+        token = move(token->_next);
+    }
+    return token;
+}
+
+/**
+ * @brief #endifが出てくるまでトークンをスキップする
+ *
+ * @param token スキップを開始するトークン
+ * @return #endifまたは末尾にあたるトークン
+ */
+unique_ptr<Token> PreProcess::skip_cond_incl2(unique_ptr<Token> &&token)
+{
+    while (TokenKind::TK_EOF != token->_kind)
+    {
+        /* #if 0にネストされた#if~#endifはスキップする */
+        if (is_hash(token.get()) && token->_next->is_equal("if"))
+        {
+            token = skip_cond_incl2(move(token->_next->_next));
+            continue;
         }
 
         if (is_hash(token.get()) && token->_next->is_equal("endif"))
         {
-            break;
+            return move(token->_next->_next);
         }
         token = move(token->_next);
     }
@@ -328,10 +377,9 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<T
  * @param token #ifに対応するトークン
  * @return 追加したCondIncl構造体のポインタ
  */
-CondIncl *PreProcess::push_cond_incl(unique_ptr<Token> &&token)
+CondIncl *PreProcess::push_cond_incl(unique_ptr<Token> &&token, bool included)
 {
-    auto ci = make_unique<CondIncl>();
-    ci->token = move(token);
+    auto ci = make_unique<CondIncl>(move(token), BlockKind::IN_THEN, included);
     cond_incl.emplace_back(move(ci));
     return cond_incl.back().get();
 }

@@ -15,12 +15,22 @@
 
 class Token;
 
+/** #if関連のブロックの種類 */
+enum class BlockKind
+{
+    IN_THEN,
+    IN_ELSE
+};
+
 /** #if関連を表す構造体 */
 struct CondIncl
 {
-    unique_ptr<Token> token /*!< 参照用のトークン */;
+    unique_ptr<Token> _token /*!< 参照用のトークン */;
+    BlockKind _ctx;          /*!< ブロックの種類 */
+    bool _included = false; /*!< ブロックが有効であるか */
 
     CondIncl();
+    CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included);
 };
 
 class PreProcess
@@ -40,9 +50,10 @@ private:
     static bool is_hash(const Token *token);
     static unique_ptr<Token> new_eof_token(const Token *src);
     static unique_ptr<Token> skip_cond_incl(unique_ptr<Token> &&token);
+    static unique_ptr<Token> skip_cond_incl2(unique_ptr<Token> &&token);
     static unique_ptr<Token> copy_line(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
     static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-    static CondIncl *push_cond_incl(unique_ptr<Token> &&token);
+    static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
 
     static vector<unique_ptr<CondIncl>> cond_incl;
 
