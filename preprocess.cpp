@@ -20,6 +20,9 @@ CondIncl::CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool include
 /** #if関連の条件リスト */
 vector<unique_ptr<CondIncl>> PreProcess::cond_incl;
 
+/* マクロの一覧 */
+vector<unique_ptr<Macro>> PreProcess::macros;
+
 /**
  * @brief プリプロセスを行う
  *
@@ -187,7 +190,7 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
  */
 unique_ptr<Token> PreProcess::append(unique_ptr<Token> &&token1, unique_ptr<Token> &&token2)
 {
-    if (!token1 || TokenKind::TK_EOF == token1->_kind)
+    if (TokenKind::TK_EOF == token1->_kind)
     {
         return token2;
     }

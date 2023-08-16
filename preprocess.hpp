@@ -27,11 +27,18 @@ enum class BlockKind
 struct CondIncl
 {
     unique_ptr<Token> _token /*!< 参照用のトークン */;
-    BlockKind _ctx;          /*!< ブロックの種類 */
+    BlockKind _ctx;         /*!< ブロックの種類 */
     bool _included = false; /*!< ブロックが有効であるか */
 
     CondIncl();
     CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included);
+};
+
+/* マクロ */
+struct Macro
+{
+    string _name = "";       /*!< マクロの名前 */
+    unique_ptr<Token> _body; /*!< マクロの置換後の内容 */
 };
 
 class PreProcess
@@ -57,6 +64,7 @@ private:
     static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
 
     static vector<unique_ptr<CondIncl>> cond_incl;
+    static vector<unique_ptr<Macro>> macros;
 
     /** 識別子一覧 */
     static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",
