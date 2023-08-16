@@ -109,14 +109,14 @@ int main()
 
 #define M1 3
 	assert(3, M1, "M1");
-#define M1 4
-	assert(4, M1, "M1");
+#define M2 4
+	assert(4, M2, "M2");
 
-#define M1 3 + 4 +
-	assert(12, M1 5, "5");
+#define M3 3 + 4 +
+	assert(12, M3 5, "3");
 
-#define M1 3 + 4
-	assert(23, M1 * 5, "5");
+#define M4 3 + 4
+	assert(23, M4 * 5, "5");
 
 #define ASSERT_ assert(
 #define if 5
