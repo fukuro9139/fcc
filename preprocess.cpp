@@ -557,3 +557,16 @@ void PreProcess::add_hideset(Hideset &hs, const string &name)
 	}
 	hs->insert(name);
 }
+
+/**
+ * @brief マクロを削除する
+ *
+ * @param name 削除するマクロの名前
+ */
+void PreProcess::delete_macro(const string &name)
+{
+	if (macros.contains(name))
+	{
+		macros.erase(name);
+	}
+}
