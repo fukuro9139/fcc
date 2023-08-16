@@ -162,6 +162,44 @@ int main()
 #define M8 M7 + 2
 	assert(13, M7, "M7");
 
+#ifdef M9
+	m = 5;
+#else
+	m = 3;
+#endif
+	assert(3, m, "m");
+
+#define M10
+#ifdef M10
+	m = 5;
+#else
+	m = 3;
+#endif
+	assert(5, m, "m");
+
+#ifndef M11
+	m = 3;
+#else
+	m = 5;
+#endif
+	assert(3, m, "m");
+
+#define M12
+#ifndef M12
+	m = 3;
+#else
+	m = 5;
+#endif
+	assert(5, m, "m");
+
+#if 0
+#ifdef NO_SUCH_MACRO
+#endif
+#ifndef NO_SUCH_MACRO
+#endif
+#else
+#endif
+
 	printf("OK\n");
 	return 0;
 }

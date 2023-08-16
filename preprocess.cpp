@@ -163,6 +163,36 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			continue;
 		}
 
+		if (token->is_equal("ifdef"))
+		{
+			bool defined = find_macro(token->_next);
+			/* #ifdef節に入る */
+			push_cond_incl(move(start), defined);
+			/* 余分なトークンを飛ばす */
+			token = skip_line(move(token));
+			/* 定義されていなければ節を飛ばす */
+			if (!defined)
+			{
+				token = skip_cond_incl(move(token));
+			}
+			continue;
+		}
+
+		if (token->is_equal("ifndef"))
+		{
+			bool defined = find_macro(token->_next);
+			/* #ifndef節に入る */
+			push_cond_incl(move(start), !defined);
+			/* 余分なトークンを飛ばす */
+			token = skip_line(move(token));
+			/* 定義されていれば節を飛ばす */
+			if (defined)
+			{
+				token = skip_cond_incl(move(token));
+			}
+			continue;
+		}
+
 		if (token->is_equal("elif"))
 		{
 			/* 対になる#ifが存在しないまたは直前が#elseのときエラー */
@@ -342,8 +372,10 @@ unique_ptr<Token> PreProcess::skip_cond_incl(unique_ptr<Token> &&token)
 {
 	while (TokenKind::TK_EOF != token->_kind)
 	{
-		/* #if 0にネストされた#if~#endifはスキップする */
-		if (is_hash(token) && token->_next->is_equal("if"))
+		/* #if 0にネストされた#if, #ifdef, #ifndefはスキップする */
+		if (is_hash(token) && (token->_next->is_equal("if") ||
+							   token->_next->is_equal("ifdef") ||
+							   token->_next->is_equal("ifndef")))
 		{
 			token = skip_cond_incl2(move(token->_next->_next));
 			continue;
@@ -370,8 +402,10 @@ unique_ptr<Token> PreProcess::skip_cond_incl2(unique_ptr<Token> &&token)
 {
 	while (TokenKind::TK_EOF != token->_kind)
 	{
-		/* #if 0にネストされた#if~#endifはスキップする */
-		if (is_hash(token) && token->_next->is_equal("if"))
+		/* #if 0にネストされた#if, #ifdef, #ifndefはスキップする */
+		if (is_hash(token) && (token->_next->is_equal("if") ||
+							   token->_next->is_equal("ifdef") ||
+							   token->_next->is_equal("ifndef")))
 		{
 			token = skip_cond_incl2(move(token->_next->_next));
 			continue;
