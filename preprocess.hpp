@@ -18,58 +18,54 @@ class Token;
 /** #if関連のブロックの種類 */
 enum class BlockKind
 {
-    IN_THEN,
-    IN_ELIF,
-    IN_ELSE,
+	IN_THEN,
+	IN_ELIF,
+	IN_ELSE,
 };
 
 /** #if関連を表す構造体 */
 struct CondIncl
 {
-    unique_ptr<Token> _token /*!< 参照用のトークン */;
-    BlockKind _ctx;         /*!< ブロックの種類 */
-    bool _included = false; /*!< ブロックが有効であるか */
+	unique_ptr<Token> _token /*!< 参照用のトークン */;
+	BlockKind _ctx;			/*!< ブロックの種類 */
+	bool _included = false; /*!< ブロックが有効であるか */
 
-    CondIncl();
-    CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included);
-};
-
-/* マクロ */
-struct Macro
-{
-    string _name = "";       /*!< マクロの名前 */
-    unique_ptr<Token> _body; /*!< マクロの置換後の内容 */
+	CondIncl();
+	CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included);
 };
 
 class PreProcess
 {
 public:
-    /* 静的メンバ関数(public) */
-    static unique_ptr<Token> preprocess(unique_ptr<Token> &&token);
+	/* 静的メンバ関数(public) */
+	static unique_ptr<Token> preprocess(unique_ptr<Token> &&token);
 
 private:
-    PreProcess();
-    /* 静的メンバ関数(private) */
-    static unique_ptr<Token> preprocess2(unique_ptr<Token> &&token);
-    static unique_ptr<Token> append(unique_ptr<Token> &&token1, unique_ptr<Token> &&token2);
-    static unique_ptr<Token> skip_line(unique_ptr<Token> &&token);
-    static void convert_keywords(Token *token);
-    static bool is_keyword(const Token *token);
-    static bool is_hash(const Token *token);
-    static unique_ptr<Token> new_eof_token(const Token *src);
-    static unique_ptr<Token> skip_cond_incl(unique_ptr<Token> &&token);
-    static unique_ptr<Token> skip_cond_incl2(unique_ptr<Token> &&token);
-    static unique_ptr<Token> copy_line(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-    static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-    static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
+	PreProcess();
+	/* 静的メンバ関数(private) */
+	static unique_ptr<Token> preprocess2(unique_ptr<Token> &&token);
+	static unique_ptr<Token> append(unique_ptr<Token> &&token1, unique_ptr<Token> &&token2);
+	static unique_ptr<Token> skip_line(unique_ptr<Token> &&token);
+	static void convert_keywords(unique_ptr<Token> &token);
+	static bool is_keyword(const Token *token);
+	static bool is_hash(const unique_ptr<Token> &token);
+	static unique_ptr<Token> new_eof_token(const unique_ptr<Token> &src);
+	static unique_ptr<Token> skip_cond_incl(unique_ptr<Token> &&token);
+	static unique_ptr<Token> skip_cond_incl2(unique_ptr<Token> &&token);
+	static unique_ptr<Token> copy_line(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+	static Token *find_macro(const unique_ptr<Token> &token);
+	static Token *add_macro(const unique_ptr<Token> &token, unique_ptr<Token> &&body);
+	static bool expand_macro(unique_ptr<Token> &next__token, unique_ptr<Token> &&current_token);
+	static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+	static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
 
-    static vector<unique_ptr<CondIncl>> cond_incl;
-    static vector<unique_ptr<Macro>> macros;
+	static vector<unique_ptr<CondIncl>> cond_incl;
+	static std::unordered_map<string, unique_ptr<Token>> macros;
 
-    /** 識別子一覧 */
-    static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",
-                                               "struct", "union", "short", "long", "void", "typedef", "_Bool",
-                                               "enum", "static", "goto", "break", "continue", "switch", "case",
-                                               "default", "extern", "_Alignof", "_Alignas", "do", "signed", "unsigned",
-                                               "const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
+	/** 識別子一覧 */
+	static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",
+											   "struct", "union", "short", "long", "void", "typedef", "_Bool",
+											   "enum", "static", "goto", "break", "continue", "switch", "case",
+											   "default", "extern", "_Alignof", "_Alignas", "do", "signed", "unsigned",
+											   "const", "volatile", "auto", "register", "restrict", "__restrict", "__restrict__", "_Noreturn"};
 };

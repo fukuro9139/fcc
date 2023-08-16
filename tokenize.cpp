@@ -816,7 +816,7 @@ void Token::print_token(const unique_ptr<Token> &token, const string &output_pat
 	int line = 1;
 	for (auto tok = token.get(); TokenKind::TK_EOF != tok->_kind; tok = tok->_next.get())
 	{
-		if (line > 1 && tok->at_begining)
+		if (line > 1 && tok->_at_begining)
 		{
 			*os << "\n";
 		}
@@ -828,11 +828,11 @@ void Token::print_token(const unique_ptr<Token> &token, const string &output_pat
 
 /**
  * @brief _next以外の要素をコピーして新たなトークンを生成し、そのトークンへのポインタを返す。
- * 
+ *
  * @param src コピー元
  * @return 生成したトークンへのポインタ
  */
-unique_ptr<Token> Token::copy_token(const Token* src)
+unique_ptr<Token> Token::copy_token(const Token *src)
 {
 	return make_unique<Token>(*src);
 }
