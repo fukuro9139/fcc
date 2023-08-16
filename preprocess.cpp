@@ -533,6 +533,11 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 		cur = cur->_next.get();
 		/* hidesetに展開するマクロ名を追加 */
 		add_hideset(cur->_hideset, name);
+		/* 現在のトークンのhidesetとマージする */
+		if (current_token->_hideset)
+		{
+			cur->_hideset->merge(*current_token->_hideset);
+		}
 	}
 	/* EOFトークンをコピー */
 	cur->_next = Token::copy_token(m);
