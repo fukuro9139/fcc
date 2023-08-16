@@ -61,7 +61,7 @@ test: $(TESTS)
 	test/driver.sh
 else
 test/macro.exe: $(TARGET) test/macro.c
-	./fcc -c -o test/macro.o test/macro.c
+	./fcc -S -o test/macro.s test/macro.c
 	
 test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
