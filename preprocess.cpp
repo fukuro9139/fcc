@@ -132,7 +132,6 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 
 		if (token->is_equal("define"))
 		{
-			token = move(token->_next);
 			/* マクロの定義を読み取る */
 			read_macro_definition(token, move(token->_next));
 			continue;
