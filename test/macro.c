@@ -10,6 +10,11 @@ int memcmp(char *p, char *q, long n);
 
 /* */ #
 
+int ret3(void)
+{
+	return 3;
+}
+
 int main()
 {
 	assert(5, include1, "include1");
@@ -200,6 +205,14 @@ int main()
 #else
 #endif
 
+#define M8() 1
+	int M8 = 5;
+	assert(1, M8(), "M8()");
+	assert(5, M8, "M8");
+
+#define M9 ()
+	assert(3, ret3 M9, "ret3 M9");
+	
 	printf("OK\n");
 	return 0;
 }

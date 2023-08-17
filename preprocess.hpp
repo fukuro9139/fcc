@@ -34,6 +34,15 @@ struct CondIncl
 	CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included);
 };
 
+/** マクロ */
+struct Macro
+{
+	unique_ptr<Token> _body; /*!< マクロの展開先 */
+	bool _is_objlike = true;	 /*!< オブジェクトマクロであるか */
+
+	Macro(unique_ptr<Token> &&body, const bool &objlike);
+};
+
 class PreProcess
 {
 public:
@@ -53,15 +62,18 @@ private:
 	static unique_ptr<Token> skip_cond_incl(unique_ptr<Token> &&token);
 	static unique_ptr<Token> skip_cond_incl2(unique_ptr<Token> &&token);
 	static unique_ptr<Token> copy_line(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-	static Token *find_macro(const unique_ptr<Token> &token);
-	static Token *add_macro(const unique_ptr<Token> &token, unique_ptr<Token> &&body);
-    static void delete_macro(const string &name);
+	static void read_macro_definition(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+	static Macro *find_macro(const unique_ptr<Token> &token);
+	static Token *add_macro(const unique_ptr<Token> &token, const bool &is_objlike, unique_ptr<Token> &&body);
+	static void delete_macro(const string &name);
 	static bool expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-    static void add_hideset(Hideset &hs, const string &name);
+	static unique_ptr<Token> load_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &body);
+	static void add_hideset(Hideset &hs, const string &name);
 	static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
 	static vector<unique_ptr<CondIncl>> cond_incl;
-	static std::unordered_map<string, unique_ptr<Token>> macros;
+
+	static std::unordered_map<string, unique_ptr<Macro>> macros;
 
 	/** 識別子一覧 */
 	static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",

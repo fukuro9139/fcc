@@ -27,11 +27,16 @@ CondIncl::CondIncl() = default;
 CondIncl::CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included)
 	: _token(move(token)), _ctx(ctx), _included(included) {}
 
+Macro::Macro(unique_ptr<Token> &&body, const bool &objlike)
+	: _body(move(body)), _is_objlike(objlike)
+{
+}
+
 /** #if関連の条件リスト */
 vector<unique_ptr<CondIncl>> PreProcess::cond_incl;
 
 /* マクロの一覧 */
-std::unordered_map<string, unique_ptr<Token>> PreProcess::macros;
+std::unordered_map<string, unique_ptr<Macro>> PreProcess::macros;
 
 /**
  * @brief プリプロセスを行う
@@ -128,13 +133,8 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 		if (token->is_equal("define"))
 		{
 			token = move(token->_next);
-			if (TokenKind::TK_IDENT != token->_kind)
-			{
-				error_token("マクロ名は識別子である必要があります", token.get());
-			}
-			/* マクロを登録する */
-			auto name = move(token);
-			add_macro(name, copy_line(token, move(name->_next)));
+			/* マクロの定義を読み取る */
+			read_macro_definition(token, move(token->_next));
 			continue;
 		}
 
@@ -492,12 +492,43 @@ CondIncl *PreProcess::push_cond_incl(unique_ptr<Token> &&token, bool included)
 }
 
 /**
+ * @brief マクロの定義を読み込む
+ *
+ * @param next_token 次の文頭のトークンを返すための参照
+ * @param current_token 開始位置のトークン
+ */
+void PreProcess::read_macro_definition(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	if (TokenKind::TK_IDENT != current_token->_kind)
+	{
+		error_token("マクロ名は識別子である必要があります", current_token.get());
+	}
+	auto name = move(current_token);
+	current_token = move(name->_next);
+
+	/* 関数マクロ */
+	if (current_token->_has_space && current_token->is_equal("("))
+	{
+		if (!current_token->_next->is_equal(")"))
+		{
+			error_token("')'が必要です", current_token->_next.get());
+		}
+		add_macro(name, false, copy_line(next_token, move(current_token->_next->_next)));
+	}
+	/* オブジェクトマクロ */
+	else
+	{
+		add_macro(name, true, copy_line(next_token, move(current_token)));
+	}
+}
+
+/**
  * @brief 定義済みのマクロを検索して定義されていれば展開先のトークンリストを返す
  *
  * @param token マクロに対応するトークン
  * @return マクロの展開先のトークンリスト
  */
-Token *PreProcess::find_macro(const unique_ptr<Token> &token)
+Macro *PreProcess::find_macro(const unique_ptr<Token> &token)
 {
 	if (TokenKind::TK_IDENT != token->_kind)
 	{
@@ -520,14 +551,14 @@ Token *PreProcess::find_macro(const unique_ptr<Token> &token)
  * @param macro
  * @return Token*
  */
-Token *PreProcess::add_macro(const unique_ptr<Token> &token, unique_ptr<Token> &&body)
+Token *PreProcess::add_macro(const unique_ptr<Token> &token, const bool &is_objlike, unique_ptr<Token> &&body)
 {
 	if (macros.contains(token->_str))
 	{
 		warn_token("マクロが再定義されています", token.get());
 	}
-	macros[token->_str] = move(body);
-	return macros[token->_str].get();
+	macros[token->_str] = make_unique<Macro>(move(body), is_objlike);
+	return macros[token->_str]->_body.get();
 }
 
 /**
@@ -540,7 +571,9 @@ Token *PreProcess::add_macro(const unique_ptr<Token> &token, unique_ptr<Token> &
  */
 bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
-	if (current_token->_hideset && current_token->_hideset->contains(current_token->_str))
+	auto name = current_token->_str;
+
+	if (current_token->_hideset && current_token->_hideset->contains(name))
 	{
 		next_token = move(current_token);
 		return false;
@@ -553,32 +586,65 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 		return false;
 	}
 
-	auto name = current_token->_str;
+	/* オブジェクトマクロ */
+	if (m->_is_objlike)
+	{
+		auto body = load_macro(current_token, m->_body);
+		/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
+		next_token = append(move(body), move(current_token->_next));
+		return true;
+	}
+
+	/* 関数マクロ */
+	/* 引数を取らない関数マクロはただの変数として扱う */
+	if (current_token->_next->is_equal("("))
+	{
+		next_token = move(current_token);
+		return false;
+	}
+
+	if (!current_token->_next->_next->is_equal(")"))
+	{
+		error_token("')'が必要です", current_token->_next->_next.get());
+	}
+	auto body = load_macro(current_token, m->_body);
+	next_token = append(move(body), move(current_token->_next->_next->_next));
+	return true;
+}
+
+/**
+ * @brief マクロの定義を読み込み展開先のトークンリストを返す
+ *
+ * @param dst 展開元のトークン
+ * @param body 登録された展開先のトークンリスト
+ * @return コピーされた展開先のトークンリスト
+ */
+unique_ptr<Token> PreProcess::load_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &body)
+{
+	auto name = dst->_str;
 
 	/* マクロの展開先のトークンリストをコピーする */
 	auto head = make_unique_for_overwrite<Token>();
 	auto cur = head.get();
+	auto tok = body.get();
 
 	/* 末尾まで順番に一つずつコピー */
-	while (TokenKind::TK_EOF != m->_kind)
+	while (TokenKind::TK_EOF != tok->_kind)
 	{
-		cur->_next = Token::copy_token(m);
-		m = m->_next.get();
+		cur->_next = Token::copy_token(tok);
+		tok = tok->_next.get();
 		cur = cur->_next.get();
 		/* hidesetに展開するマクロ名を追加 */
 		add_hideset(cur->_hideset, name);
-		/* 現在のトークンのhidesetとマージする */
-		if (current_token->_hideset)
+		/* 展開元のトークンのhidesetとマージする */
+		if (dst->_hideset)
 		{
-			cur->_hideset->merge(*current_token->_hideset);
+			cur->_hideset->merge(*dst->_hideset);
 		}
 	}
 	/* EOFトークンをコピー */
-	cur->_next = Token::copy_token(m);
-
-	/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
-	next_token = append(move(head->_next), move(current_token->_next));
-	return true;
+	cur->_next = Token::copy_token(tok);
+	return move(head->_next);
 }
 
 /**

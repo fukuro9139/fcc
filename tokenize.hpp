@@ -48,6 +48,7 @@ public:
 	const File *_file = nullptr;		 /*!< トークンが含まれるファイル */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 	bool _at_begining = false;			 /*!< トークンが行頭であるか  */
+	bool _has_space = false;			 /*!< トークンの直前にスペースが存在するか */
 	Hideset _hideset;					 /*!< マクロ展開に利用する、既に展開済みのマクロ */
 
 	/* コンストラクタ */
@@ -101,14 +102,10 @@ private:
 	static constexpr string_view punctuators[] = {"<<=", ">>=", "...", "==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=",
 												  "++", "--", "%=", "&=", "|=", "^=", "&&", "||", "<<", ">>"};
 
-	/** 入力ファイルのリスト */
 	static vector<unique_ptr<File>> input_files;
-
-	/** 入力ファイル */
 	static const File *current_file;
-
-	/** 行頭であるか */
 	static bool at_begining;
+	static bool has_space;
 };
 
 struct File

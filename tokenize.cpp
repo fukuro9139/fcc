@@ -24,6 +24,9 @@ const File *Token::current_file = nullptr;
 /** 行頭であるか */
 bool Token::at_begining = false;
 
+/** スペースであるか */
+bool Token::has_space = false;
+
 /***************/
 /* Token Class */
 /***************/
@@ -32,26 +35,27 @@ bool Token::at_begining = false;
 
 Token::Token() = default;
 Token::Token(const TokenKind &kind, const int &location)
-	: _kind(kind), _location(location), _at_begining(at_begining), _file(current_file)
+	: _kind(kind), _location(location), _at_begining(at_begining), _file(current_file), _has_space(has_space)
 {
 	at_begining = false;
 }
 
 Token::Token(const int64_t &value, const int &location)
-	: _kind(TokenKind::TK_NUM), _location(location), _val(move(value)), _at_begining(at_begining), _file(current_file)
+	: _kind(TokenKind::TK_NUM), _location(location), _val(move(value)), _at_begining(at_begining), _file(current_file),
+	  _has_space(has_space)
 {
 	at_begining = false;
 }
 
 Token::Token(const TokenKind &kind, const int &location, string &&str)
-	: _kind(kind), _location(location), _str(move(str)), _at_begining(at_begining), _file(current_file)
+	: _kind(kind), _location(location), _str(move(str)), _at_begining(at_begining), _file(current_file), _has_space(has_space)
 {
 	at_begining = false;
 }
 
 Token::Token(const Token &src)
 	: _kind(src._kind), _val(src._val), _fval(src._fval), _ty(src._ty), _location(src._location),
-	  _str(src._str), _file(src._file), _line_no(src._line_no), _at_begining(src._at_begining)
+	  _str(src._str), _file(src._file), _line_no(src._line_no), _at_begining(src._at_begining), _has_space(src._has_space)
 {
 	if (src._hideset)
 	{
@@ -144,8 +148,9 @@ unique_ptr<Token> Token::tokenize(const File *file)
 	const auto first = current_file->_contents.cbegin();
 	const auto last = current_file->_contents.cend();
 
-	/* 行頭フラグをセット */
+	/* フラグをセット */
 	at_begining = true;
+	has_space = false;
 
 	while (itr != last)
 	{
@@ -153,6 +158,8 @@ unique_ptr<Token> Token::tokenize(const File *file)
 		if ('\n' == *itr)
 		{
 			at_begining = true;
+			has_space = false;
+
 			++itr;
 			continue;
 		}
@@ -161,6 +168,7 @@ unique_ptr<Token> Token::tokenize(const File *file)
 		if (std::isspace(*itr))
 		{
 			++itr;
+			has_space = true;
 			continue;
 		}
 
@@ -190,6 +198,7 @@ unique_ptr<Token> Token::tokenize(const File *file)
 				error_at("ブロックコメントが閉じられていません", itr - first);
 			}
 			itr += 2;
+			has_space = true;
 			continue;
 		}
 
@@ -826,7 +835,10 @@ void Token::print_token(const unique_ptr<Token> &token, const string &output_pat
 		{
 			*os << "\n";
 		}
-		*os << tok->_str << " ";
+		if(tok->_has_space && !tok->_at_begining){
+			*os << " ";
+		}
+		*os << tok->_str;
 		++line;
 	}
 	*os << endl;
