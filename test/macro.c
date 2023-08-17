@@ -15,6 +15,8 @@ int ret3(void)
 	return 3;
 }
 
+int dbl(int x) { return x * x; }
+
 int main()
 {
 	assert(5, include1, "include1");
@@ -225,9 +227,13 @@ int main()
 #define M18(x, y) x y
 	assert(9, M18(, 4 + 5), "M18(, 4+5)");
 
-#define M19(x,y) x*y
-  assert(20, M19((2+3), 4), "M19((2+3), 4)");
-  assert(12, M19((2,3), 4), "M19((2,3), 4)");
+#define M19(x, y) x *y
+	assert(20, M19((2 + 3), 4), "M19((2+3), 4)");
+	assert(12, M19((2, 3), 4), "M19((2,3), 4)");
+
+#define dbl(x) M20(x) * x
+#define M20(x) dbl(x) + 3
+	assert(10, dbl(2), "dbl(2)");
 
 	printf("OK\n");
 	return 0;
