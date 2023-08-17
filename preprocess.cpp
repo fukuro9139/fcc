@@ -5,16 +5,6 @@
  * @version 0.1
  * @date 2023-08-15
  *
- * プリプロセッサーは入力としてトークンのリストを受け取り、出力として新しいトークンのリストを返す。
- * プリプロセスは再帰的なマクロがあったとしてもそれが停止することが保証されるように設計されている。
- * マクロは各トークンに対して一度だけ適用される。
- * つまり、T の直接または間接マクロ展開の結果にマクロ トークン T が現れると、T はそれ以上展開されない。
- * 例えば、TがUとして定義され、UがTとして定義された場合、トークンTはUに展開され、
- * 次にTに展開され、マクロ展開はその時点で停止する。
- * 上記の動作を実現するために各トークンはそれまでに展開されたマクロ名の集合をもつ。
- * この集合を "hideset "と呼び、hidesetは最初は空でマクロを展開するたびに、
- * そのマクロ名が結果のトークンのhidesetに追加される。
- *
  * @copyright Copyright (c) 2023 MIT License
  *
  */
@@ -508,11 +498,9 @@ void PreProcess::read_macro_definition(unique_ptr<Token> &next_token, unique_ptr
 	/* 関数マクロ */
 	if (!current_token->_has_space && current_token->is_equal("("))
 	{
-		if (!current_token->_next->is_equal(")"))
-		{
-			error_token("')'が必要です", current_token->_next.get());
-		}
-		add_macro(name, false, copy_line(next_token, move(current_token->_next->_next)));
+		auto params = read_macro_params(current_token, move(current_token->_next));
+		auto m = add_macro(name, false, copy_line(next_token, move(current_token)));
+		m->_params = move(params);
 	}
 	/* オブジェクトマクロ */
 	else
@@ -547,17 +535,19 @@ Macro *PreProcess::find_macro(const unique_ptr<Token> &token)
 /**
  * @brief マクロを登録する。マクロが定義済みの場合は上書きする。
  *
- * @param macro
+ * @param token マクロを名前を表しているトークン
+ * @param is_objlike マクロがオブジェクトマクロかどうか
+ * @param body マクロの展開先
  * @return Token*
  */
-Token *PreProcess::add_macro(const unique_ptr<Token> &token, const bool &is_objlike, unique_ptr<Token> &&body)
+Macro *PreProcess::add_macro(const unique_ptr<Token> &token, const bool &is_objlike, unique_ptr<Token> &&body)
 {
 	if (macros.contains(token->_str))
 	{
 		warn_token("マクロが再定義されています", token.get());
 	}
 	macros[token->_str] = make_unique<Macro>(move(body), is_objlike);
-	return macros[token->_str]->_body.get();
+	return macros[token->_str].get();
 }
 
 /**
@@ -588,7 +578,7 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	/* オブジェクトマクロ */
 	if (m->_is_objlike)
 	{
-		auto body = load_macro(current_token, m->_body);
+		auto body = substitute_obj_macro(current_token, m->_body);
 		/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
 		next_token = append(move(body), move(current_token->_next));
 		return true;
@@ -602,48 +592,161 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 		return false;
 	}
 
-	if (!current_token->_next->_next->is_equal(")"))
-	{
-		error_token("')'が必要です", current_token->_next->_next.get());
-	}
-	auto body = load_macro(current_token, m->_body);
-	next_token = append(move(body), move(current_token->_next->_next->_next));
+	auto dst = move(current_token);
+	/* 引数を読ん取る */
+	auto args = read_macro_args(current_token, move(dst->_next->_next), *m->_params);
+	/* 引数を代入してマクロを展開する */
+	auto body = substitute_func_macro(dst, m->_body, *args);
+	next_token = append(move(body), move(current_token));
 	return true;
 }
 
 /**
- * @brief マクロの定義を読み込み展開先のトークンリストを返す
+ * @brief オブジェクトマクロを展開する
  *
  * @param dst 展開元のトークン
- * @param body 登録された展開先のトークンリスト
+ * @param macro 登録された展開先のトークンリスト
  * @return コピーされた展開先のトークンリスト
  */
-unique_ptr<Token> PreProcess::load_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &body)
+unique_ptr<Token> PreProcess::substitute_obj_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &macro)
+{
+	/* マクロの展開先のトークンリストをコピーする */
+	auto head = make_unique_for_overwrite<Token>();
+	copy_macro_token(head.get(), macro.get(), dst->_str, dst->_hideset);
+	return move(head->_next);
+}
+
+/**
+ * @brief 関数マクロを展開する
+ *
+ * @param dst 展開元のトークン
+ * @param macro 展開するマクロ
+ * @param args 関数マクロの引数
+ * @return マクロ展開後のトークンリスト
+ */
+unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &macro, const MacroArgs &args)
 {
 	auto name = dst->_str;
 
 	/* マクロの展開先のトークンリストをコピーする */
 	auto head = make_unique_for_overwrite<Token>();
 	auto cur = head.get();
-	auto tok = body.get();
+	auto tok = macro.get();
 
-	/* 末尾まで順番に一つずつコピー */
 	while (TokenKind::TK_EOF != tok->_kind)
 	{
-		cur->_next = Token::copy_token(tok);
-		tok = tok->_next.get();
-		cur = cur->_next.get();
-		/* hidesetに展開するマクロ名を追加 */
-		add_hideset(cur->_hideset, name);
-		/* 展開元のトークンのhidesetとマージする */
-		if (dst->_hideset)
-		{
-			cur->_hideset->merge(*dst->_hideset);
+		/* マクロの引数トークンの場合。マクロの引数にマクロが含まれる場合はマクロは完全に展開する */
+		if (args.contains(tok->_str))
+		{	
+			copy_macro_token(cur, args.at(tok->_str).get(), name, dst->_hideset);
+			cur->_next = preprocess2(move(cur->_next));
+			while(TokenKind::TK_EOF != cur->_next->_kind){
+				cur = cur->_next.get();
+			}
+			tok = tok->_next.get();
+			continue;
 		}
+
+		/* マクロの引数トークンではない場合 */
+		cur->_next = Token::copy_token(tok);
+		cur = cur->_next.get();
+		tok = tok->_next.get();
 	}
-	/* EOFトークンをコピー */
 	cur->_next = Token::copy_token(tok);
 	return move(head->_next);
+}
+
+/**
+ * @brief 関数マクロの引数の定義を読み取る
+ *
+ * @param next__token 次ののトークンリストを返すための参照
+ * @param current_token 引数の開始位置のトークン
+ * @return 読み取った引数リスト
+ */
+unique_ptr<vector<string>> PreProcess::read_macro_params(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	auto params = make_unique<vector<string>>();
+	bool first = true;
+
+	/* ')'が出てくるまで読み込み続ける */
+	while (!current_token->is_equal(")"))
+	{
+		/* ２個目以降は','区切りが必要 */
+		if (!first)
+		{
+			current_token = skip(move(current_token), ",");
+		}
+		first = false;
+
+		/* 引数の名前は識別子である必要がある */
+		if (TokenKind::TK_IDENT != current_token->_kind)
+		{
+			error_token("識別子ではありません", current_token.get());
+		}
+
+		params->emplace_back(current_token->_str);
+		current_token = move(current_token->_next);
+	}
+	next_token = move(current_token->_next);
+	return params;
+}
+
+/**
+ * @brief 関数マクロの引数となる定数式を1個分読み込む
+ *
+ * @param next__token 次ののトークンリストを返すための参照
+ * @param current_token 引数の開始位置のトークン
+ * @return 読み取った引数に対応するトークンリスト
+ */
+unique_ptr<Token> PreProcess::resd_macro_arg_one(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	auto head = make_unique_for_overwrite<Token>();
+	auto cur = head.get();
+
+	/* ','または')'が出てくるまで読み込み続ける */
+	while (!current_token->is_equal(",") && !current_token->is_equal(")"))
+	{
+		if (TokenKind::TK_EOF == current_token->_kind)
+		{
+			error_token("引数が足りません", current_token.get());
+		}
+		cur->_next = Token::copy_token(current_token.get());
+		cur = cur->_next.get();
+		current_token = move(current_token->_next);
+	}
+	cur->_next = new_eof_token(current_token);
+	next_token = move(current_token);
+	return move(head->_next);
+}
+
+/**
+ * @brief 関数マクロの引数となる定数式を読み込み定義された名前と対応付ける
+ *
+ * @param next__token 次ののトークンリストを返すための参照
+ * @param current_token 引数の開始位置のトークン
+ * @return 定義された引数名と読み取った定数式を対応させたリスト
+ */
+unique_ptr<MacroArgs> PreProcess::read_macro_args(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const vector<string> &params)
+{
+	auto args = make_unique<MacroArgs>();
+	bool first = true;
+
+	for (const auto &pp : params)
+	{
+		if (!first)
+		{
+			/* 2個目以降では','区切りが必要 */
+			current_token = skip(move(current_token), ",");
+		}
+		first = false;
+		(*args)[pp] = resd_macro_arg_one(current_token, move(current_token));
+	}
+	if (!current_token->is_equal(")"))
+	{
+		error_token("引数が多すぎます", current_token.get());
+	}
+	next_token = move(current_token->_next);
+	return args;
 }
 
 /**
@@ -652,12 +755,12 @@ unique_ptr<Token> PreProcess::load_macro(const unique_ptr<Token> &dst, const uni
  * @param hs 対象となるhideset
  * @param name 追加するマクロの名前
  */
-void PreProcess::add_hideset(Hideset &hs, const string &name)
+void PreProcess::add_hideset(unique_ptr<Hideset> &hs, const string &name)
 {
 	/* hsが空なら新しく作成する */
 	if (!hs)
 	{
-		hs = make_unique<std::unordered_set<string>>();
+		hs = make_unique<Hideset>();
 	}
 	hs->insert(name);
 }
@@ -673,4 +776,50 @@ void PreProcess::delete_macro(const string &name)
 	{
 		macros.erase(name);
 	}
+}
+
+/**
+ * @brief トークンが期待している文字列であれば次のトークンを返す。それ以外であればエラー
+ *
+ * @param token 対象のトークン
+ * @param op 期待している文字列
+ */
+unique_ptr<Token> PreProcess::skip(unique_ptr<Token> &&token, const string &op)
+{
+	if (!token->is_equal(op))
+	{
+		error_token("\'" + op + "\'が必要です", token.get());
+	}
+	return move(token->_next);
+}
+
+/**
+ * @brief マクロの展開先のトークンリストをdstにコピーして繋ぐ
+ *
+ * @param dst トークンリストを繋ぐ先
+ * @param macro マクロの展開先
+ * @param name マクロの名前
+ * @param hs マクロの展開元のhideset
+ */
+void PreProcess::copy_macro_token(Token *dst, const Token *macro, const string &name, const unique_ptr<Hideset> &hs)
+{
+	auto tok = macro;
+	auto cur = dst;
+
+	/* 末尾まで順番に一つずつコピー */
+	while (TokenKind::TK_EOF != tok->_kind)
+	{
+		cur->_next = Token::copy_token(tok);
+		tok = tok->_next.get();
+		cur = cur->_next.get();
+		/* hidesetに展開するマクロ名を追加 */
+		add_hideset(cur->_hideset, name);
+		/* 展開元のトークンのhidesetとマージする */
+		if (hs)
+		{
+			cur->_hideset->merge(*hs);
+		}
+	}
+	/* EOFトークンをコピー */
+	cur->_next = Token::copy_token(tok);
 }

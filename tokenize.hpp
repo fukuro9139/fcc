@@ -49,7 +49,7 @@ public:
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 	bool _at_begining = false;			 /*!< トークンが行頭であるか  */
 	bool _has_space = false;			 /*!< トークンの直前にスペースが存在するか */
-	Hideset _hideset;					 /*!< マクロ展開に利用する、既に展開済みのマクロ */
+	unique_ptr<Hideset> _hideset;		 /*!< マクロ展開に利用する、既に展開済みのマクロ */
 
 	/* コンストラクタ */
 	Token();

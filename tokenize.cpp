@@ -645,7 +645,7 @@ unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
  */
 bool Token::is_equal(string &&op) const
 {
-	return this->_str.size() == op.size() && std::equal(op.begin(), op.end(), this->_str.begin());
+	return this->_str == op;
 }
 
 /**
@@ -656,7 +656,7 @@ bool Token::is_equal(string &&op) const
  */
 bool Token::is_equal(const string &op) const
 {
-	return this->_str.size() == op.size() && std::equal(op.begin(), op.end(), this->_str.begin());
+	return this->_str == op;
 }
 
 /**
@@ -838,7 +838,8 @@ void Token::print_token(const unique_ptr<Token> &token, const string &output_pat
 		{
 			*os << "\n";
 		}
-		if(tok->_has_space && !tok->_at_begining){
+		if (tok->_has_space && !tok->_at_begining)
+		{
 			*os << " ";
 		}
 		*os << tok->_str;

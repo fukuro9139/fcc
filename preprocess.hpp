@@ -14,6 +14,7 @@
 #include "common.hpp"
 
 class Token;
+using MacroArgs = std::unordered_map<string, unique_ptr<Token>>;
 
 /** #if関連のブロックの種類 */
 enum class BlockKind
@@ -37,8 +38,9 @@ struct CondIncl
 /** マクロ */
 struct Macro
 {
-	unique_ptr<Token> _body; /*!< マクロの展開先 */
-	bool _is_objlike = true;	 /*!< オブジェクトマクロであるか */
+	unique_ptr<Token> _body;			/*!< マクロの展開先 */
+	unique_ptr<vector<string>> _params; /*!< 関数マクロの引数 */
+	bool _is_objlike = true;			/*!< オブジェクトマクロであるか */
 
 	Macro(unique_ptr<Token> &&body, const bool &objlike);
 };
@@ -64,14 +66,20 @@ private:
 	static unique_ptr<Token> copy_line(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static void read_macro_definition(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static Macro *find_macro(const unique_ptr<Token> &token);
-	static Token *add_macro(const unique_ptr<Token> &token, const bool &is_objlike, unique_ptr<Token> &&body);
+	static Macro *add_macro(const unique_ptr<Token> &token, const bool &is_objlike, unique_ptr<Token> &&body);
 	static void delete_macro(const string &name);
 	static bool expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-	static unique_ptr<Token> load_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &body);
-	static void add_hideset(Hideset &hs, const string &name);
+	static unique_ptr<Token> substitute_obj_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &macro);
+	static unique_ptr<Token> substitute_func_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &macro, const MacroArgs &args);
+	static unique_ptr<vector<string>> read_macro_params(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+	static unique_ptr<Token> resd_macro_arg_one(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+	static unique_ptr<MacroArgs> read_macro_args(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const vector<string> &params);
+	static void add_hideset(unique_ptr<Hideset> &hs, const string &name);
 	static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
 	static vector<unique_ptr<CondIncl>> cond_incl;
+	static unique_ptr<Token> skip(unique_ptr<Token> &&token, const string &op);
+	static void copy_macro_token(Token *dst, const Token *src, const string &name, const unique_ptr<Hideset> &hs);
 
 	static std::unordered_map<string, unique_ptr<Macro>> macros;
 

@@ -212,7 +212,16 @@ int main()
 
 #define M14 ()
 	assert(3, ret3 M14, "ret3 M14");
-	
+
+#define M15(x, y) x + y
+	assert(7, M15(3, 4), "M15(3, 4)");
+
+#define M16(x, y) x *y
+	assert(24, M16(3 + 4, 4 + 5), "M16(3+4, 4+5)");
+
+#define M17(x, y) (x) * (y)
+	assert(63, M17(3 + 4, 4 + 5), "M17(3+4, 4+5)");
+
 	printf("OK\n");
 	return 0;
 }
