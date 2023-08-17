@@ -4,9 +4,9 @@
  * @brief 共通のインクルード、using宣言、汎用で使う関数の宣言
  * @version 0.1
  * @date 2023-07-30
- * 
+ *
  * @copyright Copyright (c) 2023　MIT License
- * 
+ *
  */
 
 #pragma once
@@ -28,19 +28,18 @@
 #include <filesystem>
 
 namespace fs = std::filesystem;
+using Hideset = std::unordered_set<std::string>;
 
-using Hideset = std::unique_ptr<std::unordered_set<std::string>>;
-
-using std::unique_ptr;
-using std::shared_ptr;
+using std::endl;
+using std::make_shared;
 using std::make_unique;
 using std::make_unique_for_overwrite;
-using std::make_shared;
 using std::move;
+using std::shared_ptr;
 using std::string;
 using std::string_view;
+using std::unique_ptr;
 using std::vector;
-using std::endl;
 
 class Token;
 

@@ -562,7 +562,7 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 {
 	auto name = current_token->_str;
 
-	if (current_token->_hideset && current_token->_hideset->count(name) > 0)
+	if (current_token->_hideset && current_token->_hideset->contains(name))
 	{
 		next_token = move(current_token);
 		return false;
