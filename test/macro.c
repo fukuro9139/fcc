@@ -211,7 +211,7 @@ int main()
 	assert(5, M13, "M13");
 
 #define M14 ()
-	assert(3, ret3 M14, "ret3 14");
+	assert(3, ret3 M14, "ret3 M14");
 	
 	printf("OK\n");
 	return 0;

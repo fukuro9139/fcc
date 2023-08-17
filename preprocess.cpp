@@ -506,7 +506,7 @@ void PreProcess::read_macro_definition(unique_ptr<Token> &next_token, unique_ptr
 	current_token = move(name->_next);
 
 	/* 関数マクロ */
-	if (current_token->_has_space && current_token->is_equal("("))
+	if (!current_token->_has_space && current_token->is_equal("("))
 	{
 		if (!current_token->_next->is_equal(")"))
 		{
