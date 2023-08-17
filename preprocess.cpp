@@ -651,7 +651,10 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 		/* マクロの引数トークンではない場合 */
 		auto t = Token::copy_token(tok);
 		add_hideset(t->_hideset, name);
-		t->_hideset->merge(*dst->_hideset);
+		if (dst->_hideset)
+		{
+			t->_hideset->merge(*dst->_hideset);
+		}
 		cur->_next = move(t);
 		cur = cur->_next.get();
 		tok = tok->_next.get();
