@@ -222,6 +222,9 @@ int main()
 #define M17(x, y) (x) * (y)
 	assert(63, M17(3 + 4, 4 + 5), "M17(3+4, 4+5)");
 
+#define M18(x, y) x y
+	assert(9, M18(, 4 + 5), "M18(, 4+5)");
+
 	printf("OK\n");
 	return 0;
 }
