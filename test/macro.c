@@ -205,13 +205,13 @@ int main()
 #else
 #endif
 
-#define M8() 1
-	int M8 = 5;
-	assert(1, M8(), "M8()");
-	assert(5, M8, "M8");
+#define M13() 1
+	int M13 = 5;
+	assert(1, M13(), "M13()");
+	assert(5, M13, "M13");
 
-#define M9 ()
-	assert(3, ret3 M9, "ret3 M9");
+#define M14 ()
+	assert(3, ret3 M14, "ret3 14");
 	
 	printf("OK\n");
 	return 0;
