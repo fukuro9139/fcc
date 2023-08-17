@@ -635,6 +635,19 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 
 	while (TokenKind::TK_EOF != tok->_kind)
 	{
+		/* #引数は引数をそのまま文字列リテラルとして置き換える */
+		if (tok->is_equal("#"))
+		{
+			if (!args.contains(tok->_next->_str))
+			{
+				error_token("'#'の後にはマクロ引数が必要です", tok->_next.get());
+			}
+			cur->_next = stringize(tok, args.at(tok->_next->_str).get());
+			cur = cur->_next.get();
+			tok = tok->_next->_next.get();
+			continue;
+		}
+
 		/* マクロの引数トークンの場合。マクロの引数にマクロが含まれる場合はマクロは完全に展開する */
 		if (args.contains(tok->_str))
 		{
@@ -720,9 +733,12 @@ unique_ptr<Token> PreProcess::resd_macro_arg_one(unique_ptr<Token> &next_token, 
 			error_token("引数が足りません", current_token.get());
 		}
 		/* '()'が出てきたら深さを変化させる */
-		if(current_token->is_equal("(")){
+		if (current_token->is_equal("("))
+		{
 			++level;
-		}else if(current_token->is_equal(")")){
+		}
+		else if (current_token->is_equal(")"))
+		{
 			--level;
 		}
 
@@ -838,4 +854,97 @@ void PreProcess::copy_macro_token(Token *dst, const Token *macro, const string &
 	}
 	/* EOFトークンをコピー */
 	cur->_next = Token::copy_token(tok);
+}
+
+/**
+ * @brief 文字列に含まれる特殊文字をエスケープする
+ *
+ * @param str 変換対象の文字列
+ * @return エスケープした文字列
+ */
+string PreProcess::quate_string(const string &str)
+{
+	string buf;
+	/* メモリ領域が足りない場合は先に確保しておく */
+	buf.reserve(str.size() * 2 + 3);
+	/* 文字列リテラルは'"'で始まる */
+	buf.push_back('"');
+	/* 特殊文字はエスケープしてコピー */
+	for (const auto &c : str)
+	{
+		if (c == '\\' || c == '"')
+		{
+			buf.push_back('\\');
+		}
+		buf.push_back(c);
+	}
+	/* 文字列リテラルは'"'で終わる */
+	buf.push_back('"');
+	/* ファイルとして読み込ませるため、最後は改行で終わらせる */
+	buf.push_back('\n');
+	buf.shrink_to_fit();
+	return buf;
+}
+
+/**
+ * @brief 文字列を文字列リテラルトークンに変換する
+ *
+ * @param str 対象文字列
+ * @param tmpl エラー報告用情報のテンプレートにするトークン
+ * @return 文字列リテラルトークン
+ */
+unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *tmpl)
+{
+	/* 特殊文字をエスケープ */
+	string s = quate_string(str);
+	/* 文字列リテラルだけを持つファイルとして仮想的なファイルを作る */
+	File file(tmpl->_file->_name, tmpl->_file->_file_no, s);
+	/* ファイルをトークナイズする */
+	return Token::tokenize(&file);
+}
+
+/**
+ * @brief トークンが持つ文字列を結合して１つの文字列にする
+ *
+ * @param token 文字列化するトークンリスト
+ * @return トークンを統合した文字列
+ */
+string PreProcess::join_tokens(const Token *token)
+{
+	/* 最終的な長さを求める */
+	size_t len = 0;
+	for (auto t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+	{
+		if (t != token && t->_has_space)
+		{
+			++len;
+		}
+		len += t->_str.size();
+	}
+	string buf;
+	buf.reserve(len);
+	for (auto t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+	{
+		if (t != token && t->_has_space)
+		{
+			buf.push_back(' ');
+		}
+		buf += t->_str;
+	}
+	buf.shrink_to_fit();
+	return buf;
+}
+
+/**
+ * @brief 文字列化演算子'#'に対応するための関数。トークンリストargのトークンを文字列リテラル
+ * として統合し、トークナイズしたトークンを返す。
+ *
+ * @param hash '#'演算子を表すトークン
+ * @param arg 文字列化するトークン列
+ * @return unique_ptr<Token>
+ */
+unique_ptr<Token> PreProcess::stringize(const Token *hash, const Token *arg)
+{
+	auto s = join_tokens(arg);
+	return new_str_token(s, hash);
 }

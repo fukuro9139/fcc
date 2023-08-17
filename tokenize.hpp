@@ -71,6 +71,7 @@ public:
 	/* 静的メンバ関数 (public) */
 
 	static unique_ptr<Token> tokenize_file(const string &input_path);
+	static unique_ptr<Token> tokenize(const File *file);
 	static void print_token(const unique_ptr<Token> &token, const string &output_path);
 	static const vector<unique_ptr<File>> &get_input_files();
 	static const File *get_current_file();
@@ -80,7 +81,6 @@ private:
 	/* 静的メンバ関数 (private) */
 
 	static string read_inputfile(const string &path);
-	static unique_ptr<Token> tokenize(const File *file);
 	static unique_ptr<Token> read_number(const string::const_iterator &start);
 	static unique_ptr<Token> read_int_literal(const string::const_iterator &start);
 	static unique_ptr<Token> read_char_literal(string::const_iterator &start);

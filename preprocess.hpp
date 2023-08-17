@@ -80,6 +80,10 @@ private:
 	static vector<unique_ptr<CondIncl>> cond_incl;
 	static unique_ptr<Token> skip(unique_ptr<Token> &&token, const string &op);
 	static void copy_macro_token(Token *dst, const Token *src, const string &name, const unique_ptr<Hideset> &hs);
+	static string quate_string(const string &str);
+	static unique_ptr<Token> new_str_token(const string &str, const Token *tmpl);
+	static string join_tokens(const Token * token);
+	static unique_ptr<Token> stringize(const Token *hash, const Token * arg);
 
 	static std::unordered_map<string, unique_ptr<Macro>> macros;
 
