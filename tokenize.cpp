@@ -38,6 +38,7 @@ Token::Token(const TokenKind &kind, const int &location)
 	: _kind(kind), _location(location), _at_begining(at_begining), _file(current_file), _has_space(has_space)
 {
 	at_begining = false;
+	has_space = false;
 }
 
 Token::Token(const int64_t &value, const int &location)
@@ -45,12 +46,14 @@ Token::Token(const int64_t &value, const int &location)
 	  _has_space(has_space)
 {
 	at_begining = false;
+	has_space = false;
 }
 
 Token::Token(const TokenKind &kind, const int &location, string &&str)
 	: _kind(kind), _location(location), _str(move(str)), _at_begining(at_begining), _file(current_file), _has_space(has_space)
 {
 	at_begining = false;
+	has_space = false;
 }
 
 Token::Token(const Token &src)
