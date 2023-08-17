@@ -562,7 +562,7 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 {
 	auto name = current_token->_str;
 
-	if (current_token->_hideset && current_token->_hideset->contains(name))
+	if (current_token->_hideset && current_token->_hideset->count(name) > 0)
 	{
 		next_token = move(current_token);
 		return false;
@@ -637,10 +637,11 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 	{
 		/* マクロの引数トークンの場合。マクロの引数にマクロが含まれる場合はマクロは完全に展開する */
 		if (args.contains(tok->_str))
-		{	
+		{
 			copy_macro_token(cur, args.at(tok->_str).get(), name, dst->_hideset);
 			cur->_next = preprocess2(move(cur->_next));
-			while(TokenKind::TK_EOF != cur->_next->_kind){
+			while (TokenKind::TK_EOF != cur->_next->_kind)
+			{
 				cur = cur->_next.get();
 			}
 			tok = tok->_next.get();
