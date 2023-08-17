@@ -596,7 +596,7 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 
 	/* 関数マクロ */
 	/* 引数を取らない関数マクロはただの変数として扱う */
-	if (current_token->_next->is_equal("("))
+	if (!current_token->_next->is_equal("("))
 	{
 		next_token = move(current_token);
 		return false;
