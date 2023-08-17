@@ -709,14 +709,23 @@ unique_ptr<Token> PreProcess::resd_macro_arg_one(unique_ptr<Token> &next_token, 
 {
 	auto head = make_unique_for_overwrite<Token>();
 	auto cur = head.get();
+	/* '()'の深さ */
+	int level = 0;
 
-	/* ','または')'が出てくるまで読み込み続ける */
-	while (!current_token->is_equal(",") && !current_token->is_equal(")"))
+	/* 深さが0 かつ ','または')'が出てくるまで読み込み続ける */
+	while (level > 0 || (!current_token->is_equal(",") && !current_token->is_equal(")")))
 	{
 		if (TokenKind::TK_EOF == current_token->_kind)
 		{
 			error_token("引数が足りません", current_token.get());
 		}
+		/* '()'が出てきたら深さを変化させる */
+		if(current_token->is_equal("(")){
+			++level;
+		}else if(current_token->is_equal(")")){
+			--level;
+		}
+
 		cur->_next = Token::copy_token(current_token.get());
 		cur = cur->_next.get();
 		current_token = move(current_token->_next);

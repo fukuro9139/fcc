@@ -225,6 +225,10 @@ int main()
 #define M18(x, y) x y
 	assert(9, M18(, 4 + 5), "M18(, 4+5)");
 
+#define M19(x,y) x*y
+  assert(20, M19((2+3), 4), "M19((2+3), 4)");
+  assert(12, M19((2,3), 4), "M19((2,3), 4)");
+
 	printf("OK\n");
 	return 0;
 }
