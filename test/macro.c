@@ -303,7 +303,7 @@ int main()
 #define M25(x) M24(foo.x)
 	ASSERT(0, strcmp(M25(bar), "foo.bar"));
 
-#define M26(x) M24(foo.x)
+#define M26(x) M24(foo. x)
 	ASSERT(0, strcmp(M26(bar), "foo. bar"));
 
 #define M27 foo
@@ -311,7 +311,7 @@ int main()
 #define M29(x) M28(x.M27)
 	ASSERT(0, strcmp(M29(bar), "bar.foo"));
 
-#define M30(x) M28(x.M27)
+#define M30(x) M28(x. M27)
 	ASSERT(0, strcmp(M30(bar), "bar. foo"));
 
 	printf("OK\n");
