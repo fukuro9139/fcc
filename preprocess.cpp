@@ -938,8 +938,6 @@ void PreProcess::copy_macro_token(Token *dst, const Token *macro, const string &
 string PreProcess::quate_string(const string &str)
 {
 	string buf;
-	/* メモリ領域が足りない場合は先に確保しておく */
-	buf.reserve(str.size() * 2 + 3);
 	/* 文字列リテラルは'"'で始まる */
 	buf.push_back('"');
 	/* 特殊文字はエスケープしてコピー */
@@ -953,9 +951,6 @@ string PreProcess::quate_string(const string &str)
 	}
 	/* 文字列リテラルは'"'で終わる */
 	buf.push_back('"');
-	/* ファイルとして読み込ませるため、最後は改行で終わらせる */
-	buf.push_back('\n');
-	buf.shrink_to_fit();
 	return buf;
 }
 
@@ -968,17 +963,10 @@ string PreProcess::quate_string(const string &str)
  */
 unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *ref)
 {
-	/* ファイル構造体の実体を管理するための配列 */
-	static vector<unique_ptr<File>> files;
 	/* 特殊文字をエスケープ */
 	const string s = quate_string(str);
-	/* 文字列リテラルだけを持つファイルとして仮想的なファイルを作る */
-	files.push_back(make_unique<File>(ref->_file->_name, ref->_file->_file_no, s));
-	/* ファイルをトークナイズする */
-	auto tok = Token::tokenize(files.back().get());
-	tok->_at_begining = ref->_at_begining;
-	tok->_has_space = ref->_has_space;
-	return tok;
+	/* 文字列をもった仮想的なファイルをトークナイズする */
+	return vir_file_tokenize(s, ref);
 }
 
 /**
@@ -1025,22 +1013,39 @@ unique_ptr<Token> PreProcess::stringize(const Token *ref, const Token *arg)
  */
 unique_ptr<Token> PreProcess::paste(const Token *lhs, const Token *rhs)
 {
-	/* ファイル構造体の実体を管理するための配列 */
-	static vector<unique_ptr<File>> files;
-
 	string buf = Token::reverse_str_literal(lhs);
 	buf += Token::reverse_str_literal(rhs);
-
-	/* 連結した文字列だけを持つファイルとして仮想的なファイルを作る */
-	files.push_back(make_unique<File>(lhs->_file->_name, lhs->_file->_file_no, buf));
 	/* ファイルをトークナイズする */
-	auto tok = Token::tokenize(files.back().get());
+	auto tok = vir_file_tokenize(buf, lhs);
 	if (TokenKind::TK_EOF != tok->_next->_kind)
 	{
 		error_token("連結した文字列\'" + buf + "\'は無効なトークンです", lhs);
 	}
+	return tok;
+}
 
-	tok->_at_begining = lhs->_at_begining;
-	tok->_has_space = lhs->_has_space;
+/**
+ * @brief 文字列strだけを持つ仮想的なファイルをトークナイズする。
+ *
+ * @param str トークナイズする文字列
+ * @param ref 新たに作成するトークンのテンプレート
+ * @return トークナイズした結果
+ */
+unique_ptr<Token> PreProcess::vir_file_tokenize(string str, const Token *ref)
+{
+	/* ファイル構造体の実体を管理するための配列 */
+	static vector<unique_ptr<File>> files;
+
+	/* 末尾が改行で終わっていない場合は改行を付け加える */
+	if (str.back() != '\n')
+	{
+		str.push_back('\n');
+	}
+
+	files.push_back(make_unique<File>(ref->_file->_name, ref->_file->_file_no, str));
+	/* ファイルをトークナイズする */
+	auto tok = Token::tokenize(files.back().get());
+	tok->_at_begining = ref->_at_begining;
+	tok->_has_space = ref->_has_space;
 	return tok;
 }

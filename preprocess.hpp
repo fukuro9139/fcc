@@ -81,10 +81,11 @@ private:
 	static unique_ptr<Token> skip(unique_ptr<Token> &&token, const string &op);
 	static void copy_macro_token(Token *dst, const Token *src, const string &name, const unique_ptr<Hideset> &hs);
 	static string quate_string(const string &str);
-	static unique_ptr<Token> new_str_token(const string &str, const Token *tmpl);
+	static unique_ptr<Token> new_str_token(const string &str, const Token *ref);
 	static string join_tokens(const Token * token);
-	static unique_ptr<Token> stringize(const Token *hash, const Token * arg);
+	static unique_ptr<Token> stringize(const Token *ref, const Token * arg);
 	static unique_ptr<Token> paste(const Token *lhs, const Token *rhs);
+	static unique_ptr<Token> vir_file_tokenize(string str, const Token *ref);
 
 	static std::unordered_map<string, unique_ptr<Macro>> macros;
 
