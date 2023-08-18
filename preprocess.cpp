@@ -653,13 +653,13 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	}
 
 	auto dst = move(current_token);
-	/* 引数を読ん取る */
+	/* 引数を読み取る */
 	auto args = read_macro_args(current_token, move(dst->_next->_next), *m->_params);
 	/* 引数を代入してマクロを展開する */
 	auto body = substitute_func_macro(dst, m->_body, *args);
 	next_token = append(move(body), move(current_token));
-	next_token->_at_begining = dst->_at_begining;
 	next_token->_has_space = dst->_has_space;
+	next_token->_at_begining = dst->_at_begining;
 	return true;
 }
 
@@ -705,6 +705,8 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 				error_token("'#'の後にはマクロ引数が必要です", tok->_next.get());
 			}
 			cur->_next = stringize(dst.get(), args.at(tok->_next->_str).get());
+			cur->_next->_at_begining = tok->_at_begining;
+			cur->_next->_has_space = tok->_has_space;
 			cur = cur->_next.get();
 			tok = tok->_next->_next.get();
 			continue;
@@ -788,6 +790,8 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 		{
 			copy_macro_token(cur, args.at(tok->_str).get(), name, dst->_hideset);
 			cur->_next = preprocess2(move(cur->_next));
+			cur->_next->_has_space = tok->_has_space;
+			cur->_next->_at_begining = tok->_at_begining;
 			while (TokenKind::TK_EOF != cur->_next->_kind)
 			{
 				cur = cur->_next.get();
@@ -1117,7 +1121,6 @@ unique_ptr<Token> PreProcess::vir_file_tokenize(const string &str, const Token *
 	files.push_back(make_unique<File>(ref->_file->_name, ref->_file->_file_no, str));
 	/* ファイルをトークナイズする */
 	auto tok = Token::tokenize(files.back().get());
-	tok->_at_begining = ref->_at_begining;
-	tok->_has_space = ref->_has_space;
+	std::cout << ref->_str << " " << ref->_at_begining << endl;
 	return tok;
 }
