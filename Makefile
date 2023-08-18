@@ -14,8 +14,10 @@ CC = gcc
 
 ifeq ($(WINDOWS), 0)
 CFLAGS = -std=c++20 -MMD -MP $(OPT)
+RM = rm -f
 else
 CFLAGS = -std=c++20 -MMD -MP -fexec-charset=cp932 $(OPT)
+RM = del
 endif
 
 #プログラム名とオブジェクトファイル名
@@ -41,10 +43,6 @@ $(TARGET): $(OBJS)
 #makeとcleanをまとめて行う
 all: clean $(TARGET)
 
-#ダミー
-.PHONY: test clean
-
-
 #テスト
 ifeq ($(WINDOWS), 0)
 test/macro.exe: $(TARGET) test/macro.c
@@ -56,7 +54,7 @@ test/%.exe: $(TARGET) test/%.c
 	./fcc -c -o test/$*.o test/tmp_$*.c
 	$(CC) -o $@ test/$*.o -xc test/common
 
-test: $(TESTS)
+test: clean_tmp $(TESTS)
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
 	test/driver.sh
 else
@@ -67,16 +65,24 @@ test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
 	./fcc -S -o test/$*.s test/tmp_$*.c
 
-test: $(TESTS)
+test: clean_tmp $(TESTS)
 endif
 
 #不要ファイル削除
-clean:
 ifeq ($(WINDOWS), 0)
+clean_tmp:
+	$(RM) test/*.o test/tmp*
+clean:clean_tmp
 	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.o test/tmp*
 else
-	del fcc.exe $(OBJS) *.d test\*.s test\tmp*
+clean_tmp:
+	$(RM) test\*.s test\tmp*
+clean:clean_tmp
+	$(RM) fcc.exe $(OBJS) *.d
 endif
 
 #ヘッダフィルの依存関係
 -include *.d
+
+#ダミー
+.PHONY: test clean clean_tmp
