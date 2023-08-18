@@ -1,5 +1,5 @@
 #Windowsでビルドするときは1に設定する
-WINDOWS = 0
+WINDOWS = 1
 #デバッグ用
 DEBUG = 0
 
@@ -54,7 +54,8 @@ test/%.exe: $(TARGET) test/%.c
 	./fcc -c -o test/$*.o test/tmp_$*.c
 	$(CC) -o $@ test/$*.o -xc test/common
 
-test: clean_tmp $(TESTS)
+test: $(TESTS)
+	$(RM) test/tmp*
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
 	test/driver.sh
 else
@@ -65,24 +66,20 @@ test/%.exe: $(TARGET) test/%.c
 	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
 	./fcc -S -o test/$*.s test/tmp_$*.c
 
-test: clean_tmp $(TESTS)
+test: $(TESTS)
+	$(RM) test\tmp*
 endif
 
 #不要ファイル削除
+clean:
 ifeq ($(WINDOWS), 0)
-clean_tmp:
-	$(RM) test/*.o test/tmp*
-clean:clean_tmp
 	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.o test/tmp*
 else
-clean_tmp:
-	$(RM) test\*.s test\tmp*
-clean:clean_tmp
-	$(RM) fcc.exe $(OBJS) *.d
+	$(RM) fcc.exe $(OBJS) *.d test\*.s test\tmp*
 endif
 
 #ヘッダフィルの依存関係
 -include *.d
 
 #ダミー
-.PHONY: test clean clean_tmp
+.PHONY: test clean
