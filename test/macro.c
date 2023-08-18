@@ -236,15 +236,15 @@ int main()
 	assert(10, dbl(2), "dbl(2)");
 
 #define M21(x) #x
-	assert('a', M21(a!b  `"" c)[0], "M21( a!b  `\"\"c)[0]");
-	assert('!', M21(a!b  `"" c)[1], "M21( a!b  `\"\"c)[1]");
-	assert('b', M21(a!b  `"" c)[2], "M21( a!b  `\"\"c)[2]");
-	assert(' ', M21(a!b  `"" c)[3], "M21( a!b  `\"\"c)[3]");
-	assert('`', M21(a!b  `"" c)[4], "M21( a!b  `\"\"c)[4]");
-	assert('"', M21(a!b  `"" c)[5], "M21( a!b  `\"\"c)[5]");
-	assert('"', M21(a!b  `"" c)[6], "M21( a!b  `\"\"c)[6]");
-	assert('c', M21(a!b  `"" c)[7], "M21( a!b  `\"\"c)[7]");
-	assert(0, M21(a!b  `"" c)[8], "M21( a!b  `\"\"c)[8]");
+	assert('a', M21(a!b  `""c)[0], "M21( a!b  `\"\"c)[0]");
+	assert('!', M21(a!b  `""c)[1], "M21( a!b  `\"\"c)[1]");
+	assert('b', M21(a!b  `""c)[2], "M21( a!b  `\"\"c)[2]");
+	assert(' ', M21(a!b  `""c)[3], "M21( a!b  `\"\"c)[3]");
+	assert('`', M21(a!b  `""c)[4], "M21( a!b  `\"\"c)[4]");
+	assert('"', M21(a!b  `""c)[5], "M21( a!b  `\"\"c)[5]");
+	assert('"', M21(a!b  `""c)[6], "M21( a!b  `\"\"c)[6]");
+	assert('c', M21(a!b  `""c)[7], "M21( a!b  `\"\"c)[7]");
+	assert(0, M21(a!b  `""c)[8], "M21( a!b  `\"\"c)[8]");
 
 	printf("OK\n");
 	return 0;
