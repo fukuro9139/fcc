@@ -842,29 +842,43 @@ void Token::print_token(const unique_ptr<Token> &token, const string &output_pat
 		{
 			*os << " ";
 		}
-
-		if (TokenKind::TK_STR != tok->_kind)
-		{
-			*os << tok->_str;
-		}
-		/* 文字列リテラルは特殊文字がエスケープされているので元々の文字列から該当部分を出力する */
-		else
-		{
-			*os << "\"";
-			const string &str = tok->_file->_contents;
-			for (int i = tok->_location; str[i] != '"'; ++i)
-			{
-				if(str[i] == '\\'){
-					*os << str[i];
-					++i;
-				}
-				*os << str[i];
-			}
-			*os << "\"";
-		}
+		*os << reverse_str_literal(tok);
 		++line;
 	}
 	*os << endl;
+}
+
+/**
+ * @brief トークンに対応する元々の入力文字列を返す。
+ * 文字列リテラルは特殊文字がエスケープされているので元々の文字列から該当部分を出力する
+ *
+ * @param token 対象トークン
+ * @return トークンに対応する元々の入力文字列
+ */
+string Token::reverse_str_literal(const Token *token)
+{
+	if (TokenKind::TK_STR != token->_kind)
+	{
+		return token->_str;
+	}
+
+	/* 文字列リテラル */
+	const string &str = token->_file->_contents;
+	string buf;
+	buf.push_back('"');
+
+	for (int i = token->_location; str[i] != '"'; ++i)
+	{
+		if (str[i] == '\\')
+		{
+			buf.push_back(str[i]);
+			++i;
+		}
+		buf.push_back(str[i]);
+	}
+	buf.push_back('"');
+
+	return buf;
 }
 
 /**

@@ -73,6 +73,7 @@ public:
 	static unique_ptr<Token> tokenize_file(const string &input_path);
 	static unique_ptr<Token> tokenize(const File *file);
 	static void print_token(const unique_ptr<Token> &token, const string &output_path);
+	static string reverse_str_literal(const Token *token);
 	static const vector<unique_ptr<File>> &get_input_files();
 	static const File *get_current_file();
 	static unique_ptr<Token> copy_token(const Token *src);
