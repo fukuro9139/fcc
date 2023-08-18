@@ -1121,6 +1121,5 @@ unique_ptr<Token> PreProcess::vir_file_tokenize(const string &str, const Token *
 	files.push_back(make_unique<File>(ref->_file->_name, ref->_file->_file_no, str));
 	/* ファイルをトークナイズする */
 	auto tok = Token::tokenize(files.back().get());
-	std::cout << ref->_str << " " << ref->_at_begining << endl;
 	return tok;
 }
