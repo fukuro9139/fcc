@@ -642,7 +642,7 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 			{
 				error_token("'#'の後にはマクロ引数が必要です", tok->_next.get());
 			}
-			cur->_next = stringize(tok, args.at(tok->_next->_str).get());
+			cur->_next = stringize(dst.get(), args.at(tok->_next->_str).get());
 			cur = cur->_next.get();
 			tok = tok->_next->_next.get();
 			continue;
@@ -893,16 +893,19 @@ string PreProcess::quate_string(const string &str)
  * @param tmpl エラー報告用情報のテンプレートにするトークン
  * @return 文字列リテラルトークン
  */
-unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *tmpl)
+unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *ref)
 {
 	/* ファイル構造体の実体を管理するための配列 */
 	static vector<unique_ptr<File>> files;
 	/* 特殊文字をエスケープ */
-	string s = quate_string(str);
+	const string s = quate_string(str);
 	/* 文字列リテラルだけを持つファイルとして仮想的なファイルを作る */
-	files.emplace_back(make_unique<File>(tmpl->_file->_name, tmpl->_file->_file_no, s));
+	files.push_back(make_unique<File>(ref->_file->_name, ref->_file->_file_no, s));
 	/* ファイルをトークナイズする */
-	return Token::tokenize(files.back().get());
+	auto tok = Token::tokenize(files.back().get());
+	tok->_at_begining = ref->_at_begining;
+	tok->_has_space = ref->_has_space;
+	return tok;
 }
 
 /**
@@ -941,12 +944,12 @@ string PreProcess::join_tokens(const Token *token)
  * @brief 文字列化演算子'#'に対応するための関数。トークンリストargのトークンを文字列リテラル
  * として統合し、トークナイズしたトークンを返す。
  *
- * @param hash '#'演算子を表すトークン
+ * @param ref マクロの展開元のトークン
  * @param arg 文字列化するトークン列
  * @return unique_ptr<Token>
  */
-unique_ptr<Token> PreProcess::stringize(const Token *hash, const Token *arg)
+unique_ptr<Token> PreProcess::stringize(const Token *ref, const Token *arg)
 {
 	auto s = join_tokens(arg);
-	return new_str_token(s, hash);
+	return new_str_token(s, ref);
 }
