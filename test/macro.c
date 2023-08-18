@@ -231,15 +231,15 @@ int main()
 	ASSERT(10, dbl(2));
 
 #define M21(x) #x
-	ASSERT('a', M21(a !b  `"" c)[0]);
-	ASSERT('!', M21(a !b  `"" c)[1]);
-	ASSERT('b', M21(a !b  `"" c)[2]);
-	ASSERT(' ', M21(a !b  `"" c)[3]);
-	ASSERT('`', M21(a !b  `"" c)[4]);
-	ASSERT('"', M21(a !b  `"" c)[5]);
-	ASSERT('"', M21(a !b  `"" c)[6]);
-	ASSERT('c', M21(a !b  `"" c)[7]);
-	ASSERT(0, M21(a !b  `"" c)[8]);
+	ASSERT('a', M21(a!b  `""c)[0]);
+	ASSERT('!', M21(a!b  `""c)[1]);
+	ASSERT('b', M21(a!b  `""c)[2]);
+	ASSERT(' ', M21(a!b  `""c)[3]);
+	ASSERT('`', M21(a!b  `""c)[4]);
+	ASSERT('"', M21(a!b  `""c)[5]);
+	ASSERT('"', M21(a!b  `""c)[6]);
+	ASSERT('c', M21(a!b  `""c)[7]);
+	ASSERT(0, M21(a!b  `""c)[8]);
 
 #define paste(x, y) x##y
 	ASSERT(15, paste(1, 5));
