@@ -66,6 +66,9 @@ Token::Token(const Token &src)
 	}
 }
 
+Token::Token(Token && src) = default;
+Token & Token::operator=(Token && rhs) = default;
+
 /**
  * @brief 入力されたパスのファイルを開いて中身を文字列として返す
  *

@@ -45,7 +45,7 @@ public:
 	shared_ptr<Type> _ty;				 /*!< kindがTK_NUMの場合、数値の型 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	string _str = "";					 /*!< トークンが表す文字列 */
-	const File *_file = nullptr;		 /*!< トークンが含まれるファイル */
+	const File *_file = nullptr;				 /*!< トークンが含まれるファイル */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 	bool _at_begining = false;			 /*!< トークンが行頭であるか  */
 	bool _has_space = false;			 /*!< トークンの直前にスペースが存在するか */
@@ -56,9 +56,11 @@ public:
 	Token(const TokenKind &kind, const int &location);
 	Token(const int64_t &value, const int &location);
 	Token(const TokenKind &kind, const int &location, string &&str);
-
 	/* コピーコンストラクタ */
 	Token(const Token &src);
+	/* ムーブコンストラクタ */
+	Token(Token &&src);
+	Token &operator=(Token &&rhs);
 
 	/* メンバ関数 */
 
@@ -101,7 +103,7 @@ private:
 
 	/** 区切り文字一覧 */
 	static constexpr string_view punctuators[] = {"<<=", ">>=", "...", "==", "!=", "<=", ">=", "->", "+=", "-=", "*=", "/=",
-												  "++", "--", "%=", "&=", "|=", "^=", "&&", "||", "<<", ">>"};
+												  "++", "--", "%=", "&=", "|=", "^=", "&&", "||", "<<", ">>", "##"};
 
 	static vector<unique_ptr<File>> input_files;
 	static const File *current_file;

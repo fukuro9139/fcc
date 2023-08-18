@@ -47,7 +47,7 @@ class Token;
 void error(string &&msg);
 void error_at(string &&msg, const int &location);
 void verror_at(const string &filename, const string &input, string &&msg, const int &location, const int &line_no);
-void error_token(string &&msg, Token *token);
+void error_token(string &&msg, const Token *token);
 void warn_token(string &&msg, Token *token);
 void run_subprocess(const vector<string> &argv);
 std::ostream *open_file(const string &path);

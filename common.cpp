@@ -109,7 +109,7 @@ void verror_at(const string &filename, const string &input, string &&msg, const 
  * @param msg エラーメッセージ
  * @param token エラー箇所を含むトークン
  */
-void error_token(string &&msg, Token *token)
+void error_token(string &&msg, const Token *token)
 {
     verror_at(token->_file->_name, token->_file->_contents, move(msg), token->_location, token->_line_no);
     exit(1);

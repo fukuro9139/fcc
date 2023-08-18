@@ -648,6 +648,79 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 			continue;
 		}
 
+		/* ##演算子 */
+		if (tok->is_equal("##"))
+		{
+			if (tok == head.get())
+			{
+				error_token("##演算子はマクロ定義の冒頭では使えません", tok);
+			}
+			if (TokenKind::TK_EOF == tok->_next->_kind)
+			{
+				error_token("##演算子はマクロ定義の末尾では使えません", tok);
+			}
+
+			/* ##演算子の二番目のオペランドが引数の場合 */
+			if (args.contains(tok->_next->_str))
+			{
+				auto arg_token = args.at(tok->_next->_str).get();
+				/* 引数が空でないとき引数の先頭トークンと連結する */
+				if (TokenKind::TK_EOF != arg_token->_kind)
+				{
+					*cur = move(*paste(cur, arg_token));
+					for (auto t = arg_token->_next.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+					{
+						cur->_next = Token::copy_token(t);
+						cur = cur->_next.get();
+					}
+				}
+				tok = tok->_next->_next.get();
+				continue;
+			}
+
+			/* ##演算子の二番目のオペランドが引数以外の場合 */
+			*cur = move(*paste(cur, tok->_next.get()));
+			tok = tok->_next->_next.get();
+			continue;
+		}
+
+		/* (引数トークン)##(トークン) */
+		if (args.contains(tok->_str) && tok->_next->is_equal("##"))
+		{
+			auto rhs = tok->_next->_next.get();
+			auto arg_token = args.at(tok->_str).get();
+
+			/* １番目のオペランドの引数トークンが空の場合 */
+			if (TokenKind::TK_EOF == arg_token->_kind)
+			{
+				/* 2番目のオペランドのトークンが引数の場合 */
+				if (args.contains(rhs->_str))
+				{
+					for (auto t = args.at(rhs->_str).get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+					{
+						cur->_next = Token::copy_token(t);
+						cur = cur->_next.get();
+					}
+				}
+				/* 2番目のオペランドのトークンが引数でないトークンの場合 */
+				else
+				{
+					cur->_next = Token::copy_token(rhs);
+					cur = cur->_next.get();
+				}
+				tok = rhs->_next.get();
+				continue;
+			}
+			/* １番目のオペランドの引数トークンがではない場合、引数の展開だけして連結は次のループに任せる */
+			for (auto t = arg_token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+			{
+				cur->_next = Token::copy_token(t);
+				cur = cur->_next.get();
+			}
+			tok = tok->_next.get();
+			continue;
+		}
+
 		/* マクロの引数トークンの場合。マクロの引数にマクロが含まれる場合はマクロは完全に展開する */
 		if (args.contains(tok->_str))
 		{
@@ -952,4 +1025,33 @@ unique_ptr<Token> PreProcess::stringize(const Token *ref, const Token *arg)
 {
 	auto s = join_tokens(arg);
 	return new_str_token(s, ref);
+}
+
+/**
+ * @brief 2つのトークンを連結する
+ *
+ * @param lhs 左側のトークン
+ * @param rhs 右側のトークン
+ * @return 連結したトークン
+ */
+unique_ptr<Token> PreProcess::paste(const Token *lhs, const Token *rhs)
+{
+	/* ファイル構造体の実体を管理するための配列 */
+	static vector<unique_ptr<File>> files;
+
+	string buf = Token::reverse_str_literal(lhs);
+	buf += Token::reverse_str_literal(rhs);
+
+	/* 連結した文字列だけを持つファイルとして仮想的なファイルを作る */
+	files.push_back(make_unique<File>(lhs->_file->_name, lhs->_file->_file_no, buf));
+	/* ファイルをトークナイズする */
+	auto tok = Token::tokenize(files.back().get());
+	if (TokenKind::TK_EOF != tok->_next->_kind)
+	{
+		error_token("連結した文字列\'" + buf + "\'は無効なトークンです", lhs);
+	}
+
+	tok->_at_begining = lhs->_at_begining;
+	tok->_has_space = lhs->_has_space;
+	return tok;
 }

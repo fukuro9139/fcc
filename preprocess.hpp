@@ -84,6 +84,7 @@ private:
 	static unique_ptr<Token> new_str_token(const string &str, const Token *tmpl);
 	static string join_tokens(const Token * token);
 	static unique_ptr<Token> stringize(const Token *hash, const Token * arg);
+	static unique_ptr<Token> paste(const Token *lhs, const Token *rhs);
 
 	static std::unordered_map<string, unique_ptr<Macro>> macros;
 

@@ -236,15 +236,35 @@ int main()
 	assert(10, dbl(2), "dbl(2)");
 
 #define M21(x) #x
-	assert('a', M21(a!b  `""c)[0], "M21( a!b  `\"\"c)[0]");
-	assert('!', M21(a!b  `""c)[1], "M21( a!b  `\"\"c)[1]");
-	assert('b', M21(a!b  `""c)[2], "M21( a!b  `\"\"c)[2]");
-	assert(' ', M21(a!b  `""c)[3], "M21( a!b  `\"\"c)[3]");
-	assert('`', M21(a!b  `""c)[4], "M21( a!b  `\"\"c)[4]");
-	assert('"', M21(a!b  `""c)[5], "M21( a!b  `\"\"c)[5]");
-	assert('"', M21(a!b  `""c)[6], "M21( a!b  `\"\"c)[6]");
-	assert('c', M21(a!b  `""c)[7], "M21( a!b  `\"\"c)[7]");
-	assert(0, M21(a!b  `""c)[8], "M21( a!b  `\"\"c)[8]");
+	assert('a', M21(a !b  `"" c)[0], "M21( a!b  `\"\"c)[0]");
+	assert('!', M21(a !b  `"" c)[1], "M21( a!b  `\"\"c)[1]");
+	assert('b', M21(a !b  `"" c)[2], "M21( a!b  `\"\"c)[2]");
+	assert(' ', M21(a !b  `"" c)[3], "M21( a!b  `\"\"c)[3]");
+	assert('`', M21(a !b  `"" c)[4], "M21( a!b  `\"\"c)[4]");
+	assert('"', M21(a !b  `"" c)[5], "M21( a!b  `\"\"c)[5]");
+	assert('"', M21(a !b  `"" c)[6], "M21( a!b  `\"\"c)[6]");
+	assert('c', M21(a !b  `"" c)[7], "M21( a!b  `\"\"c)[7]");
+	assert(0, M21(a !b  `"" c)[8], "M21( a!b  `\"\"c)[8]");
+
+#define paste(x, y) x##y
+	assert(15, paste(1, 5), "paste(1,5)");
+	assert(255, paste(0, xff), "paste(0,xff)");
+	assert(3, ({ int foobar=3; paste(foo,bar); }), "({ int foobar=3; paste(foo,bar); })");
+	assert(5, paste(5, ), "paste(5,)");
+	assert(5, paste(, 5), "paste(,5)");
+
+#define i 5
+	assert(101, ({ int i3=100; paste(1+i,3); }), "({ int i3=100; paste(1+i,3); })");
+#undef i
+
+#define paste2(x) x##5
+	assert(26, paste2(1 + 2), "paste2(1+2)");
+
+#define paste3(x) 2##x
+	assert(23, paste3(1 + 2), "paste3(1+2)");
+
+#define paste4(x, y, z) x##y##z
+	assert(123, paste4(1, 2, 3), "paste4(1,2,3)");
 
 	printf("OK\n");
 	return 0;
