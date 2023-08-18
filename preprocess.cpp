@@ -454,6 +454,15 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<T
 		error_token("条件式が存在しません", start);
 	}
 
+	/* 未定義のマクロは0として扱う */
+	for(auto t = expr.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get()){
+		if(TokenKind::TK_IDENT == t->_kind){
+			auto next = move(t->_next);
+			*t = move(*new_num_token(0, t));
+			t->_next = move(next);
+		}
+	}
+
 	Token *rest;
 	/* 定数式を評価 */
 	auto val = Node::const_expr(&rest, expr.get());
