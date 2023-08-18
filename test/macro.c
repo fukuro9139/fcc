@@ -318,6 +318,24 @@ int main()
 of(char), \
 "sizeof(char)");
 
+#include "include3.h"
+	ASSERT(3, foo3);
+#undef foo3
+
+#include "include4.h"
+	ASSERT(4, foo4);
+#undef foo4
+
+#define M31 "include3.h"
+#include M31
+	ASSERT(3, foo3);
+#undef foo3
+
+#define M32 < include4.h
+#include M32 >
+	ASSERT(4, foo4);
+#undef foo4
+
 	printf("OK\n");
 	return 0;
 }

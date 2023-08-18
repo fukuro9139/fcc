@@ -1,0 +1,1 @@
+#define foo4 4

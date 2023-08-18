@@ -1,0 +1,1 @@
+#define foo3 3

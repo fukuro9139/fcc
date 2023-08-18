@@ -89,34 +89,23 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 
 		if (token->is_equal("include"))
 		{
-			token = move(token->_next);
+			bool dquote;
+			string filename = read_include_filename(token, move(token->_next), dquote);
 
-			/* '#include'の次はファイル名 */
-			if (TokenKind::TK_STR != token->_kind)
-			{
-				error_token("ファイル名ではありません", token.get());
-			}
-
-			string inc_path;
-			if (token->_str[0] == '/')
-			{
-				inc_path = token->_str;
-			}
-			else
+			if (filename[0] != '/')
 			{
 				/* 現在のファイル */
-				fs::path src_path = token->_file->_name;
-				/* 文字列リテラルなので前後の'"'を取り除く */
-				const auto name = token->_str.substr(1, token->_str.size() - 2);
+				fs::path src_path = start->_file->_name;
 				/* includeするファイルのパスを生成、現在のファイルからの相対パス */
-				inc_path = src_path.replace_filename(name).string();
+				string inc_path = src_path.replace_filename(filename).string();
+				/* ファイルが存在するとき読み込む */
+				if(fs::is_regular_file(inc_path)){
+					token = include_file(move(token) ,inc_path);
+					continue;
+				}
 			}
-			auto token2 = Token::tokenize_file(inc_path);
-
-			/* 次の行頭までスキップする */
-			token = skip_line(move(token->_next));
 			/* includeしたトークンを繋ぐ */
-			token = append(move(token2), move(token));
+			token = include_file(move(token), filename);
 			continue;
 		}
 
@@ -455,8 +444,10 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<T
 	}
 
 	/* 未定義のマクロは0として扱う */
-	for(auto t = expr.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get()){
-		if(TokenKind::TK_IDENT == t->_kind){
+	for (auto t = expr.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+	{
+		if (TokenKind::TK_IDENT == t->_kind)
+		{
 			auto next = move(t->_next);
 			*t = move(*new_num_token(0, t));
 			t->_next = move(next);
@@ -637,7 +628,7 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	/* オブジェクトマクロ */
 	if (m->_is_objlike)
 	{
-		
+
 		auto body = substitute_obj_macro(macro_token, m->_body);
 		/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
 		next_token = append(move(body), move(macro_token->_next));
@@ -1057,12 +1048,12 @@ unique_ptr<Token> PreProcess::new_num_token(const int &val, const Token *ref)
  * @param token 文字列化するトークンリスト
  * @return トークンを統合した文字列
  */
-string PreProcess::join_tokens(const Token *token)
+string PreProcess::join_tokens(const Token *start, const Token *end)
 {
 	string buf;
-	for (auto t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+	for (auto t = start; t != end && TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 	{
-		if (t != token && t->_has_space)
+		if (t != start && t->_has_space)
 		{
 			buf.push_back(' ');
 		}
@@ -1082,7 +1073,7 @@ string PreProcess::join_tokens(const Token *token)
  */
 unique_ptr<Token> PreProcess::stringize(const Token *ref, const Token *arg)
 {
-	auto s = join_tokens(arg);
+	auto s = join_tokens(arg, nullptr);
 	return new_str_token(s, ref);
 }
 
@@ -1123,4 +1114,75 @@ unique_ptr<Token> PreProcess::vir_file_tokenize(const string &str, const Token *
 	/* ファイルをトークナイズする */
 	auto tok = Token::tokenize(files.back().get());
 	return tok;
+}
+
+/**
+ * @brief #includeするファイルのファイル名を取得する
+ *
+ * @param next_token 次のトークンを返すための参照
+ * @param current_token インクルードの開始位置
+ * @param is_dquote #include "..."であるか
+ * @return string インクルードするファイル名
+ */
+string PreProcess::read_include_filename(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, bool &is_dquote)
+{
+	/* #include "..." */
+	if (TokenKind::TK_STR == current_token->_kind)
+	{
+		is_dquote = true;
+		/* エスケープを無効にして元々の文字列を戻す。
+		 * 例："C:\note"に含まれる"\n"は改行文字ではない */
+		string name = Token::reverse_str_literal(current_token.get());
+		/* インクルードの後のトークンは無視 */
+		next_token = skip_line(move(current_token->_next));
+		/* 文字列リテラルの前後の'"'を消す */
+		return name.substr(1, name.size() - 2);
+	}
+
+	/* #include <...> */
+	if (current_token->is_equal("<"))
+	{
+		is_dquote = false;
+		auto start = current_token.get();
+		auto end = current_token->_next.get();
+
+		while (!end->is_equal(">"))
+		{
+			if (TokenKind::TK_EOF == end->_kind || end->_at_begining)
+			{
+				error_token("\'>\'がありません", end);
+			}
+			end = end->_next.get();
+		}
+		/* インクルードの後のトークンは無視 */
+		next_token = skip_line(move(end->_next));
+		return join_tokens(start->_next.get(), end);
+	}
+
+	/* #include FOO
+	 * FOOはマクロであり"..."または<...>に展開される
+	 */
+	if (TokenKind::TK_IDENT == current_token->_kind)
+	{
+		/* マクロを展開する */
+		auto tok = preprocess2(copy_line(next_token, move(current_token)));
+		return read_include_filename(tok, move(tok), is_dquote);
+	}
+
+	/* どれにも当てはまらなければエラー */
+	error_token("ファイル名ではありません", current_token.get());
+	return "";
+}
+
+/**
+ * @brief ファイルをインクルードする。
+ *
+ * @param follow_token インクルードの後に続くトークン
+ * @param path インクルードするファイルのパス
+ * @return インクルードしたファイルをトークナイズし、follow_tokenを後ろに接続したトークンリスト
+ */
+unique_ptr<Token> PreProcess::include_file(unique_ptr<Token> &&follow_token, const string &path)
+{
+	auto include_token = Token::tokenize_file(path);
+	return append(move(include_token), move(follow_token));
 }

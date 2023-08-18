@@ -25,7 +25,6 @@ public:
 private:
     PostProcess();
     static string find_file(const string &patern);
-    static bool file_exists(const string &path);
     static string find_libpath();
     static string find_gcc_libpath();
 };

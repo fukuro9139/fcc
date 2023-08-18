@@ -126,30 +126,18 @@ string PostProcess::find_file(const string &pattern)
 }
 
 /**
- * @brief ファイルが存在しているか判定
- *
- * @param path 判定するファイルのパス
- * @return true 存在している
- * @return false 存在しない
- */
-bool PostProcess::file_exists(const string &path)
-{
-    return fs::is_regular_file(path);
-}
-
-/**
  * @brief リンク時に必要なライブラリのパスを検索する。見つからなければエラー。
  *
  * @return ライブラリのパス
  */
 string PostProcess::find_libpath()
 {
-    if (file_exists("/usr/lib/x86_64-linux-gnu/crti.o"))
+    if (fs::is_regular_file("/usr/lib/x86_64-linux-gnu/crti.o"))
     {
         return "/usr/lib/x86_64-linux-gnu";
     }
 
-    if (file_exists("/usr/lib64/crti.o"))
+    if (fs::is_regular_file("/usr/lib64/crti.o"))
     {
         return "/usr/lib64";
     }

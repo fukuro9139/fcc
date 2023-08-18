@@ -83,10 +83,12 @@ private:
 	static string quate_string(const string &str);
 	static unique_ptr<Token> new_str_token(const string &str, const Token *ref);
 	static unique_ptr<Token> new_num_token(const int &val, const Token *ref);
-	static string join_tokens(const Token * token);
-	static unique_ptr<Token> stringize(const Token *ref, const Token * arg);
+	static string join_tokens(const Token *start, const Token *end);
+	static unique_ptr<Token> stringize(const Token *ref, const Token *arg);
 	static unique_ptr<Token> paste(const Token *lhs, const Token *rhs);
 	static unique_ptr<Token> vir_file_tokenize(const string &str, const Token *ref);
+	static string read_include_filename(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, bool &is_dquote);
+	static unique_ptr<Token> include_file(unique_ptr<Token> &&follow_token, const string &path);
 
 	static vector<unique_ptr<CondIncl>> cond_incl;
 	static std::unordered_map<string, unique_ptr<Macro>> macros;
