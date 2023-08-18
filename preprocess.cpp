@@ -619,47 +619,48 @@ Macro *PreProcess::add_macro(const unique_ptr<Token> &token, const bool &is_objl
 bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	auto name = current_token->_str;
+	auto macro_token = move(current_token);
 
-	if (current_token->_hideset && current_token->_hideset->contains(name))
+	if (macro_token->_hideset && macro_token->_hideset->contains(name))
 	{
-		next_token = move(current_token);
+		next_token = move(macro_token);
 		return false;
 	}
 
-	auto m = find_macro(current_token);
+	auto m = find_macro(macro_token);
 	if (!m)
 	{
-		next_token = move(current_token);
+		next_token = move(macro_token);
 		return false;
 	}
 
 	/* オブジェクトマクロ */
 	if (m->_is_objlike)
 	{
-		auto body = substitute_obj_macro(current_token, m->_body);
+		
+		auto body = substitute_obj_macro(macro_token, m->_body);
 		/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
-		next_token = append(move(body), move(current_token->_next));
-		next_token->_at_begining = current_token->_at_begining;
-		next_token->_has_space = current_token->_has_space;
+		next_token = append(move(body), move(macro_token->_next));
+		next_token->_at_begining = macro_token->_at_begining;
+		next_token->_has_space = macro_token->_has_space;
 		return true;
 	}
 
 	/* 関数マクロ */
 	/* 引数を取らない関数マクロはただの変数として扱う */
-	if (!current_token->_next->is_equal("("))
+	if (!macro_token->_next->is_equal("("))
 	{
-		next_token = move(current_token);
+		next_token = move(macro_token);
 		return false;
 	}
 
-	auto dst = move(current_token);
 	/* 引数を読み取る */
-	auto args = read_macro_args(current_token, move(dst->_next->_next), *m->_params);
+	auto args = read_macro_args(current_token, move(macro_token->_next->_next), *m->_params);
 	/* 引数を代入してマクロを展開する */
-	auto body = substitute_func_macro(dst, m->_body, *args);
+	auto body = substitute_func_macro(macro_token, m->_body, *args);
 	next_token = append(move(body), move(current_token));
-	next_token->_has_space = dst->_has_space;
-	next_token->_at_begining = dst->_at_begining;
+	next_token->_has_space = macro_token->_has_space;
+	next_token->_at_begining = macro_token->_at_begining;
 	return true;
 }
 
