@@ -45,37 +45,26 @@ all: clean $(TARGET)
 
 #テスト
 ifeq ($(WINDOWS), 0)
-test/macro.exe: $(TARGET) test/macro.c
-	./fcc -c -o test/macro.o test/macro.c
-	$(CC) -o $@ test/macro.o -xc test/common
-
 test/%.exe: $(TARGET) test/%.c
-	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
-	./fcc -c -o test/$*.o test/tmp_$*.c
+	./fcc -c -o test/$*.o test/$*.c
 	$(CC) -o $@ test/$*.o -xc test/common
 
 test: $(TESTS)
-	$(RM) test/tmp*
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
 	test/driver.sh
 else
-test/macro.exe: $(TARGET) test/macro.c
-	./fcc -S -o test/macro.s test/macro.c
-	
 test/%.exe: $(TARGET) test/%.c
-	$(CC) -o test/tmp_$*.c -E -P -C test/$*.c
-	./fcc -S -o test/$*.s test/tmp_$*.c
+	./fcc -S -o test/$*.s test/$*.c
 
 test: $(TESTS)
-	$(RM) test\tmp*
 endif
 
 #不要ファイル削除
 clean:
 ifeq ($(WINDOWS), 0)
-	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.o test/tmp*
+	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.o
 else
-	$(RM) fcc.exe $(OBJS) *.d test\*.s test\tmp*
+	$(RM) fcc.exe $(OBJS) *.d test\*.s
 endif
 
 #ヘッダフィルの依存関係

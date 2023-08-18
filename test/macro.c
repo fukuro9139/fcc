@@ -1,10 +1,5 @@
+#include "test.h"
 #include "include1.h"
-
-int assert(int expected, int actual, char *code);
-int printf(char *fmt, ...);
-int sprintf(char *buf, char *fmt, ...);
-int strcmp(char *p, char *q);
-int memcmp(char *p, char *q, long n);
 
 #
 
@@ -19,14 +14,14 @@ int dbl(int x) { return x * x; }
 
 int main()
 {
-	assert(5, include1, "include1");
-	assert(7, include2, "include2");
+	ASSERT(5, include1);
+	ASSERT(7, include2);
 
 #if 0
 
 #include "/no/such/file"
 
-  assert(0, 1, "1");
+  ASSERT(0, 1);
 
 #if nested
 
@@ -36,7 +31,7 @@ int main()
 #if 1
 	m = 5;
 #endif
-	assert(5, m, "m");
+	ASSERT(5, m);
 
 #if 1
 #if 0
@@ -46,7 +41,7 @@ int main()
 #endif
 	m = 3;
 #endif
-	assert(3, m, "m");
+	ASSERT(3, m);
 
 #if 1 - 1
 #if 1
@@ -63,21 +58,21 @@ int main()
 	m = 3;
 #endif
 #endif
-	assert(3, m, "m");
+	ASSERT(3, m);
 
 #if 1
 	m = 2;
 #else
 	m = 3;
 #endif
-	assert(2, m, "m");
+	ASSERT(2, m);
 
 #if 1
 	m = 2;
 #else
 	m = 3;
 #endif
-	assert(2, m, "m");
+	ASSERT(2, m);
 
 #if 0
   m = 1;
@@ -88,7 +83,7 @@ int main()
 #elif 1 * 5
 	m = 4;
 #endif
-	assert(3, m, "m");
+	ASSERT(3, m);
 
 #if 1 + 5
 	m = 1;
@@ -97,7 +92,7 @@ int main()
 #elif 3
 	m = 2;
 #endif
-	assert(1, m, "m");
+	ASSERT(1, m);
 
 #if 0
   m = 1;
@@ -110,20 +105,20 @@ int main()
 #else
 	m = 5;
 #endif
-	assert(2, m, "m");
+	ASSERT(2, m);
 
 	int M1 = 5;
 
 #define M1 3
-	assert(3, M1, "M1");
+	ASSERT(3, M1);
 #define M2 4
-	assert(4, M2, "M2");
+	ASSERT(4, M2);
 
 #define M3 3 + 4 +
-	assert(12, M3 5, "3");
+	ASSERT(12, M3 5);
 
 #define M4 3 + 4
-	assert(23, M4 * 5, "5");
+	ASSERT(23, M4 * 5);
 
 #define ASSERT_ assert(
 #define if 5
@@ -146,7 +141,7 @@ int main()
 #else
 	m = 6;
 #endif
-	assert(5, m, "m");
+	ASSERT(5, m);
 #undef M
 
 #define M 5
@@ -155,26 +150,26 @@ int main()
 #elif M
 	m = 5;
 #endif
-	assert(5, m, "m");
+	ASSERT(5, m);
 
 	int M5 = 6;
 #define M5 M5 + 3
-	assert(9, M5, "M5");
+	ASSERT(9, M5);
 
 #define M6 M5 + 3
-	assert(12, M6, "M6");
+	ASSERT(12, M6);
 
 	int M7 = 3;
 #define M7 M8 * 5
 #define M8 M7 + 2
-	assert(13, M7, "M7");
+	ASSERT(13, M7);
 
 #ifdef M9
 	m = 5;
 #else
 	m = 3;
 #endif
-	assert(3, m, "m");
+	ASSERT(3, m);
 
 #define M10
 #ifdef M10
@@ -182,14 +177,14 @@ int main()
 #else
 	m = 3;
 #endif
-	assert(5, m, "m");
+	ASSERT(5, m);
 
 #ifndef M11
 	m = 3;
 #else
 	m = 5;
 #endif
-	assert(3, m, "m");
+	ASSERT(3, m);
 
 #define M12
 #ifndef M12
@@ -197,7 +192,7 @@ int main()
 #else
 	m = 5;
 #endif
-	assert(5, m, "m");
+	ASSERT(5, m);
 
 #if 0
 #ifdef NO_SUCH_MACRO
@@ -209,62 +204,62 @@ int main()
 
 #define M13() 1
 	int M13 = 5;
-	assert(1, M13(), "M13()");
-	assert(5, M13, "M13");
+	ASSERT(1, M13());
+	ASSERT(5, M13);
 
 #define M14 ()
-	assert(3, ret3 M14, "ret3 M14");
+	ASSERT(3, ret3 M14);
 
 #define M15(x, y) x + y
-	assert(7, M15(3, 4), "M15(3, 4)");
+	ASSERT(7, M15(3, 4));
 
 #define M16(x, y) x *y
-	assert(24, M16(3 + 4, 4 + 5), "M16(3+4, 4+5)");
+	ASSERT(24, M16(3 + 4, 4 + 5));
 
 #define M17(x, y) (x) * (y)
-	assert(63, M17(3 + 4, 4 + 5), "M17(3+4, 4+5)");
+	ASSERT(63, M17(3 + 4, 4 + 5));
 
 #define M18(x, y) x y
-	assert(9, M18(, 4 + 5), "M18(, 4+5)");
+	ASSERT(9, M18(, 4 + 5));
 
 #define M19(x, y) x *y
-	assert(20, M19((2 + 3), 4), "M19((2+3), 4)");
-	assert(12, M19((2, 3), 4), "M19((2,3), 4)");
+	ASSERT(20, M19((2 + 3), 4));
+	ASSERT(12, M19((2, 3), 4));
 
 #define dbl(x) M20(x) * x
 #define M20(x) dbl(x) + 3
-	assert(10, dbl(2), "dbl(2)");
+	ASSERT(10, dbl(2));
 
 #define M21(x) #x
-	assert('a', M21( a!b  `""c)[0], "M21( a!b  `\"\"c)[0]");
-	assert('!', M21( a!b  `""c)[1], "M21( a!b  `\"\"c)[1]");
-	assert('b', M21( a!b  `""c)[2], "M21( a!b  `\"\"c)[2]");
-	assert(' ', M21( a!b  `""c)[3], "M21( a!b  `\"\"c)[3]");
-	assert('`', M21( a!b  `""c)[4], "M21( a!b  `\"\"c)[4]");
-	assert('"', M21( a!b  `""c)[5], "M21( a!b  `\"\"c)[5]");
-	assert('"', M21( a!b  `""c)[6], "M21( a!b  `\"\"c)[6]");
-	assert('c', M21( a!b  `""c)[7], "M21( a!b  `\"\"c)[7]");
-	assert(0, M21( a!b  `""c)[8], "M21( a!b  `\"\"c)[8]");
+	ASSERT('a', M21(a !b  `"" c)[0]);
+	ASSERT('!', M21(a !b  `"" c)[1]);
+	ASSERT('b', M21(a !b  `"" c)[2]);
+	ASSERT(' ', M21(a !b  `"" c)[3]);
+	ASSERT('`', M21(a !b  `"" c)[4]);
+	ASSERT('"', M21(a !b  `"" c)[5]);
+	ASSERT('"', M21(a !b  `"" c)[6]);
+	ASSERT('c', M21(a !b  `"" c)[7]);
+	ASSERT(0, M21(a !b  `"" c)[8]);
 
 #define paste(x, y) x##y
-	assert(15, paste(1, 5), "paste(1,5)");
-	assert(255, paste(0, xff), "paste(0,xff)");
-	assert(3, ({ int foobar=3; paste(foo,bar); }), "({ int foobar=3; paste(foo,bar); })");
-	assert(5, paste(5, ), "paste(5,)");
-	assert(5, paste(, 5), "paste(,5)");
+	ASSERT(15, paste(1, 5));
+	ASSERT(255, paste(0, xff));
+	ASSERT(3, ({ int foobar=3; paste(foo,bar); }));
+	ASSERT(5, paste(5, ));
+	ASSERT(5, paste(, 5));
 
 #define i 5
-	assert(101, ({ int i3=100; paste(1+i,3); }), "({ int i3=100; paste(1+i,3); })");
+	ASSERT(101, ({ int i3=100; paste(1+i,3); }));
 #undef i
 
 #define paste2(x) x##5
-	assert(26, paste2(1 + 2), "paste2(1+2)");
+	ASSERT(26, paste2(1 + 2));
 
 #define paste3(x) 2##x
-	assert(23, paste3(1 + 2), "paste3(1+2)");
+	ASSERT(23, paste3(1 + 2));
 
 #define paste4(x, y, z) x##y##z
-	assert(123, paste4(1, 2, 3), "paste4(1,2,3)");
+	ASSERT(123, paste4(1, 2, 3));
 
 	printf("OK\n");
 	return 0;

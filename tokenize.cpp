@@ -66,8 +66,8 @@ Token::Token(const Token &src)
 	}
 }
 
-Token::Token(Token && src) = default;
-Token & Token::operator=(Token && rhs) = default;
+Token::Token(Token &&src) = default;
+Token &Token::operator=(Token &&rhs) = default;
 
 /**
  * @brief 入力されたパスのファイルを開いて中身を文字列として返す
@@ -289,15 +289,15 @@ string::const_iterator Token::string_literal_end(string::const_iterator itr)
 	/* '"'が出てくるか末尾まで到達するまで読み込み続ける */
 	for (; itr != last && *itr != '"'; ++itr)
 	{
-		/* 途中で改行や'\0'が出てきたらエラーとする */
-		if (*itr == '\n' || *itr == '\0')
-		{
-			error_at("文字列が閉じられていません", start - first);
-		}
 		/* エスケープシーケンスは無視する */
 		if (*itr == '\\')
 		{
 			++itr;
+		}
+		/* 途中で改行や'\0'が出てきたらエラーとする */
+		if (*itr == '\n' || *itr == '\0')
+		{
+			error_at("文字列が閉じられていません", start - first);
 		}
 	}
 	/* 末尾まで'"'が見つからなければエラーとする */

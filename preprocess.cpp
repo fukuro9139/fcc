@@ -989,25 +989,14 @@ unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *ref)
  */
 string PreProcess::join_tokens(const Token *token)
 {
-	/* 最終的な長さを求める */
-	size_t len = 0;
-	for (auto t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
-	{
-		if (t != token && t->_has_space)
-		{
-			++len;
-		}
-		len += t->_str.size();
-	}
 	string buf;
-	buf.reserve(len);
 	for (auto t = token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 	{
 		if (t != token && t->_has_space)
 		{
 			buf.push_back(' ');
 		}
-		buf += t->_str;
+		buf += Token::reverse_str_literal(t);
 	}
 	buf.shrink_to_fit();
 	return buf;
