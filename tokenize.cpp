@@ -308,13 +308,13 @@ string::const_iterator Token::string_literal_end(string::const_iterator itr)
 /**
  * @brief 文字列リテラルを読み込む
  *
- * @param start 文字列リテラルの開始位置。(1個目の'"'の位置)
+ * @param itr 文字列リテラルの開始位置。(1個目の'"'の位置)
  * @return 文字列リテラルを表すトークン
  */
 unique_ptr<Token> Token::read_string_literal(string::const_iterator &itr)
 {
 	auto start = itr + 1;
-	auto end = string_literal_end(itr + 1);
+	auto end = string_literal_end(start);
 	string buf = "\"";
 
 	for (auto p = start; p != end;)
@@ -842,7 +842,26 @@ void Token::print_token(const unique_ptr<Token> &token, const string &output_pat
 		{
 			*os << " ";
 		}
-		*os << tok->_str;
+
+		if (TokenKind::TK_STR != tok->_kind)
+		{
+			*os << tok->_str;
+		}
+		/* 文字列リテラルは特殊文字がエスケープされているので元々の文字列から該当部分を出力する */
+		else
+		{
+			*os << "\"";
+			const string &str = tok->_file->_contents;
+			for (int i = tok->_location; str[i] != '"'; ++i)
+			{
+				if(str[i] == '\\'){
+					*os << str[i];
+					++i;
+				}
+				*os << str[i];
+			}
+			*os << "\"";
+		}
 		++line;
 	}
 	*os << endl;

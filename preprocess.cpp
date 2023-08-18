@@ -895,12 +895,14 @@ string PreProcess::quate_string(const string &str)
  */
 unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *tmpl)
 {
+	/* ファイル構造体の実体を管理するための配列 */
+	static vector<unique_ptr<File>> files;
 	/* 特殊文字をエスケープ */
 	string s = quate_string(str);
 	/* 文字列リテラルだけを持つファイルとして仮想的なファイルを作る */
-	File file(tmpl->_file->_name, tmpl->_file->_file_no, s);
+	files.emplace_back(make_unique<File>(tmpl->_file->_name, tmpl->_file->_file_no, s));
 	/* ファイルをトークナイズする */
-	return Token::tokenize(&file);
+	return Token::tokenize(files.back().get());
 }
 
 /**
