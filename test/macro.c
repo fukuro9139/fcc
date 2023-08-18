@@ -314,6 +314,10 @@ int main()
 #define M30(x) M28(x. M27)
 	ASSERT(0, strcmp(M30(bar), "bar. foo"));
 
+	assert(1, size\
+of(char), \
+"sizeof(char)");
+
 	printf("OK\n");
 	return 0;
 }

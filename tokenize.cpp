@@ -128,6 +128,8 @@ unique_ptr<Token> Token::tokenize_file(const string &input_path)
 	static int file_no = 0;
 	/* ファイルを開いて中身を読み込む */
 	auto content = read_inputfile(input_path);
+	/* '\\' + '\n'を処理する */
+	content = remove_backslash_newline(content);
 	/* File構造体を生成 */
 	auto file = make_unique<File>(input_path, ++file_no, content);
 	/* リストに追加 */
@@ -893,4 +895,51 @@ string Token::reverse_str_literal(const Token *token)
 unique_ptr<Token> Token::copy_token(const Token *src)
 {
 	return make_unique<Token>(*src);
+}
+
+/**
+ * @brief '\\' +'\n'による行の継続の変換を行う
+ *
+ * @param str 変換前の文字列
+ * @return 変換後の文字列
+ */
+string Token::remove_backslash_newline(const string &str)
+{
+	string buf;
+	buf.reserve(str.size());
+	/* ソースコード上の行数とトークナイザー上の行数を合わせるために
+	 * '\n'の数を合わせる。nは除去した'\n'の数を表す。
+	 */
+	int n = 0;
+
+	for (size_t i = 0; i < str.size(); ++i)
+	{
+		/* '\\' + '\n' の場合は改行を無視して行を継続する */
+		if (str[i] == '\\' && str[i + 1] == '\n')
+		{
+			++i;
+			++n;
+		}
+		else if (str[i] == '\n')
+		{
+			buf.push_back(str[i]);
+			/* '\n'の数を合わせる */
+			while (n > 0)
+			{
+				buf.push_back('\n');
+				--n;
+			}
+		}
+		else
+		{
+			buf.push_back(str[i]);
+		}
+	}
+	/* 最後に'\n'を残っている数付け加える */
+	while (n > 0)
+	{
+		buf.push_back('\n');
+		--n;
+	}
+	return buf;
 }

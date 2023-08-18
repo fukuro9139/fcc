@@ -95,6 +95,7 @@ private:
 	static bool is_char_of_ident(const char &c);
 	static int from_hex(const char &c);
 	static void add_line_number(Token *token);
+	static string remove_backslash_newline(const string &str);
 
 	/** 型名 */
 	static constexpr string_view type_names[] = {"void", "_Bool", "char", "short", "int", "long", "float", "double", "struct", "union",
