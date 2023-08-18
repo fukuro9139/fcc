@@ -442,8 +442,8 @@ unique_ptr<Token> PreProcess::copy_line(unique_ptr<Token> &next_token, unique_pt
 long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
 {
 	auto start = current_token.get();
-	/* 文末までのトークンをコピー */
-	auto expr = copy_line(next_token, move(current_token->_next));
+	/* 文末までのトークンを読み取る */
+	auto expr = read_const_expr(next_token, move(current_token->_next));
 
 	/* 定数式の中のマクロを展開 */
 	expr = preprocess2(move(expr));
@@ -465,6 +465,55 @@ long PreProcess::evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<T
 	}
 
 	return val;
+}
+
+/**
+ * @brief 定数式を読み取り途中にdefinedマクロがあれば展開する
+ *
+ * @param next_token 次の文頭のトークンを返すための参照
+ * @param current_token 開始位置のトークン
+ * @return 読み取り結果
+ */
+unique_ptr<Token> PreProcess::read_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+{
+	auto tok = copy_line(next_token, move(current_token));
+	auto head = make_unique_for_overwrite<Token>();
+	auto cur = head.get();
+
+	while (TokenKind::TK_EOF != tok->_kind)
+	{
+		/* 'defined(M)'または'define M'はMが定義されていれば1されていなければ0 */
+		if (tok->is_equal("defined"))
+		{
+			auto start = move(tok);
+			tok = move(start->_next);
+			bool has_paren = tok->is_equal("(");
+			if (has_paren)
+			{
+				tok = move(tok->_next);
+			}
+
+			if (TokenKind::TK_IDENT != tok->_kind)
+			{
+				error_token("definedの引数はマクロ名である必要があります", start.get());
+			}
+
+			cur->_next = new_num_token(macros.contains(tok->_str) ? 1 : 0, start.get());
+			cur = cur->_next.get();
+
+			tok = move(tok->_next);
+			if (has_paren)
+			{
+				tok = skip(move(tok), ")");
+			}
+			continue;
+		}
+		cur->_next = move(tok);
+		cur = cur->_next.get();
+		tok = move(cur->_next);
+	}
+	cur->_next = move(tok);
+	return move(head->_next);
 }
 
 /**
@@ -958,14 +1007,29 @@ string PreProcess::quate_string(const string &str)
  * @brief 文字列を文字列リテラルトークンに変換する
  *
  * @param str 対象文字列
- * @param tmpl エラー報告用情報のテンプレートにするトークン
+ * @param ref エラー報告用情報のテンプレートにするトークン
  * @return 文字列リテラルトークン
  */
 unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *ref)
 {
 	/* 特殊文字をエスケープ */
-	const string s = quate_string(str);
+	string s = quate_string(str);
+	s.push_back('\n');
 	/* 文字列をもった仮想的なファイルをトークナイズする */
+	return vir_file_tokenize(s, ref);
+}
+
+/**
+ * @brief 数値を数値トークンに変換する
+ *
+ * @param val 数値
+ * @param ref エラー報告用情報のテンプレートにするトークン
+ * @return 数値トークン
+ */
+unique_ptr<Token> PreProcess::new_num_token(const int &val, const Token *ref)
+{
+	string s = std::to_string(val);
+	s.push_back('\n');
 	return vir_file_tokenize(s, ref);
 }
 
@@ -1015,6 +1079,7 @@ unique_ptr<Token> PreProcess::paste(const Token *lhs, const Token *rhs)
 {
 	string buf = Token::reverse_str_literal(lhs);
 	buf += Token::reverse_str_literal(rhs);
+	buf.push_back('\n');
 	/* ファイルをトークナイズする */
 	auto tok = vir_file_tokenize(buf, lhs);
 	if (TokenKind::TK_EOF != tok->_next->_kind)
@@ -1027,20 +1092,14 @@ unique_ptr<Token> PreProcess::paste(const Token *lhs, const Token *rhs)
 /**
  * @brief 文字列strだけを持つ仮想的なファイルをトークナイズする。
  *
- * @param str トークナイズする文字列
+ * @param str トークナイズする文字列(末尾が'\n'で終わっていること)
  * @param ref 新たに作成するトークンのテンプレート
  * @return トークナイズした結果
  */
-unique_ptr<Token> PreProcess::vir_file_tokenize(string str, const Token *ref)
+unique_ptr<Token> PreProcess::vir_file_tokenize(const string &str, const Token *ref)
 {
 	/* ファイル構造体の実体を管理するための配列 */
 	static vector<unique_ptr<File>> files;
-
-	/* 末尾が改行で終わっていない場合は改行を付け加える */
-	if (str.back() != '\n')
-	{
-		str.push_back('\n');
-	}
 
 	files.push_back(make_unique<File>(ref->_file->_name, ref->_file->_file_no, str));
 	/* ファイルをトークナイズする */

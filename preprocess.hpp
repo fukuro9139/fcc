@@ -76,17 +76,19 @@ private:
 	static unique_ptr<MacroArgs> read_macro_args(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const vector<string> &params);
 	static void add_hideset(unique_ptr<Hideset> &hs, const string &name);
 	static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
+	static unique_ptr<Token> read_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static CondIncl *push_cond_incl(unique_ptr<Token> &&token, bool included);
-	static vector<unique_ptr<CondIncl>> cond_incl;
 	static unique_ptr<Token> skip(unique_ptr<Token> &&token, const string &op);
 	static void copy_macro_token(Token *dst, const Token *src, const string &name, const unique_ptr<Hideset> &hs);
 	static string quate_string(const string &str);
 	static unique_ptr<Token> new_str_token(const string &str, const Token *ref);
+	static unique_ptr<Token> new_num_token(const int &val, const Token *ref);
 	static string join_tokens(const Token * token);
 	static unique_ptr<Token> stringize(const Token *ref, const Token * arg);
 	static unique_ptr<Token> paste(const Token *lhs, const Token *rhs);
-	static unique_ptr<Token> vir_file_tokenize(string str, const Token *ref);
+	static unique_ptr<Token> vir_file_tokenize(const string &str, const Token *ref);
 
+	static vector<unique_ptr<CondIncl>> cond_incl;
 	static std::unordered_map<string, unique_ptr<Macro>> macros;
 
 	/** 識別子一覧 */
