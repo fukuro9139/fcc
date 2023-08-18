@@ -639,6 +639,8 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 		auto body = substitute_obj_macro(current_token, m->_body);
 		/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
 		next_token = append(move(body), move(current_token->_next));
+		next_token->_at_begining = current_token->_at_begining;
+		next_token->_has_space = current_token->_has_space;
 		return true;
 	}
 
@@ -656,6 +658,8 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	/* 引数を代入してマクロを展開する */
 	auto body = substitute_func_macro(dst, m->_body, *args);
 	next_token = append(move(body), move(current_token));
+	next_token->_at_begining = dst->_at_begining;
+	next_token->_has_space = dst->_has_space;
 	return true;
 }
 
