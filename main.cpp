@@ -71,7 +71,7 @@ void fcc(const unique_ptr<Input> &in, const string &input_path, const string &ou
 	auto program = Node::parse(token);
 
 	/* 抽象構文木を巡回しながらコード生成 */
-	CodeGen::generate_code(program, input_path, output_path);
+	CodeGen::generate_code(program, input_path, output_path, in->_opt_g);
 }
 
 int main(int argc, char **argv)

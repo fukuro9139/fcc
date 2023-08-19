@@ -50,6 +50,12 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			continue;
 		}
 
+		if ("-g" == args[i])
+		{
+			in->_opt_g = true;
+			continue;
+		}
+
 		if ("-S" == args[i])
 		{
 			in->_opt_S = true;
@@ -65,6 +71,12 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 		if ("-E" == args[i])
 		{
 			in->_opt_E = true;
+			continue;
+		}
+
+		if ("-I" == args[i])
+		{
+			in->_include.emplace_back(args[++i]);
 			continue;
 		}
 

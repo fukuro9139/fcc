@@ -22,6 +22,9 @@ static Object *current_func = nullptr;
 /* 入出力 */
 static std::ostream *os = &std::cout;
 
+/* デバッグ情報を付与するか */
+static bool print_dbg_info = false;
+
 /*****************/
 /* CodeGen Class */
 /*****************/
@@ -412,7 +415,11 @@ void CodeGen::generate_address(Node *node)
  */
 void CodeGen::generate_expression(Node *node)
 {
-	*os << "  .loc " << node->_token->_file->_file_no << " " << node->_token->_line_no << "\n";
+	if (print_dbg_info)
+	{
+		*os << "  .loc " << node->_token->_file->_file_no << " " << node->_token->_line_no << "\n";
+	}
+
 	switch (node->_kind)
 	{
 	/* NULL */
@@ -906,7 +913,10 @@ void CodeGen::generate_expression2(Node *node)
  */
 void CodeGen::generate_statement(Node *node)
 {
-	*os << "  .loc " << node->_token->_file->_file_no << " " << node->_token->_line_no << "\n";
+	if (print_dbg_info)
+	{
+		*os << "  .loc " << node->_token->_file->_file_no << " " << node->_token->_line_no << "\n";
+	}
 
 	switch (node->_kind)
 	{
@@ -1232,18 +1242,23 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
  *
  * @param program アセンブリを出力する対象関数
  */
-void CodeGen::generate_code(const unique_ptr<Object> &program, const string &input_path, const string &output_path)
+void CodeGen::generate_code(const unique_ptr<Object> &program, const string &input_path, const string &output_path, const bool &opt_g)
 {
 
 	os = open_file(output_path);
+	print_dbg_info = opt_g;
 
 	/* intel記法であることを宣言 */
 	*os << ".intel_syntax noprefix\n";
 
 	/* .fileディレクティブを出力 */
-	auto &input_files = Token::get_input_files();
-	for(auto &file:input_files){
-		*os << ".file " << file->_file_no <<" \"" << file->_name << "\"\n";
+	if (print_dbg_info)
+	{
+		auto &input_files = Token::get_input_files();
+		for (auto &file : input_files)
+		{
+			*os << ".file " << file->_file_no << " \"" << file->_name << "\"\n";
+		}
 	}
 
 	/* スタックサイズを計算してセット */
