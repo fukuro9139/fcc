@@ -558,9 +558,11 @@ void PreProcess::read_macro_definition(unique_ptr<Token> &next_token, unique_ptr
 	/* 関数マクロ */
 	if (!current_token->_has_space && current_token->is_equal("("))
 	{
-		auto params = read_macro_params(current_token, move(current_token->_next));
+		bool is_variadic = false;
+		auto params = read_macro_params(current_token, move(current_token->_next), is_variadic);
 		auto m = add_macro(name, false, copy_line(next_token, move(current_token)));
 		m->_params = move(params);
+		m->_is_variadic = is_variadic;
 	}
 	/* オブジェクトマクロ */
 	else
@@ -673,7 +675,7 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	}
 
 	/* 引数を読み取る */
-	auto args = read_macro_args(current_token, move(macro_token->_next->_next), *m->_params);
+	auto args = read_macro_args(current_token, move(macro_token->_next->_next), *m->_params, m->_is_variadic);
 	/* 引数を代入してマクロを展開する */
 	auto body = substitute_func_macro(macro_token, m->_body, *args);
 	/* 展開元のマクロのファイル情報をコピー */
@@ -845,9 +847,10 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
  *
  * @param next__token 次ののトークンリストを返すための参照
  * @param current_token 引数の開始位置のトークン
+ * @param マクロが可変長引数を取るかどうかを返すための参照
  * @return 読み取った引数リスト
  */
-unique_ptr<vector<string>> PreProcess::read_macro_params(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+unique_ptr<vector<string>> PreProcess::read_macro_params(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, bool &is_variadic)
 {
 	auto params = make_unique<vector<string>>();
 	bool first = true;
@@ -861,6 +864,14 @@ unique_ptr<vector<string>> PreProcess::read_macro_params(unique_ptr<Token> &next
 			current_token = skip(move(current_token), ",");
 		}
 		first = false;
+
+		/* 可変長引数 */
+		if (current_token->is_equal("..."))
+		{
+			is_variadic = true;
+			next_token = skip(move(current_token->_next), ")");
+			return params;
+		}
 
 		/* 引数の名前は識別子である必要がある */
 		if (TokenKind::TK_IDENT != current_token->_kind)
@@ -880,18 +891,29 @@ unique_ptr<vector<string>> PreProcess::read_macro_params(unique_ptr<Token> &next
  *
  * @param next__token 次ののトークンリストを返すための参照
  * @param current_token 引数の開始位置のトークン
+ * @param read_rest trueの場合、残りの引数をすべて読む
  * @return 読み取った引数に対応するトークンリスト
  */
-unique_ptr<Token> PreProcess::resd_macro_arg_one(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token)
+unique_ptr<Token> PreProcess::resd_macro_arg_one(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const bool &read_rest)
 {
 	auto head = make_unique_for_overwrite<Token>();
 	auto cur = head.get();
 	/* '()'の深さ */
 	int level = 0;
 
-	/* 深さが0 かつ ','または')'が出てくるまで読み込み続ける */
-	while (level > 0 || (!current_token->is_equal(",") && !current_token->is_equal(")")))
+	for (;;)
 	{
+		/* 深さが0 かつ ')'が出てきたらループを抜ける */
+		if (level == 0 && current_token->is_equal(")"))
+		{
+			break;
+		}
+		/* 深さが0 かつ read_restがfalseかつ','が出てきたらループを抜ける */
+		if (level == 0 && !read_rest && current_token->is_equal(","))
+		{
+			break;
+		}
+
 		if (TokenKind::TK_EOF == current_token->_kind)
 		{
 			error_token("引数が足りません", current_token.get());
@@ -920,9 +942,15 @@ unique_ptr<Token> PreProcess::resd_macro_arg_one(unique_ptr<Token> &next_token, 
  *
  * @param next__token 次ののトークンリストを返すための参照
  * @param current_token 引数の開始位置のトークン
+ * @param param 定義された関数マクロの引数
+ * @param is_variadic 可変長引数をとるか
  * @return 定義された引数名と読み取った定数式を対応させたリスト
  */
-unique_ptr<MacroArgs> PreProcess::read_macro_args(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const vector<string> &params)
+unique_ptr<MacroArgs> PreProcess::read_macro_args(
+	unique_ptr<Token> &next_token,
+	unique_ptr<Token> &&current_token,
+	const vector<string> &params,
+	const bool &is_variadic)
 {
 	auto args = make_unique<MacroArgs>();
 	bool first = true;
@@ -935,9 +963,31 @@ unique_ptr<MacroArgs> PreProcess::read_macro_args(unique_ptr<Token> &next_token,
 			current_token = skip(move(current_token), ",");
 		}
 		first = false;
-		(*args)[pp] = resd_macro_arg_one(current_token, move(current_token));
+		(*args)[pp] = resd_macro_arg_one(current_token, move(current_token), false);
 	}
-	if (!current_token->is_equal(")"))
+
+	/* 可変長引数 */
+	if (is_variadic)
+	{
+		unique_ptr<Token> varg;
+		/* 残りの引数がないならEOFトークン */
+		if (current_token->is_equal(")"))
+		{
+			varg = new_eof_token(current_token);
+		}
+		/* 残りの引数が存在するなら全て読み込む */
+		else
+		{
+			if (!first)
+			{
+				/* 2個目以降では','区切りが必要 */
+				current_token = skip(move(current_token), ",");
+			}
+			varg = resd_macro_arg_one(current_token, move(current_token), true);
+		}
+		(*args)["__VA_ARGS__"] = move(varg);
+	}
+	else if (!current_token->is_equal(")"))
 	{
 		error_token("引数が多すぎます", current_token.get());
 	}

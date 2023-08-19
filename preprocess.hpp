@@ -43,6 +43,7 @@ struct Macro
 	unique_ptr<Token> _body;			 /*!< マクロの展開先 */
 	unique_ptr<vector<string>> _params;	 /*!< 関数マクロの引数 */
 	bool _is_objlike = true;			 /*!< オブジェクトマクロであるか */
+	bool _is_variadic = false;			 /*!< 可変長引数をとるか */
 	Macro_handler_fn _handler = nullptr; /*!< 動的な事前定義マクロの動作(__LINE__など) */
 
 	Macro(unique_ptr<Token> &&body, const bool &objlike);
@@ -74,9 +75,9 @@ private:
 	static bool expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static unique_ptr<Token> substitute_obj_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &macro);
 	static unique_ptr<Token> substitute_func_macro(const unique_ptr<Token> &dst, const unique_ptr<Token> &macro, const MacroArgs &args);
-	static unique_ptr<vector<string>> read_macro_params(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-	static unique_ptr<Token> resd_macro_arg_one(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
-	static unique_ptr<MacroArgs> read_macro_args(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const vector<string> &params);
+	static unique_ptr<vector<string>> read_macro_params(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, bool &is_variadic);
+	static unique_ptr<Token> resd_macro_arg_one(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const bool &read_rest);
+	static unique_ptr<MacroArgs> read_macro_args(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, const vector<string> &params, const bool &is_variadic);
 	static void add_hideset(unique_ptr<Hideset> &hs, const string &name);
 	static long evaluate_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
 	static unique_ptr<Token> read_const_expr(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token);
