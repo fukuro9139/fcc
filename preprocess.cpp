@@ -1201,6 +1201,9 @@ unique_ptr<Token> PreProcess::include_file(unique_ptr<Token> &&follow_token, con
  */
 string PreProcess::search_include_path(const string &current_path, const string &filename, const bool &dquote)
 {
+
+	constexpr string_view std_inc_path[] = {"/usr/local/include", "/usr/include/x86_64-linux-gnu", "/usr/include"};
+
 	fs::path pfilename = filename;
 	/* 絶対パス */
 	if (pfilename.is_absolute())
@@ -1227,6 +1230,18 @@ string PreProcess::search_include_path(const string &current_path, const string 
 
 	/* -Iオプションで追加されたパスを検索する */
 	for (const auto &base_path : input_options->_include)
+	{
+		/* includeするファイルのパスを生成、base_pathからの相対パス */
+		inc_path = fs::path(base_path) / pfilename;
+		/* ファイルが存在するときパスを返す */
+		if (fs::is_regular_file(inc_path))
+		{
+			return inc_path.string();
+		}
+	}
+
+	/* 標準インクルードパスを検索する */
+	for (const auto &base_path : std_inc_path)
 	{
 		/* includeするファイルのパスを生成、base_pathからの相対パス */
 		inc_path = fs::path(base_path) / pfilename;
