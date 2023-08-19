@@ -116,6 +116,10 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 		error("入力ファイルが指定されていません\n");
 	}
 
+	/* デフォルトのインクルードパスを設定する */
+	auto path = fs::path(args[0]).parent_path() / "include";
+	in->_include.emplace_back(path.string());
+
 	return in;
 }
 
