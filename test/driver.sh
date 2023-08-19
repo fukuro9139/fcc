@@ -88,4 +88,11 @@ echo "#include \"$tmp/out1.h\"" > $tmp/out1.c
 cat $tmp/out2 | grep -q foo
 check '-E and -o'
 
+# -I
+mkdir $tmp/dir
+echo foo > $tmp/dir/i-option-test
+echo "#include \"i-option-test\"" > $tmp/i-option-test.c
+./fcc -I$tmp/dir -E $tmp/i-option-test.c | grep -q foo
+check -I
+
 echo OK

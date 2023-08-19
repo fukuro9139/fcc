@@ -18,6 +18,7 @@ class Input
 public:
 	/* メンバ変数(public) */
 	vector<string> _inputs;	  /*!< インプットファイルパス */
+	vector<string> _include;  /*!< インクルードパス */
 	string _output_path = ""; /*!< アウトプットファイルパス */
 	string _fcc_input = "";	  /*!< -fccオプションが指定されている時の入力先 */
 	string _fcc_output = "";  /*!< -fccオプションが指定されている時の出力先 */
@@ -27,10 +28,11 @@ public:
 	bool _opt_fcc = false;	  /*!< -fccオプションが指定されているか */
 
 	/* 静的メンバ関数(public) */
-	static unique_ptr<Input> parse_args(const std::vector<std::string> &args);
+	static unique_ptr<Input> parse_args(const std::vector<string> &args);
 	static string replace_extension(const string &path, const string &extn);
 
 private:
 	/* 静的メンバ関数(input) */
 	static void usage(int status);
+	static bool take_arg(const string &arg);
 };

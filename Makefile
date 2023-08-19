@@ -46,7 +46,7 @@ all: clean $(TARGET)
 #テスト
 ifeq ($(WINDOWS), 0)
 test/%.exe: $(TARGET) test/%.c
-	./fcc -c -o test/$*.o test/$*.c
+	./fcc -Itest -c -o test/$*.o test/$*.c
 	$(CC) -o $@ test/$*.o -xc test/common
 
 test: $(TESTS)
@@ -54,7 +54,7 @@ test: $(TESTS)
 	test/driver.sh
 else
 test/%.exe: $(TARGET) test/%.c
-	./fcc -S -o test/$*.s test/$*.c
+	./fcc -Itest -S -o test/$*.s test/$*.c
 
 test: $(TESTS)
 endif

@@ -12,6 +12,7 @@
 #include "preprocess.hpp"
 #include "tokenize.hpp"
 #include "parse.hpp"
+#include "input.hpp"
 
 CondIncl::CondIncl() = default;
 CondIncl::CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included)
@@ -25,8 +26,11 @@ Macro::Macro(unique_ptr<Token> &&body, const bool &objlike)
 /** #if関連の条件リスト */
 vector<unique_ptr<CondIncl>> PreProcess::cond_incl;
 
-/* マクロの一覧 */
+/** マクロの一覧 */
 std::unordered_map<string, unique_ptr<Macro>> PreProcess::macros;
+
+/** 入力オプション */
+const Input *PreProcess::input_options = nullptr;
 
 /**
  * @brief プリプロセスを行う
@@ -34,8 +38,11 @@ std::unordered_map<string, unique_ptr<Macro>> PreProcess::macros;
  * @param token トークンリストの先頭
  * @return unique_ptr<Token>
  */
-unique_ptr<Token> PreProcess::preprocess(unique_ptr<Token> &&token)
+unique_ptr<Token> PreProcess::preprocess(unique_ptr<Token> &&token, const unique_ptr<Input> &in)
 {
+	/* 入力オプション */
+	input_options = in.get();
+
 	/* プリプロセスマクロとディレクティブを処理 */
 	token = preprocess2(move(token));
 
@@ -92,21 +99,16 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 			bool dquote;
 			string filename = read_include_filename(token, move(token->_next), dquote);
 
-			if (filename[0] != '/')
+			/* includeするパスを検索する */
+			auto inc_path = search_include_path(start->_file->_name, filename, dquote);
+			/* 見つからなければエラー */
+			if (inc_path.empty())
 			{
-				/* 現在のファイル */
-				fs::path src_path = start->_file->_name;
-				/* includeするファイルのパスを生成、現在のファイルからの相対パス */
-				string inc_path = src_path.replace_filename(filename).string();
-				/* ファイルが存在するとき読み込む */
-				if (fs::is_regular_file(inc_path))
-				{
-					token = include_file(move(token), inc_path);
-					continue;
-				}
+				error_token("ファイルが見つかりません", start.get());
 			}
+
 			/* includeしたトークンを繋ぐ */
-			token = include_file(move(token), filename);
+			token = include_file(move(token), inc_path);
 			continue;
 		}
 
@@ -1187,4 +1189,54 @@ unique_ptr<Token> PreProcess::include_file(unique_ptr<Token> &&follow_token, con
 {
 	auto include_token = Token::tokenize_file(path);
 	return append(move(include_token), move(follow_token));
+}
+
+/**
+ * @brief インクルードファイルのパスを検索する。見つからなければ空文字列を返す。
+ *
+ * @param current_path 現在処理しているファイルのパス
+ * @param filename インクルードファイルの名前
+ * @param dquote #include "..."形式であるか
+ * @return インクルードファイルのパス
+ */
+string PreProcess::search_include_path(const string &current_path, const string &filename, const bool &dquote)
+{
+	fs::path pfilename = filename;
+	/* 絶対パス */
+	if (pfilename.is_absolute())
+	{
+		return filename;
+	}
+
+	/* 現在のファイル */
+	fs::path pcurrent_path = current_path;
+	/* インクルードするファイルのパス */
+	fs::path inc_path;
+
+	/* #include "..."形式では現在のパスからの相対パスから探す */
+	if (dquote)
+	{
+		/* 現在のファイルからの相対パス */
+		inc_path = pcurrent_path.replace_filename(filename);
+		/* ファイルが存在するとき読み込む */
+		if (fs::is_regular_file(inc_path))
+		{
+			return inc_path.string();
+		}
+	}
+
+	/* -Iオプションで追加されたパスを検索する */
+	for (const auto &base_path : input_options->_include)
+	{
+		/* includeするファイルのパスを生成、base_pathからの相対パス */
+		inc_path = fs::path(base_path) / pfilename;
+		/* ファイルが存在するときパスを返す */
+		if (fs::is_regular_file(inc_path))
+		{
+			return inc_path.string();
+		}
+	}
+
+	/* 見つからなければ空文字列を返す */
+	return "";
 }

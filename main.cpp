@@ -58,7 +58,7 @@ void fcc(const unique_ptr<Input> &in, const string &input_path, const string &ou
 	auto token = Token::tokenize_file(input_path);
 
 	/* プリプロセス */
-	token = PreProcess::preprocess(move(token));
+	token = PreProcess::preprocess(move(token), in);
 
 	/* -Eオプションが指定されている場合はプリプロセス済ファイルを出力 */
 	if (in->_opt_E)

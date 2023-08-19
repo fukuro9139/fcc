@@ -25,6 +25,14 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 	/* args[0]は実行ファイルのパス */
 	for (size_t i = 1, sz = args.size(); i < sz; ++i)
 	{
+		if (take_arg(args[i]))
+		{
+			if (i + 1 == sz)
+			{
+				usage(1);
+			}
+		}
+
 		if ("--help" == args[i])
 		{
 			usage(0);
@@ -32,12 +40,13 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 
 		if ("-o" == args[i])
 		{
-			/* "-o" オプションの後に何も引数がなければエラー終了 */
-			if (++i == sz)
-			{
-				usage(1);
-			}
-			in->_output_path = args[i];
+			in->_output_path = args[++i];
+			continue;
+		}
+
+		if (args[i].starts_with("-o"))
+		{
+			in->_output_path = args[i].substr(2);
 			continue;
 		}
 
@@ -59,6 +68,12 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			continue;
 		}
 
+		if (args[i].starts_with("-I"))
+		{
+			in->_include.emplace_back(args[i].substr(2));
+			continue;
+		}
+
 		if ("-fcc" == args[i])
 		{
 			in->_opt_fcc = true;
@@ -74,12 +89,6 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 		if ("-fcc-output" == args[i])
 		{
 			in->_fcc_output = args[++i];
-			continue;
-		}
-
-		if (args[i].starts_with("-o"))
-		{
-			in->_output_path = args[i].substr(2);
 			continue;
 		}
 
@@ -139,4 +148,26 @@ string Input::replace_extension(const string &path, const string &extn)
 	}
 
 	return path.substr(0, dot_pos) + extn;
+}
+
+/**
+ * @brief 引数が必要なオプションであるか（-o, -I）
+ *
+ * @param arg 入力引数
+ * @return true 引数が必要なオプションである
+ * @return false 引数が必要なオプションではない
+ */
+bool Input::take_arg(const string &arg)
+{
+	constexpr string_view ops[] = {"-o", "-I"};
+
+	for (auto &x : ops)
+	{
+		if (arg == x)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

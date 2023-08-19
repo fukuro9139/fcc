@@ -14,6 +14,7 @@
 #include "common.hpp"
 
 class Token;
+class Input;
 using MacroArgs = std::unordered_map<string, unique_ptr<Token>>;
 
 /** #if関連のブロックの種類 */
@@ -49,7 +50,7 @@ class PreProcess
 {
 public:
 	/* 静的メンバ関数(public) */
-	static unique_ptr<Token> preprocess(unique_ptr<Token> &&token);
+	static unique_ptr<Token> preprocess(unique_ptr<Token> &&token, const unique_ptr<Input> &in);
 
 private:
 	PreProcess();
@@ -89,9 +90,11 @@ private:
 	static unique_ptr<Token> vir_file_tokenize(const string &str, const Token *ref);
 	static string read_include_filename(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, bool &is_dquote);
 	static unique_ptr<Token> include_file(unique_ptr<Token> &&follow_token, const string &path);
+	static string search_include_path(const string &current_path, const string &filename, const bool &dquote);
 
 	static vector<unique_ptr<CondIncl>> cond_incl;
 	static std::unordered_map<string, unique_ptr<Macro>> macros;
+	static const Input *input_options;
 
 	/** 識別子一覧 */
 	static constexpr string_view keywords[] = {"return", "if", "else", "for", "while", "int", "sizeof", "char", "float", "double",
