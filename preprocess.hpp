@@ -99,6 +99,7 @@ private:
 	static void init_macros();
 	static unique_ptr<Token> file_macro(const Token *macro_token);
 	static unique_ptr<Token> line_macro(const Token *macro_token);
+	static void join_adjacent_string_literals(Token *token);
 
 	static vector<unique_ptr<CondIncl>> cond_incl;
 	static std::unordered_map<string, unique_ptr<Macro>> macros;

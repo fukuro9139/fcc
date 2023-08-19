@@ -57,6 +57,10 @@ unique_ptr<Token> PreProcess::preprocess(unique_ptr<Token> &&token, const unique
 
 	/* 識別子を認識 */
 	convert_keywords(token);
+
+	/* 連続する文字列リテラルを連結 */
+	join_adjacent_string_literals(token.get());
+
 	return token;
 }
 
@@ -1449,4 +1453,41 @@ unique_ptr<Token> PreProcess::file_macro(const Token *macro_token)
 unique_ptr<Token> PreProcess::line_macro(const Token *macro_token)
 {
 	return new_num_token(macro_token->_line_no, macro_token);
+}
+
+/**
+ * @brief 連続する文字列リテラルをまとめる
+ *
+ * @param token トークンリストの先頭
+ */
+void PreProcess::join_adjacent_string_literals(Token *token1)
+{
+	while (TokenKind::TK_EOF != token1->_kind)
+	{
+		/* 文字列リテラルが連続しない場合はそのまま */
+		if (TokenKind::TK_STR != token1->_kind || TokenKind::TK_STR != token1->_next->_kind)
+		{
+			token1 = token1->_next.get();
+			continue;
+		}
+
+		auto token2 = token1->_next.get();
+		while (token2->_next->_kind == TokenKind::TK_STR)
+		{
+			token2 = token2->_next.get();
+		}
+
+		string buf = "\"";
+		/* token1からtoken2まで文字列リテラルが連続しているのでまとめる */
+		for (auto t = token1; t != token2; t = t->_next.get())
+		{
+			buf += t->_str.substr(1, t->_str.size() - 2);
+		}
+		buf += token2->_str.substr(1, token2->_str.size() - 2);
+		buf.push_back('"');
+
+		token1->_str = buf;
+		token1->_next = move(token2->_next);
+		token1 = token1->_next.get();
+	}
 }
