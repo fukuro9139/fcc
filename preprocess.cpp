@@ -88,6 +88,10 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 		auto start = move(token);
 		token = move(start->_next);
 
+		if(token->is_equal("error")){
+			error_token("Error", token.get());
+		}
+
 		/* '#'のみの行は無視する */
 		if (token->_at_begining)
 		{
