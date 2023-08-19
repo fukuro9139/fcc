@@ -714,6 +714,8 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
 	/* 引数の次は"{"がくる */
 	token = skip(token, "{");
 
+	Object::push_scope("__func__")->_var = new_string_literal(fn->_name);
+
 	/* 関数の中身を読み取る */
 	fn->_body = compound_statement(&token, token);
 
