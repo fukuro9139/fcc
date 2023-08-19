@@ -87,10 +87,12 @@ private:
 	static string join_tokens(const Token *start, const Token *end);
 	static unique_ptr<Token> stringize(const Token *ref, const Token *arg);
 	static unique_ptr<Token> paste(const Token *lhs, const Token *rhs);
-	static unique_ptr<Token> vir_file_tokenize(const string &str, const Token *ref);
+	static unique_ptr<Token> vir_file_tokenize(const string &str, const string &file_name, const int &file_no);
 	static string read_include_filename(unique_ptr<Token> &next_token, unique_ptr<Token> &&current_token, bool &is_dquote);
 	static unique_ptr<Token> include_file(unique_ptr<Token> &&follow_token, const string &path);
 	static string search_include_path(const string &current_path, const string &filename, const bool &dquote);
+	static void define_macro(const string &name, const string &buf);
+	static void init_macros();
 
 	static vector<unique_ptr<CondIncl>> cond_incl;
 	static std::unordered_map<string, unique_ptr<Macro>> macros;

@@ -43,6 +43,9 @@ unique_ptr<Token> PreProcess::preprocess(unique_ptr<Token> &&token, const unique
 	/* 入力オプション */
 	input_options = in.get();
 
+	/* 事前定義マクロの定義 */
+	init_macros();
+
 	/* プリプロセスマクロとディレクティブを処理 */
 	token = preprocess2(move(token));
 
@@ -88,7 +91,8 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 		auto start = move(token);
 		token = move(start->_next);
 
-		if(token->is_equal("error")){
+		if (token->is_equal("error"))
+		{
 			error_token("Error", token.get());
 		}
 
@@ -1032,7 +1036,7 @@ unique_ptr<Token> PreProcess::new_str_token(const string &str, const Token *ref)
 	string s = quate_string(str);
 	s.push_back('\n');
 	/* 文字列をもった仮想的なファイルをトークナイズする */
-	return vir_file_tokenize(s, ref);
+	return vir_file_tokenize(s, ref->_file->_name, ref->_file->_file_no);
 }
 
 /**
@@ -1046,7 +1050,7 @@ unique_ptr<Token> PreProcess::new_num_token(const int &val, const Token *ref)
 {
 	string s = std::to_string(val);
 	s.push_back('\n');
-	return vir_file_tokenize(s, ref);
+	return vir_file_tokenize(s, ref->_file->_name, ref->_file->_file_no);
 }
 
 /**
@@ -1097,7 +1101,7 @@ unique_ptr<Token> PreProcess::paste(const Token *lhs, const Token *rhs)
 	buf += Token::reverse_str_literal(rhs);
 	buf.push_back('\n');
 	/* ファイルをトークナイズする */
-	auto tok = vir_file_tokenize(buf, lhs);
+	auto tok = vir_file_tokenize(buf, lhs->_file->_name, lhs->_file->_file_no);
 	if (TokenKind::TK_EOF != tok->_next->_kind)
 	{
 		error_token("連結した文字列\'" + buf + "\'は無効なトークンです", lhs);
@@ -1112,12 +1116,12 @@ unique_ptr<Token> PreProcess::paste(const Token *lhs, const Token *rhs)
  * @param ref 新たに作成するトークンのテンプレート
  * @return トークナイズした結果
  */
-unique_ptr<Token> PreProcess::vir_file_tokenize(const string &str, const Token *ref)
+unique_ptr<Token> PreProcess::vir_file_tokenize(const string &str, const string &file_name, const int &file_no)
 {
 	/* ファイル構造体の実体を管理するための配列 */
 	static vector<unique_ptr<File>> files;
 
-	files.push_back(make_unique<File>(ref->_file->_name, ref->_file->_file_no, str));
+	files.push_back(make_unique<File>(file_name, file_no, str));
 	/* ファイルをトークナイズする */
 	auto tok = Token::tokenize(files.back().get());
 	return tok;
@@ -1258,4 +1262,82 @@ string PreProcess::search_include_path(const string &current_path, const string 
 
 	/* 見つからなければ空文字列を返す */
 	return "";
+}
+
+/**
+ * @brief マクロを定義する
+ *
+ * @param name マクロ名
+ * @param buf マクロの展開先
+ */
+void PreProcess::define_macro(const string &name, const string &buf)
+{
+	auto tok = vir_file_tokenize(buf, "<built-in>", 1);
+	macros[name] = make_unique<Macro>(move(tok), true);
+}
+
+/**
+ * @brief 事前定義マクロを定義する。（例：__STDC__）
+ *
+ */
+void PreProcess::init_macros()
+{
+
+	define_macro("_LP64", "1");
+	define_macro("__C99_MACRO_WITH_VA_ARGS", "1");
+	define_macro("__LP64__", "1");
+	define_macro("__SIZEOF_DOUBLE__", "8");
+	define_macro("__SIZEOF_FLOAT__", "4");
+	define_macro("__SIZEOF_INT__", "4");
+	define_macro("__SIZEOF_LONG_DOUBLE__", "8");
+	define_macro("__SIZEOF_LONG_LONG__", "8");
+	define_macro("__SIZEOF_LONG__", "8");
+	define_macro("__SIZEOF_POINTER__", "8");
+	define_macro("__SIZEOF_PTRDIFF_T__", "8");
+	define_macro("__SIZEOF_SHORT__", "2");
+	define_macro("__SIZEOF_SIZE_T__", "8");
+	define_macro("__SIZE_TYPE__", "unsigned long");
+	define_macro("__STDC_HOSTED__", "1");
+	define_macro("__STDC_NO_ATOMICS__", "1");
+	define_macro("__STDC_NO_COMPLEX__", "1");
+	define_macro("__STDC_NO_THREADS__", "1");
+	define_macro("__STDC_NO_VLA__", "1");
+	define_macro("__STDC_VERSION__", "201112L");
+	define_macro("__STDC__", "1");
+	define_macro("__USER_LABEL_PREFIX__", "");
+	define_macro("__alignof__", "_Alignof");
+	define_macro("__amd64", "1");
+	define_macro("__amd64__", "1");
+	define_macro("__fcc__", "1");
+	define_macro("__const__", "const");
+	define_macro("__inline__", "inline");
+	define_macro("__signed__", "signed");
+	define_macro("__typeof__", "typeof");
+	define_macro("__volatile__", "volatile");
+	define_macro("__x86_64", "1");
+	define_macro("__x86_64__", "1");
+
+#if __linux__
+
+	define_macro("__linux", "1");
+	define_macro("__linux__", "1");
+	define_macro("__unix", "1");
+	define_macro("__unix__", "1");
+	define_macro("linux", "1");
+	define_macro("unix", "1");
+	define_macro("__gnu_linux__", "1");
+	define_macro("__ELF__", "1");
+
+#else
+
+	define_macro("WIN64", "1");
+	define_macro("WIN32", "1");
+	define_macro("_WIN64", "1");
+	define_macro("_WIN32", "1");
+	define_macro("__WIN64", "1");
+	define_macro("__WIN32", "1");
+	define_macro("__WIN32__", "1");
+	define_macro("__WIN64__", "1");
+
+#endif /* __linux__ */
 }

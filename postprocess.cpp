@@ -11,7 +11,7 @@
 
 #include "postprocess.hpp"
 
-#ifndef WINDOWS
+#if __linux__
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -171,4 +171,4 @@ string PostProcess::find_gcc_libpath()
     error("gccライブラリが見つかりません");
 }
 
-#endif /* WINDOWS */
+#endif /* __linux__ */

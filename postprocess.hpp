@@ -13,7 +13,7 @@
 
 #include "common.hpp"
 
-#ifndef WINDOWS
+#if __linux__
 
 class PostProcess
 {
@@ -29,4 +29,4 @@ private:
     static string find_gcc_libpath();
 };
 
-#endif /* WINDOWS */
+#endif /* __linux__ */

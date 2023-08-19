@@ -112,14 +112,7 @@ int main(int argc, char **argv)
 			output_path = "-";
 		}
 
-#ifdef WINDOWS
-
-		else
-		{
-			output_path = Input::replace_extension(input_path, ".s");
-		}
-
-#else /* WINDOWS */
+#if __linux__
 
 		/* ファイル名は入力ファイルと同じにする */
 		else if (in->_opt_S)
@@ -131,13 +124,17 @@ int main(int argc, char **argv)
 			output_path = Input::replace_extension(input_path, ".o");
 		}
 
-#endif /* WINDOWS */
+#else /* __linux__ */
 
-#ifdef WINDOWS
+		else
+		{
+			output_path = Input::replace_extension(input_path, ".s");
+		}
 
-		run_fcc(args, input_path, output_path);
+#endif /* __linux__ */
 
-#else
+#if __linux__
+
 		/* 入力ファイルの拡張子が".o"の場合 */
 		if (input_path.ends_with(".o"))
 		{
@@ -162,7 +159,8 @@ int main(int argc, char **argv)
 			error("不明な拡張子です: " + input_path);
 		}
 
-		if(in->_opt_E){
+		if (in->_opt_E)
+		{
 			run_fcc(args, input_path, output_path);
 			continue;
 		}
@@ -197,17 +195,22 @@ int main(int argc, char **argv)
 		PostProcess::assemble(tmpfile1, tmpfile2);
 		/* リンク対象のリストに追加 */
 		ld_args.emplace_back(tmpfile2);
-#endif /* WINDOWS */
+
+#else
+
+		run_fcc(args, input_path, output_path);
+
+#endif /* __linux__ */
 	}
 
-#ifndef WINDOWS
+#if __linux__
 	/* リンク */
 	if (!ld_args.empty())
 	{
 		PostProcess::run_linker(ld_args, in->_output_path.empty() ? "a.out" : in->_output_path);
 	}
 
-#endif /* WINDOWS */
+#endif /* __linux__ */
 
 	return 0;
 }

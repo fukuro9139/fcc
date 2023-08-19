@@ -336,6 +336,8 @@ of(char), \
 	ASSERT(4, foo4);
 #undef foo4
 
+	ASSERT(1, __STDC__);
+
 	printf("OK\n");
 	return 0;
 }
