@@ -12,7 +12,7 @@
 #include "common.hpp"
 #include "tokenize.hpp"
 
-#ifndef WINDOWS
+#if __linux__
 
 #include <sys/wait.h>
 #include <unistd.h>
@@ -22,7 +22,7 @@
 
 #include <windows.h>
 
-#endif /* WINDOWS */
+#endif /* __linux__ */
 
 /**
  * @brief エラーを報告して終了する
@@ -132,7 +132,7 @@ void warn_token(string &&msg, Token *token)
  * @param argv 引数リスト
  */
 void run_subprocess(const vector<string> &argv)
-#ifndef WINDOWS
+#if __linux__
 {
     /* 引数の数 + 1 (NULL終端)*/
     size_t capacity = argv.size() + 1;
@@ -225,7 +225,7 @@ void run_subprocess(const vector<string> &argv)
     /* 解放 */
     // delete[] wcmd;
 }
-#endif /* WINDOWS */
+#endif /* __linux__ */
 
 /**
  * @brief ファイルを開いてファイルストリームのポインタを返す。

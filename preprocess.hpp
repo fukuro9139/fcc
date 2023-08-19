@@ -16,6 +16,7 @@
 class Token;
 class Input;
 using MacroArgs = std::unordered_map<string, unique_ptr<Token>>;
+using Macro_handler_fn = unique_ptr<Token> (*)(const Token *);
 
 /** #if関連のブロックの種類 */
 enum class BlockKind
@@ -39,9 +40,10 @@ struct CondIncl
 /** マクロ */
 struct Macro
 {
-	unique_ptr<Token> _body;			/*!< マクロの展開先 */
-	unique_ptr<vector<string>> _params; /*!< 関数マクロの引数 */
-	bool _is_objlike = true;			/*!< オブジェクトマクロであるか */
+	unique_ptr<Token> _body;			 /*!< マクロの展開先 */
+	unique_ptr<vector<string>> _params;	 /*!< 関数マクロの引数 */
+	bool _is_objlike = true;			 /*!< オブジェクトマクロであるか */
+	Macro_handler_fn _handler = nullptr; /*!< 動的な事前定義マクロの動作(__LINE__など) */
 
 	Macro(unique_ptr<Token> &&body, const bool &objlike);
 };
@@ -92,7 +94,10 @@ private:
 	static unique_ptr<Token> include_file(unique_ptr<Token> &&follow_token, const string &path);
 	static string search_include_path(const string &current_path, const string &filename, const bool &dquote);
 	static void define_macro(const string &name, const string &buf);
+	static void add_builtin(const string &name, const Macro_handler_fn &fn);
 	static void init_macros();
+	static unique_ptr<Token> file_macro(const Token *macro_token);
+	static unique_ptr<Token> line_macro(const Token *macro_token);
 
 	static vector<unique_ptr<CondIncl>> cond_incl;
 	static std::unordered_map<string, unique_ptr<Macro>> macros;

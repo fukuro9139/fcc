@@ -636,11 +636,27 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 		return false;
 	}
 
+	/* 動的な事前定義マクロ（__LINE__など） */
+	if (m->_handler)
+	{
+		next_token = m->_handler(macro_token.get());
+		next_token->_at_begining = macro_token->_at_begining;
+		next_token->_has_space = macro_token->_has_space;
+		next_token->_next = move(macro_token->_next);
+		return true;
+	}
+
 	/* オブジェクトマクロ */
 	if (m->_is_objlike)
 	{
 
 		auto body = substitute_obj_macro(macro_token, m->_body);
+		/* 展開元のマクロのファイル情報をコピー */
+		for (auto t = body.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+		{
+			t->_file = macro_token->_file;
+			t->_line_no = macro_token->_line_no;
+		}
 		/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
 		next_token = append(move(body), move(macro_token->_next));
 		next_token->_at_begining = macro_token->_at_begining;
@@ -660,6 +676,12 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	auto args = read_macro_args(current_token, move(macro_token->_next->_next), *m->_params);
 	/* 引数を代入してマクロを展開する */
 	auto body = substitute_func_macro(macro_token, m->_body, *args);
+	/* 展開元のマクロのファイル情報をコピー */
+	for (auto t = body.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
+	{
+		t->_file = macro_token->_file;
+		t->_line_no = macro_token->_line_no;
+	}
 	next_token = append(move(body), move(current_token));
 	next_token->_has_space = macro_token->_has_space;
 	next_token->_at_begining = macro_token->_at_begining;
@@ -1277,11 +1299,26 @@ void PreProcess::define_macro(const string &name, const string &buf)
 }
 
 /**
+ * @brief 動的な事前定義マクロを定義する
+ *
+ * @param name マクロ名
+ * @param fn マクロの動作
+ */
+void PreProcess::add_builtin(const string &name, const Macro_handler_fn &fn)
+{
+	auto m = make_unique<Macro>(nullptr, true);
+	m->_handler = fn;
+	macros[name] = move(m);
+}
+
+/**
  * @brief 事前定義マクロを定義する。（例：__STDC__）
  *
  */
 void PreProcess::init_macros()
 {
+	add_builtin("__FILE__", file_macro);
+	add_builtin("__LINE__", line_macro);
 
 	define_macro("_LP64", "1");
 	define_macro("__C99_MACRO_WITH_VA_ARGS", "1");
@@ -1340,4 +1377,26 @@ void PreProcess::init_macros()
 	define_macro("__WIN64__", "1");
 
 #endif /* __linux__ */
+}
+
+/**
+ * @brief __FILE__マクロ
+ *
+ * @param macro_token 展開するマクロのトークン
+ * @return __FILE__マクロが書かれているファイル名のトークン
+ */
+unique_ptr<Token> PreProcess::file_macro(const Token *macro_token)
+{
+	return new_str_token(macro_token->_file->_name, macro_token);
+}
+
+/**
+ * @brief __LINE__マクロ
+ *
+ * @param macro_token 展開するマクロのトークン
+ * @return __LINE__マクロが書かれている行数のトークン
+ */
+unique_ptr<Token> PreProcess::line_macro(const Token *macro_token)
+{
+	return new_num_token(macro_token->_line_no, macro_token);
 }
