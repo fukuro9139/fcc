@@ -230,7 +230,16 @@ unique_ptr<Token> Token::tokenize(const File *file)
 		/* 文字リテラル */
 		if ('\'' == *itr)
 		{
-			current_token->_next = read_char_literal(itr);
+			current_token->_next = read_char_literal(itr, itr);
+			current_token = current_token->_next.get();
+			itr += current_token->_str.size();
+			continue;
+		}
+
+		/* ワイド文字リテラル */
+		if ('L' == *itr && '\'' == *(itr + 1))
+		{
+			current_token->_next = read_char_literal(itr, itr + 1);
 			current_token = current_token->_next.get();
 			itr += current_token->_str.size();
 			continue;
@@ -606,9 +615,9 @@ unique_ptr<Token> Token::read_int_literal(const string::const_iterator &start)
  * @param start 開始位置("'"の位置)
  * @return 文字リテラルのトークン
  */
-unique_ptr<Token> Token::read_char_literal(string::const_iterator &start)
+unique_ptr<Token> Token::read_char_literal(const string::const_iterator &start, const string::const_iterator &quote)
 {
-	auto pos = start + 1;
+	auto pos = quote + 1;
 	if (current_file->_contents.cend() == pos)
 	{
 		error_at("文字リテラルが閉じられていません", start - current_file->_contents.cbegin());

@@ -42,6 +42,9 @@ int main()
 	ASSERT(0, !strcmp("abc" "d", "abcd\nefgh"));
 	ASSERT(0, strcmp("\x9" "0", "\t0"));
 
+	ASSERT(4, sizeof(L'\0'));
+	ASSERT(97, L'a');
+
 	printf("OK\n");
 	return 0;
 }

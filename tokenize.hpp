@@ -45,7 +45,7 @@ public:
 	shared_ptr<Type> _ty;				 /*!< kindがTK_NUMの場合、数値の型 */
 	int _location = 0;					 /*!< トークン文字列の開始位置 */
 	string _str = "";					 /*!< トークンが表す文字列 */
-	const File *_file = nullptr;				 /*!< トークンが含まれるファイル */
+	const File *_file = nullptr;		 /*!< トークンが含まれるファイル */
 	int _line_no = 0;					 /*!< トークン文字列が含まれる行数  */
 	bool _at_begining = false;			 /*!< トークンが行頭であるか  */
 	bool _has_space = false;			 /*!< トークンの直前にスペースが存在するか */
@@ -86,7 +86,7 @@ private:
 	static string read_inputfile(const string &path);
 	static unique_ptr<Token> read_number(const string::const_iterator &start);
 	static unique_ptr<Token> read_int_literal(const string::const_iterator &start);
-	static unique_ptr<Token> read_char_literal(string::const_iterator &start);
+	static unique_ptr<Token> read_char_literal(const string::const_iterator &start, const string::const_iterator &quote);
 	static size_t read_punct(string &&str);
 	static char read_escaped_char(string::const_iterator &new_pos, string::const_iterator &&pos);
 	static unique_ptr<Token> read_string_literal(string::const_iterator &itr);
