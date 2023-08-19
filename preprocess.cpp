@@ -99,8 +99,9 @@ unique_ptr<Token> PreProcess::preprocess2(unique_ptr<Token> &&token)
 				/* includeするファイルのパスを生成、現在のファイルからの相対パス */
 				string inc_path = src_path.replace_filename(filename).string();
 				/* ファイルが存在するとき読み込む */
-				if(fs::is_regular_file(inc_path)){
-					token = include_file(move(token) ,inc_path);
+				if (fs::is_regular_file(inc_path))
+				{
+					token = include_file(move(token), inc_path);
 					continue;
 				}
 			}
@@ -1154,9 +1155,10 @@ string PreProcess::read_include_filename(unique_ptr<Token> &next_token, unique_p
 			}
 			end = end->_next.get();
 		}
+		auto name = join_tokens(start->_next.get(), end);
 		/* インクルードの後のトークンは無視 */
 		next_token = skip_line(move(end->_next));
-		return join_tokens(start->_next.get(), end);
+		return name;
 	}
 
 	/* #include FOO
