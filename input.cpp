@@ -14,6 +14,14 @@
 /** 現在の入力ファイルの種類の指定 */
 FileType Input::specified_file_type = FileType::F_NONE;
 
+/* 文字列とファイルタイプの対応テーブル */
+const std::unordered_map<string, FileType> Input::filetype_table = {
+	{"c", FileType::F_C},
+	{"c-header", FileType::F_C_HEADER},
+	{"assembler", FileType::F_ASM},
+	{"none", FileType::F_NONE},
+};
+
 /**
  * @brief コマンドライン引数を解析する。
  *
@@ -70,7 +78,7 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 		{
 			if (filetype_table.contains(args[++i]))
 			{
-				specified_file_type = filetype_table[args[i]];
+				specified_file_type = filetype_table.at(args[i]);
 			}
 			else
 			{
@@ -80,11 +88,12 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			continue;
 		}
 
-		if(args[i].starts_with("-x")){
+		if (args[i].starts_with("-x"))
+		{
 			auto t = args[i].substr(2);
 			if (filetype_table.contains(t))
 			{
-				specified_file_type = filetype_table[t];
+				specified_file_type = filetype_table.at(t);
 			}
 			else
 			{
@@ -93,7 +102,6 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			}
 			continue;
 		}
-
 
 		if ("-S" == args[i])
 		{

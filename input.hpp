@@ -57,11 +57,5 @@ private:
 	static bool take_arg(const string &arg);
 
 	static FileType specified_file_type;
-
-	static const std::unordered_map<string, FileType> filetype_table = {
-		{"c", FileType::F_C},
-		{"c-header", FileType::F_C_HEADER},
-		{"assembler", FileType::F_ASM},
-		{"none", FileType::F_NONE},
-	};
+	static const std::unordered_map<string, FileType> filetype_table;
 };
