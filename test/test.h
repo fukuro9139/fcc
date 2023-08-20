@@ -6,6 +6,7 @@ int vsprintf(char *buf, char *fmt, void *ap);
 int strcmp(char *p, char *q);
 int memcmp(char *p, char *q, long n);
 void exit(int n);
+int vsprintf();
 
 void assert(int expected, int actual, char *code)
 {
