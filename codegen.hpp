@@ -34,7 +34,8 @@ private:
 
 	static void push();
 	static void pushf();
-	static void push_args(Node *args);
+	static int push_args(Node *args);
+	static void push_args2(Node *args, const bool &first_pass);
 	static void pop(const string_view &reg);
 	static void popf(int reg);
 	static void load(const Type *ty);
@@ -132,6 +133,12 @@ private:
 		{f32i8, f32i16, f32i32, f32i64, f32u8, f32u16, f32u32, f32u64, none, f32f64}, /* f32 */
 		{f64i8, f64i16, f64i32, f64i64, f64u8, f64u16, f64u32, f64u64, f64f32, none}, /* f64 */
 	};
+
+	/** GPレジスタの数 */
+	static constexpr int GP_MAX = 6;
+
+	/** FPレジスタの数 */
+	static constexpr int FP_MAX = 8;
 
 	/* サイズにより型を分類したID */
 	enum class TypeID

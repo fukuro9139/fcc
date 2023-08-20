@@ -307,26 +307,81 @@ void CodeGen::pushf()
 }
 
 /**
- * @brief 引数をスタックにpushしていく
+ * @brief 引数を2回に分けてスタックにpushしていく。
+ * 1回目ではスタック経由で渡す引数、２回目ではレジスタ経由で渡す引数をpushする
  *
- * @param node
+ * @param args 引数ノード
+ * @return スタック経由で渡す引数の数
  */
-void CodeGen::push_args(Node *args)
+int CodeGen::push_args(Node *args)
 {
-	if (args)
-	{
-		push_args(args->_next.get());
+	/* 引数の数(stack: スタック経由で渡す引数, gp:整数, fp:浮動小数点数) */
+	int stack = 0, gp = 0, fp = 0;
 
-		/* 引数を評価 */
-		generate_expression(args);
-		if (args->_ty->is_flonum())
+	/* 引数の数を数える */
+	for (auto arg = args; arg; arg = arg->_next.get())
+	{
+		if (arg->_ty->is_flonum())
 		{
-			pushf();
+			if (fp++ >= FP_MAX)
+			{
+				arg->_pass_by_stack = true;
+				++stack;
+			}
 		}
 		else
 		{
-			push();
+			if (gp++ >= GP_MAX)
+			{
+				arg->_pass_by_stack = true;
+				++stack;
+			}
 		}
+	}
+
+	/* rspの値を16の倍数にする */
+	if ((depth + stack) % 2 == 1)
+	{
+		*os << "  sub rsp, 8\n";
+		depth++;
+		stack++;
+	}
+
+	push_args2(args, true);
+	push_args2(args, false);
+	return stack;
+}
+
+/**
+ * @brief 引数をスタックにpushする。２回に分けてpushするため、この関数は２回呼ばれる。
+ *
+ * @param args 引数ノード
+ * @param first_pass １回目のpushであるか
+ */
+void CodeGen::push_args2(Node *args, const bool &first_pass)
+{
+	if (!args)
+	{
+		return;
+	}
+
+	push_args2(args->_next.get(), first_pass);
+
+	/* 1回目ではスタック経由で渡す引数、２回目ではレジスタ経由で渡す引数をpushする */
+	if ((first_pass && !args->_pass_by_stack) || (!first_pass && args->_pass_by_stack))
+	{
+		return;
+	}
+
+	generate_expression(args);
+
+	if (args->_ty->is_flonum())
+	{
+		pushf();
+	}
+	else
+	{
+		push();
 	}
 }
 
@@ -570,7 +625,7 @@ void CodeGen::generate_expression(Node *node)
 	case NodeKind::ND_FUNCALL:
 	{
 		/* スタックに入れる */
-		push_args(node->_args.get());
+		int stack_args = push_args(node->_args.get());
 		/* raxに関数のアドレスを入れる */
 		generate_expression(node->_lhs.get());
 
@@ -582,30 +637,30 @@ void CodeGen::generate_expression(Node *node)
 		{
 			if (arg->_ty->is_flonum())
 			{
-				popf(fp++);
+				if (fp < FP_MAX)
+				{
+					popf(fp++);
+				}
 			}
 			else
 			{
-				pop(arg_regs64[gp++]);
+				if (gp < GP_MAX)
+				{
+					pop(arg_regs64[gp++]);
+				}
 			}
 		}
 
-		/* 関数を呼び出す時点でのスタックフレームが16の倍数になるように調整 */
-		/* raxのアドレスの関数を呼び出す */
-		if (depth % 2 == 0)
-		{
-			*os << "  call "
-				<< "rax"
-				<< "\n";
-		}
-		else
-		{
-			*os << "  sub rsp, 8\n";
-			*os << "  call "
-				<< "rax"
-				<< "\n";
-			*os << "  add rsp, 8\n";
-		}
+		/* 関数のアドレスをr10に格納 */
+		*os << "  mov r10, rax\n";
+		/* fpの数をraxに格納 */
+		*os << "  mov rax, " << fp << "\n";
+		/* 関数を呼び出す */
+		*os << "  call r10\n";
+
+		/* スタック経由で渡した引数を片付ける */
+		*os << "  add rsp, " << stack_args * 8 << "\n";
+		depth -= stack_args;
 
 		/* x86-64において関数の戻り値がchar/bool, shortのときraxの上位48 または56ビット
 		 * は不定となる。そのため関数の戻り値がchar/bool, shortのとき上位ビットをクリアする。

@@ -35,7 +35,7 @@ struct Member
  *
  */
 enum class NodeKind
- {
+{
 	ND_NULL_EXPR, /*!< 何もしない */
 	ND_ADD,		  /*!< + */
 	ND_SUB,		  /*!< - */
@@ -110,8 +110,9 @@ public:
 	shared_ptr<Member> _member; /*!< 構造体メンバー */
 
 	/* 関数呼び出し */
-	shared_ptr<Type> _func_ty; /*!< 関数の型 */
-	unique_ptr<Node> _args;	   /*!< 引数  */
+	shared_ptr<Type> _func_ty;	 /*!< 関数の型 */
+	unique_ptr<Node> _args;		 /*!< 引数  */
+	bool _pass_by_stack = false; /*!< 引数をスタック経由で渡すか */
 
 	/* 数値 */
 	int64_t _val = 0;	/*!< kindがND_NUMの場合のみ使う、数値の値(整数) */
@@ -153,7 +154,7 @@ public:
 	static unique_ptr<Object> parse(const unique_ptr<Token> &list);
 	static unique_ptr<Node> new_cast(unique_ptr<Node> &&expr, const shared_ptr<Type> &ty);
 	static int64_t const_expr(Token **next_token, Token *current_token);
-	
+
 private:
 	/***************************/
 	/* 静的メンバ関数 (private) */
