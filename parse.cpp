@@ -3100,7 +3100,7 @@ unique_ptr<Node> Node::postfix(Token **next_token, Token *current_token)
  * @details 下記のEBNF規則に従う。 @n
  * primary = "(" "{" statement+ "}" ")" | "(" expression ")" | "sizeof" unary | "sizeof" "(" type-name ")" @n
  * 		   | "_Alignof" "(" type-name ")" | "_Alignof" unary  | identifier args? | str | num @n
- * 		   | args = "(" ")" | identifier
+ * 		   | args = "(" ")" | identifier | "__builtin_reg_class" "(" type-name ")"
  */
 unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 {
@@ -3171,6 +3171,22 @@ unique_ptr<Node> Node::primary(Token **next_token, Token *current_token)
 		auto node = unary(next_token, current_token->_next.get());
 		Type::add_type(node.get());
 		return make_unique<Node>(node->_ty->_align, Type::ULONG_BASE, current_token);
+	}
+
+	/* __builtin_reg_class演算子 */
+	if(current_token->is_equal("__builtin_reg_class")){
+		auto start = current_token;
+		current_token = skip(current_token->_next.get(), "(");
+		auto ty = type_name(&current_token, current_token);
+		*next_token = skip(current_token, ")");
+
+		if(ty->is_integer() || TypeKind::TY_PTR == ty->_kind){
+			return make_unique<Node>(0, start);
+		}
+		if(ty->is_flonum()){
+			return make_unique<Node>(1, start);
+		}
+		return make_unique<Node>(2, start);
 	}
 
 	/* トークンが識別子の場合 */
