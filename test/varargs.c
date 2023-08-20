@@ -13,6 +13,7 @@ int sum1(int x, ...)
             return x;
         x += y;
     }
+    va_end(ap);
 }
 
 int sum2(int x, ...)
@@ -30,6 +31,7 @@ int sum2(int x, ...)
             return x;
         x += z;
     }
+    va_end(ap);
 }
 
 int main()

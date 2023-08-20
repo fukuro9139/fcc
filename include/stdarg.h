@@ -17,7 +17,7 @@ typedef __va_elem va_list[1];
     *(ap) = *(__va_elem *)__va_area__; \
   } while (0)
 
-#define va_end(ap)
+#define va_end(ap) ap = (void *)0
 
 static void *__va_arg_gp(__va_elem *ap)
 {
