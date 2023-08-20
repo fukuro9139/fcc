@@ -480,9 +480,13 @@ unique_ptr<Token> Token::read_number(const string::const_iterator &start)
 		ty = Type::DOUBLE_BASE;
 	}
 
+	auto bol = token->_at_begining;
+	auto space = token->_has_space;
 	token = make_unique<Token>(TokenKind::TK_NUM, start - current_file->_contents.begin(), string(start, itr));
 	token->_fval = val;
 	token->_ty = ty;
+	token->_at_begining = bol;
+	token->_has_space = space;
 
 	return token;
 }
