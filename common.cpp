@@ -24,6 +24,9 @@
 
 #endif /* __linux__ */
 
+/** 警告レベル */
+static int warning_level = 1;
+
 /**
  * @brief エラーを報告して終了する
  *
@@ -119,11 +122,25 @@ void error_token(string &&msg, const Token *token)
  * @brief 警告を出力する
  *
  * @param msg 警告メッセージ
+ * @param leval 警告レベル
  * @param token 対象メッセージ
  */
-void warn_token(string &&msg, Token *token)
+void warn_token(string &&msg, const int &level, Token *token)
 {
+    if(warning_level == 0 || warning_level >= level){
+        return;
+    }
     verror_at(token->_file->_name, token->_file->_contents, move(msg), token->_location, token->_line_no);
+}
+
+/**
+ * @brief 警告レベルを初期化する
+ * 
+ * @param level 警告レベル
+ */
+void init_warning_level(int level)
+{
+    warning_level = level;
 }
 
 /**

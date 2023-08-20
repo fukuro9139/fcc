@@ -56,6 +56,12 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			continue;
 		}
 
+		if ("-w" == args[i])
+		{
+			in->_opt_w = true;
+			continue;
+		}
+
 		if ("-S" == args[i])
 		{
 			in->_opt_S = true;

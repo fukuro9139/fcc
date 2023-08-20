@@ -28,6 +28,7 @@ public:
 	bool _opt_c = false;   /*!< -cオプションが指定されているか */
 	bool _opt_E = false;   /*!< -Eオプションが指定されているか */
 	bool _opt_fcc = false; /*!< -fccオプションが指定されているか */
+	bool _opt_w = false;   /*!< -wオプションが指定されているか */
 
 	/* 静的メンバ関数(public) */
 	static unique_ptr<Input> parse_args(const std::vector<string> &args);

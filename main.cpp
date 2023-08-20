@@ -47,6 +47,15 @@ void run_fcc(const vector<string> &args, const string &input_path, const string 
 }
 
 /**
+ * @brief 初期化を行う
+ * @param in 入力引数
+ */
+void initialize(const unique_ptr<Input> &in)
+{
+	init_warning_level(in->_opt_w ? 0 : 1);
+}
+
+/**
  * @brief コンパイルを実行する
  *
  * @param input_path 入力先
@@ -54,6 +63,9 @@ void run_fcc(const vector<string> &args, const string &input_path, const string 
  */
 void fcc(const unique_ptr<Input> &in, const string &input_path, const string &output_path)
 {
+	/* 初期化 */
+	initialize(in);
+
 	/* 入力ファイルをトークナイズする */
 	auto token = Token::tokenize_file(input_path);
 

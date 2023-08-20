@@ -333,7 +333,7 @@ unique_ptr<Token> PreProcess::skip_line(unique_ptr<Token> &&token)
 		return token;
 	}
 
-	warn_token("このトークンは無視されます", token.get());
+	warn_token("このトークンは無視されます", 1, token.get());
 	while (!token->_at_begining)
 	{
 		token = move(token->_next);
@@ -610,7 +610,7 @@ Macro *PreProcess::add_macro(const unique_ptr<Token> &token, const bool &is_objl
 {
 	if (macros.contains(token->_str))
 	{
-		warn_token("マクロが再定義されています", token.get());
+		warn_token("マクロが再定義されています", 1, token.get());
 	}
 	macros[token->_str] = make_unique<Macro>(move(body), is_objlike);
 	return macros[token->_str].get();
