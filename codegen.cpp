@@ -1242,6 +1242,10 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 			*os << "  mov DWORD PTR [rbp - " << off << "], " << gp * 8 << "\n";
 			*os << "  mov DWORD PTR [rbp - " << off - 4 << "], " << fp * 8 + 48 << "\n";
 
+			/* ６個より多い引数をストアしている領域のアドレス */
+			*os << "  mov QWORD PTR [rbp - " << off - 8 << "], rbp\n";
+			*os << "  add QWORD PTR [rbp - " << off - 8 << "], 16\n";
+
 			/* レジスタの引数をストアしている領域のアドレス */
 			*os << "  mov QWORD PTR [rbp - " << off - 16 << "], rbp\n";
 			*os << "  sub QWORD PTR [rbp - " << off - 16 << "], " << off - 24 << "\n";
