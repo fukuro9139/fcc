@@ -226,56 +226,6 @@ shared_ptr<Type> Object::find_tag_in_internal_scope(const Token *token)
 }
 
 /**
- * @brief 'n'を切り上げて最も近い'align'の倍数にする。
- *
- * @param n 切り上げ対象
- * @param align 基数
- * @return 切り上げた結果
- * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
- */
-int Object::align_to(const int &n, const int &align)
-{
-	return (n + align - 1) / align * align;
-}
-
-/** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。
- *
- * @param prog スタックサイズをセットする関数
- */
-void Object::assign_lvar_offsets(const unique_ptr<Object> &prog)
-{
-	for (auto fn = prog.get(); fn; fn = fn->_next.get())
-	{
-		/* 関数でなければスキップ */
-		if (!fn->_is_function)
-		{
-			continue;
-		}
-
-		int offset = 0;
-
-		/* ローカル変数 */
-		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
-		{
-			offset += var->_ty->_size;
-			offset = align_to(offset, var->_align);
-			var->_offset = offset;
-		}
-		
-		/* 引数 */
-		for (auto *var = fn->_params.get(); var; var = var->_next.get())
-		{
-			offset += var->_ty->_size;
-			offset = align_to(offset, var->_align);
-			var->_offset = offset;
-		}
-
-		/* スタックサイズが16の倍数になるようにアライメントする */
-		fn->_stack_size = align_to(move(offset), 16);
-	}
-}
-
-/**
  * @brief 引数をローカル変数としてローカル変数のリストに繋ぐ
  *
  * @param param 引数のリスト
@@ -286,7 +236,8 @@ void Object::create_params_lvars(shared_ptr<Type> &param)
 	{
 		create_params_lvars(param->_next);
 		/* 引数名が存在しないときエラー */
-		if(!param->_name){
+		if (!param->_name)
+		{
 			error_token("引数名がありません", param->_name_pos);
 		}
 		new_lvar(param->_name->_str, param);

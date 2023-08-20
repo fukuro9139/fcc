@@ -75,8 +75,6 @@ public:
 	static shared_ptr<Type> find_typedef(const Token *token);
 	static shared_ptr<Type> find_tag(const Token *token);
 	static shared_ptr<Type> find_tag_in_internal_scope(const Token *token);
-	static int align_to(const int &n, const int &align);
-	static void assign_lvar_offsets(const unique_ptr<Object> &prog);
 	static void create_params_lvars(shared_ptr<Type> &param);
 	static void enter_scope();
 	static void leave_scope();

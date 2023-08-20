@@ -1267,10 +1267,16 @@ void CodeGen::emit_text(const unique_ptr<Object> &program)
 		int gp = 0, fp = 0;
 		for (auto var = fn->_params.get(); var; var = var->_next.get())
 		{
+			/* スタック渡しの引数 */
+			if(var->_offset < 0){
+				continue;
+			}
+			/* 浮動小数点数 */
 			if (var->_ty->is_flonum())
 			{
 				store_fp(fp++, var->_offset, var->_ty->_size);
 			}
+			/* 整数 */
 			else
 			{
 				store_gp(gp++, var->_offset, var->_ty->_size);
@@ -1317,11 +1323,90 @@ void CodeGen::generate_code(const unique_ptr<Object> &program, const string &inp
 	}
 
 	/* スタックサイズを計算してセット */
-	Object::assign_lvar_offsets(program);
+	assign_lvar_offsets(program);
 
 	/* .data部を出力 */
 	emit_data(program);
 
 	/* text部を出力 */
 	emit_text(program);
+}
+
+
+/** @brief 関数に必要なスタックサイズを計算してstack_sizeにセットする。
+ *
+ * @param prog スタックサイズをセットする関数
+ */
+void CodeGen::assign_lvar_offsets(const unique_ptr<Object> &prog)
+{
+	for (auto fn = prog.get(); fn; fn = fn->_next.get())
+	{
+		/* 関数でなければスキップ */
+		if (!fn->_is_function)
+		{
+			continue;
+		}
+
+		/* 関数が多数の引数を持つとき、一部の引数はレジスタではなくスタック経由で渡される。
+		 * 最初にスタック経由で渡される引数はRBP + 16に配置される
+		 */
+		/* RBPより上側 */
+		int top = 16;
+		/* RBPより下側 */
+		int bottom = 0;
+
+		int gp = 0, fp = 0;
+
+		/* スタック経由で渡される引数 */
+		for (auto *var = fn->_params.get(); var; var = var->_next.get()){
+			if(var->_ty->is_flonum()){
+				if(fp++ < FP_MAX){
+					continue;
+				}
+			}else{
+				if(gp++ < GP_MAX){
+					continue;
+				}
+			}
+
+			top = align_to(top, 8);
+			var->_offset = -top;
+			top += var->_ty->_size;
+		}
+
+		/* ローカル変数 */
+		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
+		{
+			bottom += var->_ty->_size;
+			bottom = align_to(bottom, var->_align);
+			var->_offset = bottom;
+		}
+
+		/* 引数 */
+		for (auto *var = fn->_params.get(); var; var = var->_next.get())
+		{
+			if(var->_offset < 0){
+				continue;
+			}
+			bottom += var->_ty->_size;
+			bottom = align_to(bottom, var->_align);
+			var->_offset = bottom;
+		}
+
+		/* スタックサイズが16の倍数になるようにアライメントする */
+		fn->_stack_size = align_to(move(bottom), 16);
+	}
+}
+
+/**
+ * @brief 'n'を切り上げて最も近い'align'の倍数にする。
+ *
+ * @param n 切り上げ対象
+ * @param align 基数
+ * @return 切り上げた結果
+ * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
+ */
+int CodeGen::align_to(const int &n, const int &align)
+{
+	return (n + align - 1) / align * align;
 }
