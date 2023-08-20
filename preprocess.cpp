@@ -804,7 +804,7 @@ unique_ptr<Token> PreProcess::substitute_func_macro(const unique_ptr<Token> &dst
 				tok = rhs->_next.get();
 				continue;
 			}
-			/* １番目のオペランドの引数トークンがではない場合、引数の展開だけして連結は次のループに任せる */
+			/* １番目のオペランドの引数トークンが空ではない場合、引数の展開だけして連結は次のループに任せる */
 			for (auto t = arg_token; TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 			{
 				cur->_next = Token::copy_token(t);
@@ -1180,6 +1180,8 @@ unique_ptr<Token> PreProcess::paste(const Token *lhs, const Token *rhs)
 	{
 		error_token("連結した文字列\'" + buf + "\'は無効なトークンです", lhs);
 	}
+	tok->_has_space = lhs->_has_space;
+	tok->_at_begining = lhs->_at_begining;
 	return tok;
 }
 
