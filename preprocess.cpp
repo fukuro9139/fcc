@@ -657,10 +657,9 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	{
 
 		auto body = substitute_obj_macro(macro_token, m->_body);
-		/* 展開元のマクロのファイル情報をコピー */
+		/* 展開元のマクロの行数情報をコピー */
 		for (auto t = body.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 		{
-			t->_file = macro_token->_file;
 			t->_line_no = macro_token->_line_no;
 		}
 		/* 展開したマクロのトークンリストの末尾に現在のトークンシルトを接続する */
@@ -682,10 +681,9 @@ bool PreProcess::expand_macro(unique_ptr<Token> &next_token, unique_ptr<Token> &
 	auto args = read_macro_args(current_token, move(macro_token->_next->_next), *m->_params, m->_is_variadic);
 	/* 引数を代入してマクロを展開する */
 	auto body = substitute_func_macro(macro_token, m->_body, *args);
-	/* 展開元のマクロのファイル情報をコピー */
+	/* 展開元のマクロの行数情報をコピー */
 	for (auto t = body.get(); TokenKind::TK_EOF != t->_kind; t = t->_next.get())
 	{
-		t->_file = macro_token->_file;
 		t->_line_no = macro_token->_line_no;
 	}
 	next_token = append(move(body), move(current_token));
