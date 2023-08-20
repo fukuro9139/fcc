@@ -790,8 +790,8 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
 			if (current_token->is_equal("="))
 			{
 				gvar_initializer(&current_token, current_token->_next.get(), var);
-				continue;
 			}
+			continue;
 		}
 
 		const auto var = Object::new_lvar(ty->_name->_str, ty);
