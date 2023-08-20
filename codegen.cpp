@@ -1369,7 +1369,7 @@ void CodeGen::assign_lvar_offsets(const unique_ptr<Object> &prog)
 				}
 			}
 
-			top = align_to(top, 8);
+			top = Object::align_to(top, 8);
 			var->_offset = -top;
 			top += var->_ty->_size;
 		}
@@ -1378,7 +1378,7 @@ void CodeGen::assign_lvar_offsets(const unique_ptr<Object> &prog)
 		for (Object *var = fn->_locals.get(); var; var = var->_next.get())
 		{
 			bottom += var->_ty->_size;
-			bottom = align_to(bottom, var->_align);
+			bottom = Object::align_to(bottom, var->_align);
 			var->_offset = bottom;
 		}
 
@@ -1389,24 +1389,12 @@ void CodeGen::assign_lvar_offsets(const unique_ptr<Object> &prog)
 				continue;
 			}
 			bottom += var->_ty->_size;
-			bottom = align_to(bottom, var->_align);
+			bottom = Object::align_to(bottom, var->_align);
 			var->_offset = bottom;
 		}
 
 		/* スタックサイズが16の倍数になるようにアライメントする */
-		fn->_stack_size = align_to(move(bottom), 16);
+		fn->_stack_size = Object::align_to(move(bottom), 16);
 	}
 }
 
-/**
- * @brief 'n'を切り上げて最も近い'align'の倍数にする。
- *
- * @param n 切り上げ対象
- * @param align 基数
- * @return 切り上げた結果
- * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
- */
-int CodeGen::align_to(const int &n, const int &align)
-{
-	return (n + align - 1) / align * align;
-}

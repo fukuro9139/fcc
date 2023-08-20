@@ -53,7 +53,6 @@ private:
 	static void cast(Type *from, Type *to);
 	static int get_TypeId(Type *ty);
 	static void assign_lvar_offsets(const unique_ptr<Object> &prog);
-	static int align_to(const int &n, const int &align);
 
 	/** 64ビット整数レジスタ、前から順に関数の引数を格納される */
 	static constexpr string_view arg_regs64[6] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};

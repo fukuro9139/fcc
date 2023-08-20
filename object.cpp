@@ -295,3 +295,16 @@ bool Object::at_outermost_scope()
 {
 	return scope->_next == nullptr;
 }
+
+/**
+ * @brief 'n'を切り上げて最も近い'align'の倍数にする。
+ *
+ * @param n 切り上げ対象
+ * @param align 基数
+ * @return 切り上げた結果
+ * @details 例：align_to(5,8) = 8, align_to(11,8) = 16
+ */
+int Object::align_to(const int &n, const int &align)
+{
+	return (n + align - 1) / align * align;
+}

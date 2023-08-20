@@ -81,6 +81,7 @@ public:
 	static bool at_outermost_scope();
 	static VarScope *push_scope(const string &name);
 	static void push_tag_scope(Token *token, const shared_ptr<Type> &ty);
+	static int align_to(const int &n, const int &align);
 
 	/* 静的メンバ変数 */
 
