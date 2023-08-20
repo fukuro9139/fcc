@@ -1407,9 +1407,6 @@ void PreProcess::init_macros()
 	define_macro("__volatile__", "volatile");
 	define_macro("__x86_64", "1");
 	define_macro("__x86_64__", "1");
-
-#if __linux__
-
 	define_macro("__linux", "1");
 	define_macro("__linux__", "1");
 	define_macro("__unix", "1");
@@ -1418,19 +1415,6 @@ void PreProcess::init_macros()
 	define_macro("unix", "1");
 	define_macro("__gnu_linux__", "1");
 	define_macro("__ELF__", "1");
-
-#else
-
-	define_macro("WIN64", "1");
-	define_macro("WIN32", "1");
-	define_macro("_WIN64", "1");
-	define_macro("_WIN32", "1");
-	define_macro("__WIN64", "1");
-	define_macro("__WIN32", "1");
-	define_macro("__WIN32__", "1");
-	define_macro("__WIN64__", "1");
-
-#endif /* __linux__ */
 }
 
 /**
