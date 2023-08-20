@@ -11,6 +11,9 @@
 
 #include "input.hpp"
 
+/** 現在の入力ファイルの種類の指定 */
+FileType Input::specified_file_type = FileType::F_NONE;
+
 /**
  * @brief コマンドライン引数を解析する。
  *
@@ -29,6 +32,7 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 		{
 			if (i + 1 == sz)
 			{
+				std::cerr << "オプション指定が正しくありません\n";
 				usage(1);
 			}
 		}
@@ -61,6 +65,35 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			in->_opt_w = true;
 			continue;
 		}
+
+		if ("-x" == args[i])
+		{
+			if (filetype_table.contains(args[++i]))
+			{
+				specified_file_type = filetype_table[args[i]];
+			}
+			else
+			{
+				std::cerr << "オプション指定が正しくありません\n";
+				usage(1);
+			}
+			continue;
+		}
+
+		if(args[i].starts_with("-x")){
+			auto t = args[i].substr(2);
+			if (filetype_table.contains(t))
+			{
+				specified_file_type = filetype_table[t];
+			}
+			else
+			{
+				std::cerr << "オプション指定が正しくありません\n";
+				usage(1);
+			}
+			continue;
+		}
+
 
 		if ("-S" == args[i])
 		{
@@ -181,7 +214,7 @@ string Input::replace_extension(const string &path, const string &extn)
  */
 bool Input::take_arg(const string &arg)
 {
-	constexpr string_view ops[] = {"-o", "-I"};
+	constexpr string_view ops[] = {"-o", "-x", "-I"};
 
 	for (auto &x : ops)
 	{

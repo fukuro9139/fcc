@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 		error("入力ファイルが複数ある時に-oオプションは-c, -S, -Eオプションと併用できません");
 	}
 
-	for (const auto &input_path : in->_inputs)
+	for (const auto &input : in->_inputs)
 	{
 		/* 出力先 */
 		string output_path;
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 			output_path = in->_output_path;
 		}
 		/* 入力が標準入力なら標準出力から出力 */
-		else if (input_path == "-")
+		else if (input._name == "-")
 		{
 			output_path = "-";
 		}
@@ -129,18 +129,18 @@ int main(int argc, char **argv)
 		/* ファイル名は入力ファイルと同じにする */
 		else if (in->_opt_S)
 		{
-			output_path = Input::replace_extension(input_path, ".s");
+			output_path = Input::replace_extension(input._name, ".s");
 		}
 		else
 		{
-			output_path = Input::replace_extension(input_path, ".o");
+			output_path = Input::replace_extension(input._name, ".o");
 		}
 
 #else /* __linux__ */
 
 		else
 		{
-			output_path = Input::replace_extension(input_path, ".s");
+			output_path = Input::replace_extension(input._name, ".s");
 		}
 
 #endif /* __linux__ */
@@ -148,39 +148,52 @@ int main(int argc, char **argv)
 #if __linux__
 
 		/* 入力ファイルの拡張子が".o"の場合 */
-		if (input_path.ends_with(".o"))
+		if (input._type == FileType::F_NONE && input._name.ends_with(".o"))
 		{
-			ld_args.emplace_back(input_path);
+			ld_args.emplace_back(input._name);
 			continue;
 		}
 
-		/* 入力ファイルの拡張子が".s"の場合 */
-		if (input_path.ends_with(".s"))
+		/* アセンブリファイルとして指定されているか入力ファイルの拡張子が".s"の場合 */
+		if (input._type == FileType::F_ASM || (input._type == FileType::F_NONE && input._name.ends_with(".s")))
 		{
 			/* -Sオプションが入っていなければアセンブルする */
 			if (!in->_opt_S)
 			{
-				PostProcess::assemble(input_path, output_path);
+				if (in->_opt_c)
+				{
+					PostProcess::assemble(input._name, output_path);
+				}
+				else
+				{
+					auto tmpfile = PostProcess::create_tmpfile();
+					PostProcess::assemble(input._name, tmpfile);
+					/* リンク対象のリストに追加 */
+					ld_args.emplace_back(tmpfile);
+				}
 			}
 			continue;
 		}
 
-		/* 入力ファイルの拡張子が".c"以外の場合 */
-		if (!input_path.ends_with(".c") && input_path != "-")
+		/* 入力ファイルの拡張子が".c", ".h以外の場合 */
+		if (input._type == FileType::F_NONE &&
+			!input._name.ends_with(".c") &&
+			!input._name.ends_with(".h") &&
+			input._name != "-")
 		{
-			error("不明な拡張子です: " + input_path);
+			error("不明な拡張子です: " + input._name);
 		}
 
 		if (in->_opt_E)
 		{
-			run_fcc(args, input_path, output_path);
+			run_fcc(args, input._name, output_path);
 			continue;
 		}
 
 		/* -Sオプションが指定されていれば単にコンパイルするだけ */
 		if (in->_opt_S)
 		{
-			run_fcc(args, input_path, output_path);
+			run_fcc(args, input._name, output_path);
 			continue;
 		}
 
@@ -190,7 +203,7 @@ int main(int argc, char **argv)
 			/* 一時ファイルを作成 */
 			auto tmpfile = PostProcess::create_tmpfile();
 			/* アセンブリコードを生成 */
-			run_fcc(args, input_path, tmpfile);
+			run_fcc(args, input._name, tmpfile);
 			/* アセンブル */
 			PostProcess::assemble(tmpfile, output_path);
 			continue;
@@ -202,7 +215,7 @@ int main(int argc, char **argv)
 		auto tmpfile1 = PostProcess::create_tmpfile();
 		auto tmpfile2 = PostProcess::create_tmpfile();
 		/* アセンブリコードを生成 */
-		run_fcc(args, input_path, tmpfile1);
+		run_fcc(args, input._name, tmpfile1);
 		/* アセンブル */
 		PostProcess::assemble(tmpfile1, tmpfile2);
 		/* リンク対象のリストに追加 */
@@ -210,7 +223,7 @@ int main(int argc, char **argv)
 
 #else
 
-		run_fcc(args, input_path, output_path);
+		run_fcc(args, input._name, output_path);
 
 #endif /* __linux__ */
 	}
