@@ -22,11 +22,8 @@ endif
 
 #プログラム名とオブジェクトファイル名
 TARGET = fcc
-SRCS = $(wildcard *.cpp)
-OBJS = $(SRCS:.cpp=.o)
-
-#サフィックスルール適用対象
-.SUFFIXES: .cpp .o
+SRCS = $(wildcard src/*.cpp)
+OBJS = $(addprefix obj/, $(notdir $(SRCS:.cpp=.o)))
 
 #テスト用ファイル
 TEST_SRCS=$(wildcard test/*.c)
@@ -36,9 +33,14 @@ TESTS=$(TEST_SRCS:.c=.exe)
 $(TARGET): $(OBJS)
 	$(CXX) -o $@ $^
 
-#サフィックスルール
-.cpp.o:
-	$(CXX) $(CFLAGS) -c $<
+#オブジェクトファイル
+obj/%.o: src/%.cpp
+ifeq ($(WINDOWS), 0)
+	@mkdir -p obj
+else
+	@if not exist obj mkdir obj
+endif
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 #makeとcleanをまとめて行う
 all: clean $(TARGET)
@@ -62,9 +64,9 @@ endif
 #不要ファイル削除
 clean:
 ifeq ($(WINDOWS), 0)
-	$(RM) $(TARGET) $(OBJS) $(TESTS) *.d test/*.o
+	$(RM) $(TARGET) $(OBJS) $(TESTS) obj/*.d test/*.o
 else
-	$(RM) fcc.exe $(OBJS) *.d test\*.s
+	$(RM) fcc.exe obj\* test\*.s /Q
 endif
 
 #ヘッダフィルの依存関係
