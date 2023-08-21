@@ -86,6 +86,13 @@ void fcc(const unique_ptr<Input> &in, const string &input_path, const string &ou
 	CodeGen::generate_code(program, input_path, output_path, in->_opt_g);
 }
 
+/**
+ * @brief メイン処理
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char **argv)
 {
 	/* 入力をvectorに変換 */
