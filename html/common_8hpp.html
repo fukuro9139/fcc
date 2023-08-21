@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>FCC: common.cpp File Reference</title>
+<title>FCC: common.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -63,7 +63,7 @@ $(function() {
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
-$(document).ready(function(){initNavTree('common_8cpp.html',''); initResizable(); });
+$(document).ready(function(){initNavTree('common_8hpp.html',''); initResizable(); });
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -83,89 +83,134 @@ $(document).ready(function(){initNavTree('common_8cpp.html',''); initResizable()
 
 <div class="header">
   <div class="summary">
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">common.cpp File Reference</div>  </div>
+<div class="title">common.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>汎用で使う関数の定義  
+<p>共通のインクルード、using宣言、汎用で使う関数の宣言  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &quot;<a class="el" href="common_8hpp_source.html">common.hpp</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="tokenize_8hpp_source.html">tokenize.hpp</a>&quot;</code><br />
-<code>#include &lt;sys/wait.h&gt;</code><br />
-<code>#include &lt;unistd.h&gt;</code><br />
-<code>#include &lt;sys/types.h&gt;</code><br />
-<code>#include &lt;windows.h&gt;</code><br />
+<div class="textblock"><code>#include &lt;iostream&gt;</code><br />
+<code>#include &lt;fstream&gt;</code><br />
+<code>#include &lt;cassert&gt;</code><br />
+<code>#include &lt;memory&gt;</code><br />
+<code>#include &lt;vector&gt;</code><br />
+<code>#include &lt;string&gt;</code><br />
+<code>#include &lt;locale&gt;</code><br />
+<code>#include &lt;unordered_map&gt;</code><br />
+<code>#include &lt;unordered_set&gt;</code><br />
+<code>#include &lt;algorithm&gt;</code><br />
+<code>#include &lt;functional&gt;</code><br />
+<code>#include &lt;filesystem&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
-Include dependency graph for common.cpp:</div>
+Include dependency graph for common.hpp:</div>
 <div class="dyncontent">
-<div class="center"><img src="common_8cpp__incl.png" border="0" usemap="#acommon_8cpp" alt=""/></div>
-<map name="acommon_8cpp" id="acommon_8cpp">
-<area shape="rect" title="汎用で使う関数の定義" alt="" coords="721,5,828,32"/>
-<area shape="rect" href="common_8hpp.html" title="共通のインクルード、using宣言、汎用で使う関数の宣言" alt="" coords="508,229,615,256"/>
-<area shape="rect" href="tokenize_8hpp.html" title="文字列をトークンに変換するトークナイザの定義" alt="" coords="549,80,654,107"/>
-<area shape="rect" title=" " alt="" coords="679,80,767,107"/>
-<area shape="rect" title=" " alt="" coords="791,80,865,107"/>
-<area shape="rect" title=" " alt="" coords="889,80,985,107"/>
-<area shape="rect" title=" " alt="" coords="1009,80,1100,107"/>
-<area shape="rect" title=" " alt="" coords="5,304,85,331"/>
-<area shape="rect" title=" " alt="" coords="110,304,183,331"/>
-<area shape="rect" title=" " alt="" coords="208,304,277,331"/>
-<area shape="rect" title=" " alt="" coords="301,304,379,331"/>
-<area shape="rect" title=" " alt="" coords="403,304,466,331"/>
-<area shape="rect" title=" " alt="" coords="491,304,549,331"/>
-<area shape="rect" title=" " alt="" coords="573,304,635,331"/>
-<area shape="rect" title=" " alt="" coords="659,304,783,331"/>
-<area shape="rect" title=" " alt="" coords="808,304,923,331"/>
-<area shape="rect" title=" " alt="" coords="947,304,1032,331"/>
-<area shape="rect" title=" " alt="" coords="1057,304,1143,331"/>
-<area shape="rect" title=" " alt="" coords="1168,304,1259,331"/>
-<area shape="rect" href="input_8hpp.html" title="入力された引数を解析するためのクラス" alt="" coords="599,155,681,181"/>
+<div class="center"><img src="common_8hpp__incl.png" border="0" usemap="#acommon_8hpp" alt=""/></div>
+<map name="acommon_8hpp" id="acommon_8hpp">
+<area shape="rect" title="共通のインクルード、using宣言、汎用で使う関数の宣言" alt="" coords="508,5,615,32"/>
+<area shape="rect" title=" " alt="" coords="5,80,85,107"/>
+<area shape="rect" title=" " alt="" coords="110,80,183,107"/>
+<area shape="rect" title=" " alt="" coords="208,80,277,107"/>
+<area shape="rect" title=" " alt="" coords="301,80,379,107"/>
+<area shape="rect" title=" " alt="" coords="403,80,466,107"/>
+<area shape="rect" title=" " alt="" coords="491,80,549,107"/>
+<area shape="rect" title=" " alt="" coords="573,80,635,107"/>
+<area shape="rect" title=" " alt="" coords="659,80,783,107"/>
+<area shape="rect" title=" " alt="" coords="808,80,923,107"/>
+<area shape="rect" title=" " alt="" coords="947,80,1032,107"/>
+<area shape="rect" title=" " alt="" coords="1057,80,1143,107"/>
+<area shape="rect" title=" " alt="" coords="1168,80,1259,107"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+This graph shows which files directly or indirectly include this file:</div>
+<div class="dyncontent">
+<div class="center"><img src="common_8hpp__dep__incl.png" border="0" usemap="#acommon_8hppdep" alt=""/></div>
+<map name="acommon_8hppdep" id="acommon_8hppdep">
+<area shape="rect" title="共通のインクルード、using宣言、汎用で使う関数の宣言" alt="" coords="691,5,798,32"/>
+<area shape="rect" href="codegen_8hpp.html" title="抽象構文木(AST)を意味解析してアセンブリを出力するコードジェネレーターの定義。" alt="" coords="404,155,509,181"/>
+<area shape="rect" href="main_8cpp.html" title="x86&#45;64用で動作するC言語コンパイラです。" alt="" coords="415,229,498,256"/>
+<area shape="rect" href="common_8cpp.html" title="汎用で使う関数の定義" alt="" coords="1271,229,1378,256"/>
+<area shape="rect" href="input_8hpp.html" title="入力された引数を解析するためのクラス" alt="" coords="663,80,746,107"/>
+<area shape="rect" href="tokenize_8hpp.html" title="文字列をトークンに変換するトークナイザの定義" alt="" coords="905,155,1011,181"/>
+<area shape="rect" href="object_8hpp.html" title="関数や変数を表すクラス" alt="" coords="822,80,913,107"/>
+<area shape="rect" href="parse_8hpp.html" title="C言語の再帰下降構文解析を行うパーサーの定義" alt="" coords="743,155,829,181"/>
+<area shape="rect" href="postprocess_8hpp.html" title="コンパイル後の処理を行う" alt="" coords="55,80,183,107"/>
+<area shape="rect" href="preprocess_8hpp.html" title="プリプロセスを行う" alt="" coords="259,155,380,181"/>
+<area shape="rect" href="type_8hpp.html" title="型を表現するためのクラス" alt="" coords="1035,155,1113,181"/>
+<area shape="rect" href="codegen_8cpp.html" title="抽象構文木(AST)を意味解析してアセンブリを出力するコードジェネレーターの定義。" alt="" coords="687,229,791,256"/>
+<area shape="rect" href="input_8cpp.html" title="入力された引数を解析するためのクラス" alt="" coords="585,155,667,181"/>
+<area shape="rect" href="preprocess_8cpp.html" title="プリプロセスを行う" alt="" coords="543,229,663,256"/>
+<area shape="rect" href="object_8cpp.html" title="関数や変数を表すクラス" alt="" coords="1029,229,1119,256"/>
+<area shape="rect" href="parse_8cpp.html" title="C言語の再帰下降構文解析を行うパーサーの定義" alt="" coords="919,229,1005,256"/>
+<area shape="rect" href="tokenize_8cpp.html" title="文字列をトークンに変換するトークナイザの定義" alt="" coords="1143,229,1247,256"/>
+<area shape="rect" href="type_8cpp.html" title="型を表すためのクラス" alt="" coords="816,229,895,256"/>
+<area shape="rect" href="postprocess_8cpp.html" title="コンパイル後の処理を行う" alt="" coords="5,155,132,181"/>
 </map>
 </div>
 </div>
-<p><a href="common_8cpp_source.html">Go to the source code of this file.</a></p>
+<p><a href="common_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:ab4a31c592487d56065c7ed5c84f4f38e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#ab4a31c592487d56065c7ed5c84f4f38e">Hideset</a> = std::unordered_set&lt; std::string &gt;</td></tr>
+<tr class="separator:ab4a31c592487d56065c7ed5c84f4f38e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:affc076f7c26f004496f5bc4a8177eafd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a> (string &amp;&amp;msg)</td></tr>
-<tr class="memdesc:affc076f7c26f004496f5bc4a8177eafd"><td class="mdescLeft">&#160;</td><td class="mdescRight">エラーを報告して終了する  <a href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">More...</a><br /></td></tr>
+<tr class="memitem:affc076f7c26f004496f5bc4a8177eafd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a> (string &amp;&amp;msg)</td></tr>
+<tr class="memdesc:affc076f7c26f004496f5bc4a8177eafd"><td class="mdescLeft">&#160;</td><td class="mdescRight">エラーを報告して終了する  <a href="common_8hpp.html#affc076f7c26f004496f5bc4a8177eafd">More...</a><br /></td></tr>
 <tr class="separator:affc076f7c26f004496f5bc4a8177eafd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae54cd0d65dfe2ce9516dbfe2801638cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#ae54cd0d65dfe2ce9516dbfe2801638cd">error_at</a> (string &amp;&amp;msg, const int &amp;location)</td></tr>
-<tr class="memdesc:ae54cd0d65dfe2ce9516dbfe2801638cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">エラー箇所の位置を受け取ってエラー出力して終了  <a href="common_8cpp.html#ae54cd0d65dfe2ce9516dbfe2801638cd">More...</a><br /></td></tr>
+<tr class="memitem:ae54cd0d65dfe2ce9516dbfe2801638cd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#ae54cd0d65dfe2ce9516dbfe2801638cd">error_at</a> (string &amp;&amp;msg, const int &amp;location)</td></tr>
+<tr class="memdesc:ae54cd0d65dfe2ce9516dbfe2801638cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">エラー箇所の位置を受け取ってエラー出力して終了  <a href="common_8hpp.html#ae54cd0d65dfe2ce9516dbfe2801638cd">More...</a><br /></td></tr>
 <tr class="separator:ae54cd0d65dfe2ce9516dbfe2801638cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e4265113288c7d43237908030b7b964"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#a1e4265113288c7d43237908030b7b964">error_token</a> (string &amp;&amp;msg, const <a class="el" href="classToken.html">Token</a> *token)</td></tr>
-<tr class="memdesc:a1e4265113288c7d43237908030b7b964"><td class="mdescLeft">&#160;</td><td class="mdescRight">トークンを受け取ってエラーメッセージを出力  <a href="common_8cpp.html#a1e4265113288c7d43237908030b7b964">More...</a><br /></td></tr>
+<tr class="memitem:a1e4265113288c7d43237908030b7b964"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#a1e4265113288c7d43237908030b7b964">error_token</a> (string &amp;&amp;msg, const <a class="el" href="classToken.html">Token</a> *token)</td></tr>
+<tr class="memdesc:a1e4265113288c7d43237908030b7b964"><td class="mdescLeft">&#160;</td><td class="mdescRight">トークンを受け取ってエラーメッセージを出力  <a href="common_8hpp.html#a1e4265113288c7d43237908030b7b964">More...</a><br /></td></tr>
 <tr class="separator:a1e4265113288c7d43237908030b7b964"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a747d534dc013bef3180a891b6864cbbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#a747d534dc013bef3180a891b6864cbbe">init_warning_level</a> (int level)</td></tr>
-<tr class="memdesc:a747d534dc013bef3180a891b6864cbbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">警告レベルを初期化する  <a href="common_8cpp.html#a747d534dc013bef3180a891b6864cbbe">More...</a><br /></td></tr>
+<tr class="memitem:a747d534dc013bef3180a891b6864cbbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#a747d534dc013bef3180a891b6864cbbe">init_warning_level</a> (int level)</td></tr>
+<tr class="memdesc:a747d534dc013bef3180a891b6864cbbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">警告レベルを初期化する  <a href="common_8hpp.html#a747d534dc013bef3180a891b6864cbbe">More...</a><br /></td></tr>
 <tr class="separator:a747d534dc013bef3180a891b6864cbbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a119aa816bd531d61ebacff3c96fb27e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a> (const vector&lt; string &gt; &amp;argv)</td></tr>
-<tr class="memdesc:a119aa816bd531d61ebacff3c96fb27e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">forkした子プロセスでargvを引数としてexecvpを起動  <a href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">More...</a><br /></td></tr>
+<tr class="memitem:a8587b4703e2439d891c2a2351916013d"><td class="memItemLeft" align="right" valign="top">std::ostream *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a> (const string &amp;path)</td></tr>
+<tr class="memdesc:a8587b4703e2439d891c2a2351916013d"><td class="mdescLeft">&#160;</td><td class="mdescRight">ファイルを開いてファイルストリームのポインタを返す。 アウトプットパスとして"-"が指定されているまたはファイルを開くのに失敗したら出力先は標準出力。  <a href="common_8hpp.html#a8587b4703e2439d891c2a2351916013d">More...</a><br /></td></tr>
+<tr class="separator:a8587b4703e2439d891c2a2351916013d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a119aa816bd531d61ebacff3c96fb27e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a> (const vector&lt; string &gt; &amp;argv)</td></tr>
+<tr class="memdesc:a119aa816bd531d61ebacff3c96fb27e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">forkした子プロセスでargvを引数としてexecvpを起動  <a href="common_8hpp.html#a119aa816bd531d61ebacff3c96fb27e8">More...</a><br /></td></tr>
 <tr class="separator:a119aa816bd531d61ebacff3c96fb27e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a033b2d892484e339509210a2a5b67fa5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#a033b2d892484e339509210a2a5b67fa5">verror_at</a> (const string &amp;filename, const string &amp;input, string &amp;&amp;msg, const int &amp;location, const int &amp;line_no)</td></tr>
-<tr class="memdesc:a033b2d892484e339509210a2a5b67fa5"><td class="mdescLeft">&#160;</td><td class="mdescRight">下記のフォーマットでエラー箇所を報告する foo.c:10: x = y + 1; ^ &lt;error message here&gt;  <a href="common_8cpp.html#a033b2d892484e339509210a2a5b67fa5">More...</a><br /></td></tr>
+<tr class="memitem:a033b2d892484e339509210a2a5b67fa5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#a033b2d892484e339509210a2a5b67fa5">verror_at</a> (const string &amp;filename, const string &amp;input, string &amp;&amp;msg, const int &amp;location, const int &amp;line_no)</td></tr>
+<tr class="memdesc:a033b2d892484e339509210a2a5b67fa5"><td class="mdescLeft">&#160;</td><td class="mdescRight">下記のフォーマットでエラー箇所を報告する foo.c:10: x = y + 1; ^ &lt;error message here&gt;  <a href="common_8hpp.html#a033b2d892484e339509210a2a5b67fa5">More...</a><br /></td></tr>
 <tr class="separator:a033b2d892484e339509210a2a5b67fa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac00192d849d9668352fb24ce744e927b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#ac00192d849d9668352fb24ce744e927b">warn_token</a> (string &amp;&amp;msg, const int &amp;level, <a class="el" href="classToken.html">Token</a> *token)</td></tr>
-<tr class="memdesc:ac00192d849d9668352fb24ce744e927b"><td class="mdescLeft">&#160;</td><td class="mdescRight">警告を出力する  <a href="common_8cpp.html#ac00192d849d9668352fb24ce744e927b">More...</a><br /></td></tr>
+<tr class="memitem:ac00192d849d9668352fb24ce744e927b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8hpp.html#ac00192d849d9668352fb24ce744e927b">warn_token</a> (string &amp;&amp;msg, const int &amp;level, <a class="el" href="classToken.html">Token</a> *token)</td></tr>
+<tr class="memdesc:ac00192d849d9668352fb24ce744e927b"><td class="mdescLeft">&#160;</td><td class="mdescRight">警告を出力する  <a href="common_8hpp.html#ac00192d849d9668352fb24ce744e927b">More...</a><br /></td></tr>
 <tr class="separator:ac00192d849d9668352fb24ce744e927b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:a0c2edf2b24d8f45aa0b0abb8a1b8117d"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="common_8cpp.html#a0c2edf2b24d8f45aa0b0abb8a1b8117d">warning_level</a> = 1</td></tr>
-<tr class="separator:a0c2edf2b24d8f45aa0b0abb8a1b8117d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>汎用で使う関数の定義 </p>
+<div class="textblock"><p>共通のインクルード、using宣言、汎用で使う関数の宣言 </p>
 <dl class="section author"><dt>Author</dt><dd>K.Fukunaga </dd></dl>
 <dl class="section version"><dt>Version</dt><dd>0.1 </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>2023-08-16</dd></dl>
-<dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2023 MIT License </dd></dl>
+<dl class="section date"><dt>Date</dt><dd>2023-07-30</dd></dl>
+<dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2023　MIT License </dd></dl>
 
-<p class="definition">Definition in file <a class="el" href="common_8cpp_source.html">common.cpp</a>.</p>
-</div><h2 class="groupheader">Function Documentation</h2>
+<p class="definition">Definition in file <a class="el" href="common_8hpp_source.html">common.hpp</a>.</p>
+</div><h2 class="groupheader">Typedef Documentation</h2>
+<a id="ab4a31c592487d56065c7ed5c84f4f38e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4a31c592487d56065c7ed5c84f4f38e">&#9670;&nbsp;</a></span>Hideset</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="common_8hpp.html#ab4a31c592487d56065c7ed5c84f4f38e">Hideset</a> =  std::unordered_set&lt;std::string&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="common_8hpp_source.html#l00030">30</a> of file <a class="el" href="common_8hpp_source.html">common.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
 <a id="affc076f7c26f004496f5bc4a8177eafd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#affc076f7c26f004496f5bc4a8177eafd">&#9670;&nbsp;</a></span>error()</h2>
 
@@ -297,6 +342,35 @@ Variables</h2></td></tr>
 </dl>
 
 <p class="definition">Definition at line <a class="el" href="common_8cpp_source.html#l00141">141</a> of file <a class="el" href="common_8cpp_source.html">common.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a8587b4703e2439d891c2a2351916013d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8587b4703e2439d891c2a2351916013d">&#9670;&nbsp;</a></span>open_file()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream* open_file </td>
+          <td>(</td>
+          <td class="paramtype">const string &amp;&#160;</td>
+          <td class="paramname"><em>path</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>ファイルを開いてファイルストリームのポインタを返す。 アウトプットパスとして"-"が指定されているまたはファイルを開くのに失敗したら出力先は標準出力。 </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">path</td><td>出力先ファイルパス </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>出力用ostreamのポインタ </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="common_8cpp_source.html#l00202">202</a> of file <a class="el" href="common_8cpp_source.html">common.cpp</a>.</p>
 
 </div>
 </div>
@@ -432,38 +506,12 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a0c2edf2b24d8f45aa0b0abb8a1b8117d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c2edf2b24d8f45aa0b0abb8a1b8117d">&#9670;&nbsp;</a></span>warning_level</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int warning_level = 1</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>警告レベル </p>
-
-<p class="definition">Definition at line <a class="el" href="common_8cpp_source.html#l00028">28</a> of file <a class="el" href="common_8cpp_source.html">common.cpp</a>.</p>
-
-</div>
-</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="common_8cpp.html">common.cpp</a></li>
+    <li class="navelem"><a class="el" href="common_8hpp.html">common.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

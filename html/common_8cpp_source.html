@@ -225,76 +225,24 @@ $(document).ready(function(){initNavTree('common_8cpp_source.html',''); initResi
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <span class="keyword">delete</span>[] cmd;</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;}</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;{</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keywordtype">string</span> cmd_str;</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; argv.size(); ++i)</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    {</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        cmd_str += argv[i];</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;        <span class="keywordflow">if</span> (i != argv.size() - 1)</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        {</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;            cmd_str.push_back(<span class="charliteral">&#39; &#39;</span>);</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        }</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    }</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keywordtype">char</span> *cmd = <span class="keyword">new</span> <span class="keywordtype">char</span>[cmd_str.size() + 1];</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    std::char_traits&lt;char&gt;::copy(cmd, cmd_str.c_str(), cmd_str.size() + 1);</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160; </div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="comment">// wchar_t *wcmd = new wchar_t[cmd.size() + 1];</span></div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="comment">// mbstowcs(wcmd, cmd.c_str(), cmd.size() + 1);</span></div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    STARTUPINFO si{};</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    PROCESS_INFORMATION pi{};</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    si.cb = <span class="keyword">sizeof</span>(si);</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <span class="comment">/* プロセスの実行 */</span></div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keywordflow">if</span> (CreateProcess(<span class="keyword">nullptr</span>, cmd, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>, <span class="keyword">false</span>, 0, <span class="keyword">nullptr</span>, <span class="keyword">nullptr</span>, &amp;si, &amp;pi))</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    {</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <span class="comment">/* 子プロセスの終了まで待つ */</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        WaitForSingleObject(pi.hProcess, INFINITE);</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160; </div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <span class="comment">/* アプリケーションの終了コードの取得 */</span></div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> exitCode;</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        GetExitCodeProcess(pi.hProcess, &amp;exitCode);</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        <span class="comment">/* 終了コードが負の値になる場合もあるので、signedにキャストする */</span></div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        <span class="keywordtype">long</span> ec = <span class="keyword">static_cast&lt;</span><span class="keywordtype">long</span><span class="keyword">&gt;</span>(exitCode);</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <span class="comment">/* ハンドルを閉じる */</span></div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        CloseHandle(pi.hProcess);</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        CloseHandle(pi.hThread);</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        <span class="keywordflow">if</span> (ec != 0)</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        {</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            exit(1);</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        }</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    }</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    {</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <span class="comment">/* 起動失敗 */</span></div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        <a class="code" href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a>(<span class="stringliteral">&quot;プロセス起動に失敗しました&quot;</span>);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    }</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <span class="comment">/* 解放 */</span></div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="comment">// delete[] wcmd;</span></div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;}</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;std::ostream *<a class="code" href="common_8hpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;path)</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;{</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="keyword">static</span> unique_ptr&lt;std::ofstream&gt; <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a>;</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a> = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="comment">/* 出力先が標準出力ではない */</span></div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <span class="keywordflow">if</span> (path != <span class="stringliteral">&quot;-&quot;</span>)</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    {</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        <span class="comment">/* ファイルを開く */</span></div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a> = make_unique&lt;std::ofstream&gt;(path);</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a>-&gt;fail())</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        {</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a>.get();</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        }</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    }</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keywordflow">return</span> &amp;std::cout;</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;}</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160; </div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
+<div class="line"><a name="l00202"></a><span class="lineno"><a class="line" href="common_8cpp.html#a8587b4703e2439d891c2a2351916013d">  202</a></span>&#160;std::ostream *<a class="code" href="common_8cpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;path)</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;{</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keyword">static</span> unique_ptr&lt;std::ofstream&gt; <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a>;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a> = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="comment">/* 出力先が標準出力ではない */</span></div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="keywordflow">if</span> (path != <span class="stringliteral">&quot;-&quot;</span>)</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    {</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        <span class="comment">/* ファイルを開く */</span></div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a> = make_unique&lt;std::ofstream&gt;(path);</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a>-&gt;fail())</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        {</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a>.get();</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        }</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    }</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keywordflow">return</span> &amp;std::cout;</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;}</div>
 <div class="ttc" id="aclassToken_html"><div class="ttname"><a href="classToken.html">Token</a></div><div class="ttdoc">トークンを表すクラス</div><div class="ttdef"><b>Definition:</b> <a href="tokenize_8hpp_source.html#l00035">tokenize.hpp:36</a></div></div>
 <div class="ttc" id="aclassToken_html_a249161422e2aee52bdc7f6aac89a3ebf"><div class="ttname"><a href="classToken.html#a249161422e2aee52bdc7f6aac89a3ebf">Token::_file</a></div><div class="ttdeci">const File * _file</div><div class="ttdef"><b>Definition:</b> <a href="tokenize_8hpp_source.html#l00063">tokenize.hpp:63</a></div></div>
 <div class="ttc" id="aclassToken_html_af7f8a5d02ebba5e537ce3e3c4e5ad688"><div class="ttname"><a href="classToken.html#af7f8a5d02ebba5e537ce3e3c4e5ad688">Token::_location</a></div><div class="ttdeci">int _location</div><div class="ttdef"><b>Definition:</b> <a href="tokenize_8hpp_source.html#l00061">tokenize.hpp:61</a></div></div>
@@ -306,11 +254,11 @@ $(document).ready(function(){initNavTree('common_8cpp_source.html',''); initResi
 <div class="ttc" id="acommon_8cpp_html_a119aa816bd531d61ebacff3c96fb27e8"><div class="ttname"><a href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a></div><div class="ttdeci">void run_subprocess(const vector&lt; string &gt; &amp;argv)</div><div class="ttdoc">forkした子プロセスでargvを引数としてexecvpを起動</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00151">common.cpp:151</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_a1e4265113288c7d43237908030b7b964"><div class="ttname"><a href="common_8cpp.html#a1e4265113288c7d43237908030b7b964">error_token</a></div><div class="ttdeci">void error_token(string &amp;&amp;msg, const Token *token)</div><div class="ttdoc">トークンを受け取ってエラーメッセージを出力</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00115">common.cpp:115</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_a747d534dc013bef3180a891b6864cbbe"><div class="ttname"><a href="common_8cpp.html#a747d534dc013bef3180a891b6864cbbe">init_warning_level</a></div><div class="ttdeci">void init_warning_level(int level)</div><div class="ttdoc">警告レベルを初期化する</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00141">common.cpp:141</a></div></div>
+<div class="ttc" id="acommon_8cpp_html_a8587b4703e2439d891c2a2351916013d"><div class="ttname"><a href="common_8cpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a></div><div class="ttdeci">std::ostream * open_file(const string &amp;path)</div><div class="ttdoc">ファイルを開いてファイルストリームのポインタを返す。 アウトプットパスとして&quot;-&quot;が指定されているまたはファイルを開くのに失敗したら出力先は標準出力。</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00202">common.cpp:202</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_ac00192d849d9668352fb24ce744e927b"><div class="ttname"><a href="common_8cpp.html#ac00192d849d9668352fb24ce744e927b">warn_token</a></div><div class="ttdeci">void warn_token(string &amp;&amp;msg, const int &amp;level, Token *token)</div><div class="ttdoc">警告を出力する</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00128">common.cpp:128</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_ae54cd0d65dfe2ce9516dbfe2801638cd"><div class="ttname"><a href="common_8cpp.html#ae54cd0d65dfe2ce9516dbfe2801638cd">error_at</a></div><div class="ttdeci">void error_at(string &amp;&amp;msg, const int &amp;location)</div><div class="ttdoc">エラー箇所の位置を受け取ってエラー出力して終了</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00047">common.cpp:47</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_affc076f7c26f004496f5bc4a8177eafd"><div class="ttname"><a href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a></div><div class="ttdeci">void error(string &amp;&amp;msg)</div><div class="ttdoc">エラーを報告して終了する</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00035">common.cpp:35</a></div></div>
 <div class="ttc" id="acommon_8hpp_html"><div class="ttname"><a href="common_8hpp.html">common.hpp</a></div><div class="ttdoc">共通のインクルード、using宣言、汎用で使う関数の宣言</div></div>
-<div class="ttc" id="acommon_8hpp_html_a8587b4703e2439d891c2a2351916013d"><div class="ttname"><a href="common_8hpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a></div><div class="ttdeci">std::ostream * open_file(const string &amp;path)</div></div>
 <div class="ttc" id="astructToken_1_1File_html_a5b76ad7024f328b49df305244f5560ba"><div class="ttname"><a href="structToken_1_1File.html#a5b76ad7024f328b49df305244f5560ba">Token::File::_name</a></div><div class="ttdeci">string _name</div><div class="ttdef"><b>Definition:</b> <a href="tokenize_8hpp_source.html#l00044">tokenize.hpp:44</a></div></div>
 <div class="ttc" id="astructToken_1_1File_html_ab03cfd81629e8d9b73f591cf8bd45060"><div class="ttname"><a href="structToken_1_1File.html#ab03cfd81629e8d9b73f591cf8bd45060">Token::File::_contents</a></div><div class="ttdeci">string _contents</div><div class="ttdef"><b>Definition:</b> <a href="tokenize_8hpp_source.html#l00046">tokenize.hpp:46</a></div></div>
 <div class="ttc" id="atokenize_8hpp_html"><div class="ttname"><a href="tokenize_8hpp.html">tokenize.hpp</a></div><div class="ttdoc">文字列をトークンに変換するトークナイザの定義</div></div>
