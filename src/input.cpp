@@ -12,14 +12,13 @@
 #include "input.hpp"
 
 /** 現在の入力ファイルの種類の指定 */
-FileType Input::specified_file_type = FileType::F_NONE;
+FileType Input::opt_x = FileType::FILE_NONE;
 
 /* 文字列とファイルタイプの対応テーブル */
 const std::unordered_map<string, FileType> Input::filetype_table = {
-	{"c", FileType::F_C},
-	{"c-header", FileType::F_C_HEADER},
-	{"assembler", FileType::F_ASM},
-	{"none", FileType::F_NONE},
+	{"c", FileType::FILE_C},
+	{"assembler", FileType::FILE_ASM},
+	{"none", FileType::FILE_NONE},
 };
 
 /**
@@ -78,7 +77,7 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 		{
 			if (filetype_table.contains(args[++i]))
 			{
-				specified_file_type = filetype_table.at(args[i]);
+				opt_x = filetype_table.at(args[i]);
 			}
 			else
 			{
@@ -93,7 +92,7 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			auto t = args[i].substr(2);
 			if (filetype_table.contains(t))
 			{
-				specified_file_type = filetype_table.at(t);
+				opt_x = filetype_table.at(t);
 			}
 			else
 			{
@@ -167,7 +166,7 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 			stdin_flg = true;
 		}
 
-		in->_inputs.emplace_back(args[i]);
+		in->_inputs.emplace_back(args[i], get_file_type(args[i]));
 	}
 
 	if (in->_inputs.empty())
@@ -233,4 +232,32 @@ bool Input::take_arg(const string &arg)
 	}
 
 	return false;
+}
+
+
+/**
+ * @brief ファイルの種類を判定する
+ * 
+ * @param filename ファイル名
+ * @return 判定結果
+ */
+FileType Input::get_file_type(const string & filename)
+{
+	if(filename.ends_with(".o")){
+		return FileType::FILE_OBJ;
+	}
+
+	if(FileType::FILE_NONE != opt_x){
+		return opt_x;
+	}
+
+	if(filename.ends_with(".c") || filename.ends_with("h")){
+		return FileType::FILE_C;
+	}
+
+	if(filename.ends_with(".s")){
+		return FileType::FILE_ASM;
+	}
+
+	error("不明なファイル拡張子です: " + filename);
 }

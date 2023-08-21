@@ -16,10 +16,10 @@
 /** 入力ファイルの種類 */
 enum class FileType
 {
-	F_C,		  /*!< Cソースファイル */
-	F_C_HEADER,	  /*!< Cヘッダファイル */
-	F_ASM,		  /*!< アセンブリファイル */
-	F_NONE,		  /*!< 指定なし */
+	FILE_NONE, /*!< 指定なし */
+	FILE_C,	   /*!< Cソースファイル */
+	FILE_ASM,  /*!< アセンブリファイル */
+	FILE_OBJ   /*!< オブジェクトファイル */
 };
 
 class Input
@@ -29,8 +29,8 @@ public:
 	struct InputFile
 	{
 		string _name = "";				   /*!< ファイル名 */
-		FileType _type = FileType::F_NONE; /*!<  ファイルの種類*/
-		InputFile(const string &name) : _name(name), _type(specified_file_type) {}
+		FileType _type = FileType::FILE_NONE; /*!<  ファイルの種類*/
+		InputFile(const string &name, const FileType &type) : _name(name), _type(type) {}
 	};
 
 	/* メンバ変数(public) */
@@ -55,7 +55,8 @@ private:
 	/* 静的メンバ関数(input) */
 	static void usage(int status);
 	static bool take_arg(const string &arg);
+	static FileType get_file_type(const string &filename);
 
-	static FileType specified_file_type;
+	static FileType opt_x;
 	static const std::unordered_map<string, FileType> filetype_table;
 };

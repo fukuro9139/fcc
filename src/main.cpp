@@ -148,41 +148,24 @@ int main(int argc, char **argv)
 #if __linux__
 
 		/* 入力ファイルの拡張子が".o"の場合 */
-		if (input._type == FileType::F_NONE && input._name.ends_with(".o"))
+		if (input._type == FileType::FILE_OBJ)
 		{
 			ld_args.emplace_back(input._name);
 			continue;
 		}
 
 		/* アセンブリファイルとして指定されているか入力ファイルの拡張子が".s"の場合 */
-		if (input._type == FileType::F_ASM || (input._type == FileType::F_NONE && input._name.ends_with(".s")))
+		if (input._type == FileType::FILE_ASM)
 		{
 			/* -Sオプションが入っていなければアセンブルする */
 			if (!in->_opt_S)
 			{
-				if (in->_opt_c)
-				{
-					PostProcess::assemble(input._name, output_path);
-				}
-				else
-				{
-					auto tmpfile = PostProcess::create_tmpfile();
-					PostProcess::assemble(input._name, tmpfile);
-					/* リンク対象のリストに追加 */
-					ld_args.emplace_back(tmpfile);
-				}
+				PostProcess::assemble(input._name, output_path);
 			}
 			continue;
 		}
 
-		/* 入力ファイルの拡張子が".c", ".h以外の場合 */
-		if (input._type == FileType::F_NONE &&
-			!input._name.ends_with(".c") &&
-			!input._name.ends_with(".h") &&
-			input._name != "-")
-		{
-			error("不明な拡張子です: " + input._name);
-		}
+		assert(input._type == FileType::FILE_C);
 
 		if (in->_opt_E)
 		{
