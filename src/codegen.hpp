@@ -11,8 +11,11 @@
 
 #pragma once
 
-#include "parse.hpp"
 #include "common.hpp"
+
+class Object;
+class Node;
+class Type;
 
 /** @brief　アセンブリを生成 */
 class CodeGen

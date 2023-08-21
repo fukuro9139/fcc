@@ -11,6 +11,8 @@
 
 #include "object.hpp"
 #include "parse.hpp"
+#include "tokenize.hpp"
+#include "type.hpp"
 
 /* Initializerクラス */
 Object::Initializer::Initializer() = default;

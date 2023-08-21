@@ -11,15 +11,16 @@
 
 #pragma once
 
-#include "type.hpp"
-#include "tokenize.hpp"
 #include "common.hpp"
 
-/* 先に宣言 */
+class Type;
+class Token;
+class Node;
 struct Scope;
 struct VarScope;
 struct Initializer;
 struct Relocation;
+struct Member;
 
 /**
  * @brief 変数または関数を表す。各オブジェクトは名前によって区別する

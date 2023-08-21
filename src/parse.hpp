@@ -11,10 +11,11 @@
 
 #pragma once
 
-#include "tokenize.hpp"
-#include "object.hpp"
-#include "type.hpp"
 #include "common.hpp"
+#include "object.hpp"
+
+class Type;
+class Token;
 
 /**
  * @brief 構造体のメンバーを表すクラス

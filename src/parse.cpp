@@ -12,6 +12,8 @@
  */
 
 #include "parse.hpp"
+#include "tokenize.hpp"
+#include "type.hpp"
 
 /** 現在パースしている関数 */
 static Object *current_function = nullptr;

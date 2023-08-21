@@ -12,6 +12,10 @@
  */
 
 #include "codegen.hpp"
+#include "tokenize.hpp"
+#include "parse.hpp"
+#include "object.hpp"
+#include "type.hpp"
 
 /** スタックの深さ */
 static int depth = 0;

@@ -15,6 +15,10 @@
 
 #if __linux__
 
+/**
+ * @brief コンパイル後のアセンブル、リンクを行うクラス
+ * 
+ */
 class PostProcess
 {
 public:

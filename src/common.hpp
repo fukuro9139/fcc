@@ -24,9 +24,10 @@
 #include <functional>
 #include <filesystem>
 
+class Token;
+
 namespace fs = std::filesystem;
 using Hideset = std::unordered_set<std::string>;
-
 using std::endl;
 using std::make_shared;
 using std::make_unique;
@@ -37,8 +38,6 @@ using std::string;
 using std::string_view;
 using std::unique_ptr;
 using std::vector;
-
-class Token;
 
 /* 汎用関数 */
 void error(string &&msg);
