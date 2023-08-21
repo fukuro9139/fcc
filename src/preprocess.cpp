@@ -14,6 +14,9 @@
 #include "parse.hpp"
 #include "input.hpp"
 
+using Macro = PreProcess::Macro;
+using CondIncl = PreProcess::CondIncl;
+
 CondIncl::CondIncl() = default;
 CondIncl::CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included)
 	: _token(move(token)), _ctx(ctx), _included(included) {}

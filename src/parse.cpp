@@ -244,7 +244,7 @@ unique_ptr<Object> Node::parse(const unique_ptr<Token> &list)
 	/* トークンリストを最後まで辿る*/
 	while (TokenKind::TK_EOF != token->_kind)
 	{
-		VarAttr attr = {};
+		Object::VarAttr attr = {};
 		auto base = declspec(&token, token, &attr);
 
 		/* typedef */
@@ -613,7 +613,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
 		if (current_token->is_typename() && !current_token->_next->is_equal(":"))
 		{
 			/* 型指定子を読み取る */
-			VarAttr attr = {};
+			Object::VarAttr attr = {};
 			auto base = declspec(&current_token, current_token, &attr);
 
 			/* typedefの場合 */
@@ -668,7 +668,7 @@ unique_ptr<Node> Node::compound_statement(Token **next_token, Token *current_tok
  * @return 次のトークン
  * @details 下記のEBNF規則に従う。 @n function-definition = declarator ( "{" compound-statement | ";" )
  */
-Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr *attr)
+Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, Object::VarAttr *attr)
 {
 	/* 型を判定 */
 	auto ty = declarator(&token, token, base);
@@ -744,7 +744,7 @@ Token *Node::function_definition(Token *token, shared_ptr<Type> &&base, VarAttr 
  * @return 対応するASTノード
  * @details 下記のEBNF規則に従う。 @n declaration = declspec (declarator ("=" expr)? ("," declarator ("=" expr)?)*)? ";"
  */
-unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, shared_ptr<Type> &base, const VarAttr *attr)
+unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, shared_ptr<Type> &base, const Object::VarAttr *attr)
 {
 	/* ノードリストの先頭としてダミーのノードを作成 */
 	auto head = make_unique_for_overwrite<Node>();
@@ -839,7 +839,7 @@ unique_ptr<Node> Node::declaration(Token **next_token, Token *current_token, sha
  * @param new_ty 初期化式から補完した完全な型を返すための参照
  * @return 生成した初期化式
  */
-unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_token, shared_ptr<Type> ty, shared_ptr<Type> &new_ty)
+unique_ptr<Object::Initializer> Node::initializer(Token **next_token, Token *current_token, shared_ptr<Type> ty, shared_ptr<Type> &new_ty)
 {
 	auto init = Object::new_initializer(ty, true);
 	initializer2(next_token, current_token, init.get());
@@ -878,7 +878,7 @@ unique_ptr<Initializer> Node::initializer(Token **next_token, Token *current_tok
  * @details 以下のEBNF規則に従う。 @n
  * initializer = string-initialize | array-initializer | struct-initializer | union-initializer |assign
  */
-void Node::initializer2(Token **next_token, Token *current_token, Initializer *init)
+void Node::initializer2(Token **next_token, Token *current_token, Object::Initializer *init)
 {
 	/* 文字列 */
 	if (TypeKind::TY_ARRAY == init->_ty->_kind && TokenKind::TK_STR == current_token->_kind)
@@ -950,7 +950,7 @@ void Node::initializer2(Token **next_token, Token *current_token, Initializer *i
  * @details 以下のEBNF規則に従う。 @n
  * string_initializer = string-literal
  */
-void Node::string_initializer(Token **next_token, Token *current_token, Initializer *init)
+void Node::string_initializer(Token **next_token, Token *current_token, Object::Initializer *init)
 {
 
 	/* 前後の'"'を削除 */
@@ -1004,7 +1004,7 @@ int Node::count_array_init_element(Token *token, const Type *ty)
  * @details 以下のEBNF規則に従う。 @n
  * array_initializer1 = "{" identifier ("," identifier)*  ","? "}"
  */
-void Node::array_initializer1(Token **next_token, Token *current_token, Initializer *init)
+void Node::array_initializer1(Token **next_token, Token *current_token, Object::Initializer *init)
 {
 	/* 配列の初期化式は"{"で始まる */
 	current_token = skip(current_token, "{");
@@ -1043,7 +1043,7 @@ void Node::array_initializer1(Token **next_token, Token *current_token, Initiali
  * @details 以下のEBNF規則に従う。 @n
  * array_initializer2 =  identifier ("," identifier)*
  */
-void Node::array_initializer2(Token **next_token, Token *current_token, Initializer *init)
+void Node::array_initializer2(Token **next_token, Token *current_token, Object::Initializer *init)
 {
 	if (init->_is_flexible)
 	{
@@ -1073,7 +1073,7 @@ void Node::array_initializer2(Token **next_token, Token *current_token, Initiali
  * @details 以下のEBNF規則に従う。 @n
  * struct_initializer1 = "{" initializer ("," initializer)* ","? "}"
  */
-void Node::struct_initializer1(Token **next_token, Token *current_token, Initializer *init)
+void Node::struct_initializer1(Token **next_token, Token *current_token, Object::Initializer *init)
 {
 	current_token = skip(current_token, "{");
 
@@ -1110,7 +1110,7 @@ void Node::struct_initializer1(Token **next_token, Token *current_token, Initial
  * @details 以下のEBNF規則に従う。 @n
  * struct_initializer2 = initializer ("," initializer)*
  */
-void Node::struct_initializer2(Token **next_token, Token *current_token, Initializer *init)
+void Node::struct_initializer2(Token **next_token, Token *current_token, Object::Initializer *init)
 {
 	bool first = true;
 	for (auto mem = init->_ty->_members.get(); mem && !current_token->is_end(); mem = mem->_next.get())
@@ -1132,7 +1132,7 @@ void Node::struct_initializer2(Token **next_token, Token *current_token, Initial
  * @param current_token 現在処理しているトークン
  * @param init 初期化式
  */
-void Node::union_initializer(Token **next_token, Token *current_token, Initializer *init)
+void Node::union_initializer(Token **next_token, Token *current_token, Object::Initializer *init)
 {
 	if (current_token->is_equal("{"))
 	{
@@ -1174,7 +1174,7 @@ Token *Node::skip_excess_element(Token *token)
  * @param token ノードと対応するトークン
  * @return 生成したノード
  */
-unique_ptr<Node> Node::init_desg_expr(InitDesg *desg, Token *token)
+unique_ptr<Node> Node::init_desg_expr(Object::InitDesg *desg, Token *token)
 {
 	/* 配列ではない変数なら変数を表すノードを生成して返す */
 	if (desg->_var)
@@ -1203,7 +1203,7 @@ unique_ptr<Node> Node::init_desg_expr(InitDesg *desg, Token *token)
  * @param token ノードと対応するトークン
  * @return 生成したノード
  */
-unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *desg, Token *token)
+unique_ptr<Node> Node::create_lvar_init(Object::Initializer *init, Type *ty, Object::InitDesg *desg, Token *token)
 {
 	if (TypeKind::TY_ARRAY == ty->_kind)
 	{
@@ -1211,7 +1211,7 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 		auto len = ty->_array_length;
 		for (int i = 0; i < len; ++i)
 		{
-			InitDesg desg2 = {desg, i};
+			Object::InitDesg desg2 = {desg, i};
 			auto rhs = create_lvar_init(init->_children[i].get(), ty->_base.get(), &desg2, token);
 			node = make_unique<Node>(NodeKind::ND_COMMA, move(node), move(rhs), token);
 		}
@@ -1224,7 +1224,7 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 
 		for (auto mem = ty->_members; mem; mem = mem->_next)
 		{
-			InitDesg desg2 = {desg, 0, mem};
+			Object::InitDesg desg2 = {desg, 0, mem};
 			auto rhs = create_lvar_init(init->_children[mem->_idx].get(), mem->_ty.get(), &desg2, token);
 			node = make_unique<Node>(NodeKind::ND_COMMA, move(node), move(rhs), token);
 		}
@@ -1233,7 +1233,7 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 
 	if (TypeKind::TY_UNION == ty->_kind)
 	{
-		InitDesg desg2 = {desg, 0, ty->_members};
+		Object::InitDesg desg2 = {desg, 0, ty->_members};
 		return create_lvar_init(init->_children[0].get(), ty->_members->_ty.get(), &desg2, token);
 	}
 
@@ -1262,7 +1262,7 @@ unique_ptr<Node> Node::create_lvar_init(Initializer *init, Type *ty, InitDesg *d
 unique_ptr<Node> Node::lvar_initializer(Token **next_token, Token *current_token, Object *var)
 {
 	auto init = initializer(next_token, current_token, var->_ty, var->_ty);
-	InitDesg desg = {nullptr, 0, nullptr, var};
+	Object::InitDesg desg = {nullptr, 0, nullptr, var};
 
 	auto lhs = make_unique<Node>(NodeKind::ND_MEMZERO, current_token);
 	lhs->_var = var;
@@ -1347,7 +1347,7 @@ void Node::write_fval_buf(unsigned char buf[], double val, int sz, int offset)
  * @param buf データの書き込み先
  * @param offset オフセット
  */
-Relocation *Node::write_gvar_data(Relocation *cur, Initializer *init, Type *ty, unsigned char buf[], int offset)
+Object::Relocation *Node::write_gvar_data(Object::Relocation *cur, Object::Initializer *init, Type *ty, unsigned char buf[], int offset)
 {
 
 	if (TypeKind::TY_ARRAY == ty->_kind)
@@ -1395,7 +1395,7 @@ Relocation *Node::write_gvar_data(Relocation *cur, Initializer *init, Type *ty, 
 		return cur;
 	}
 
-	auto rel = make_unique<Relocation>();
+	auto rel = make_unique<Object::Relocation>();
 	rel->_offset = offset;
 	rel->_label = label;
 	rel->_addend = val;
@@ -1418,7 +1418,7 @@ Relocation *Node::write_gvar_data(Relocation *cur, Initializer *init, Type *ty, 
 void Node::gvar_initializer(Token **next_token, Token *current_token, Object *var)
 {
 	auto init = initializer(next_token, current_token, var->_ty, var->_ty);
-	auto head = make_unique<Relocation>();
+	auto head = make_unique<Object::Relocation>();
 
 	auto buf = make_unique<unsigned char[]>(var->_ty->_size);
 	write_gvar_data(head.get(), init.get(), var->_ty.get(), buf.get(), 0);
@@ -1765,7 +1765,7 @@ void Node::struct_members(Token **next_token, Token *current_token, Type *ty)
 	/* '}'が出てくるまで読み込み続ける */
 	while (!current_token->is_equal("}"))
 	{
-		VarAttr attr = {};
+		Object::VarAttr attr = {};
 		auto base = declspec(&current_token, current_token, &attr);
 		bool first = true;
 
@@ -1883,7 +1883,7 @@ unique_ptr<Node> Node::struct_ref(unique_ptr<Node> &&lhs, Token *token)
  * @param attr 読み取った型の属性を返すための参照
  * @return 変数の型
  */
-shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, VarAttr *attr)
+shared_ptr<Type> Node::declspec(Token **next_token, Token *current_token, Object::VarAttr *attr)
 {
 	constexpr int VOID = 1 << 0;
 	constexpr int BOOL = 1 << 2;
@@ -3463,7 +3463,7 @@ bool Node::is_function(Token *token)
  * @param base 型宣言の前半部分から読み取れた型
  * @return 次のトークン
  */
-Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const VarAttr *attr)
+Token *Node::global_variable(Token *token, shared_ptr<Type> &&base, const Object::VarAttr *attr)
 {
 	/* 1個めの変数であるか */
 	bool first = true;

@@ -16,7 +16,6 @@
 
 /* 前方宣言 */
 class Type;
-struct File;
 
 /** @brief トークンの種類 */
 enum class TokenKind
@@ -36,6 +35,19 @@ enum class TokenKind
 class Token
 {
 public:
+	/** ファイルを表す構造体 */
+	struct File
+	{
+		string _name;	  /*!< ファイル名（フルパス） */
+		int _file_no;	  /*!< ファイルの通し番号 */
+		string _contents; /*!< ファイルの中身 */
+
+		File(const string &name, const int &file_no, const string &content)
+			: _name(name), _file_no(file_no), _contents(content)
+		{
+		}
+	};
+
 	/* メンバ変数 (public) */
 
 	unique_ptr<Token> _next;			 /*!< 次のトークン */
@@ -112,14 +124,4 @@ private:
 	static bool has_space;
 };
 
-struct File
-{
-	string _name;	  /*!< ファイル名（フルパス） */
-	int _file_no;	  /*!< ファイルの通し番号 */
-	string _contents; /*!< ファイルの中身 */
-
-	File(const string &name, const int &file_no, const string &content)
-		: _name(name), _file_no(file_no), _contents(content)
-	{
-	}
-};
+using File = Token::File;

@@ -18,40 +18,40 @@ class Input;
 using MacroArgs = std::unordered_map<string, unique_ptr<Token>>;
 using Macro_handler_fn = unique_ptr<Token> (*)(const Token *);
 
-/** #if関連のブロックの種類 */
-enum class BlockKind
-{
-	IN_THEN,
-	IN_ELIF,
-	IN_ELSE,
-};
-
-/** #if関連を表す構造体 */
-struct CondIncl
-{
-	unique_ptr<Token> _token /*!< 参照用のトークン */;
-	BlockKind _ctx;			/*!< ブロックの種類 */
-	bool _included = false; /*!< ブロックが有効であるか */
-
-	CondIncl();
-	CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included);
-};
-
-/** マクロ */
-struct Macro
-{
-	unique_ptr<Token> _body;			 /*!< マクロの展開先 */
-	unique_ptr<vector<string>> _params;	 /*!< 関数マクロの引数 */
-	bool _is_objlike = true;			 /*!< オブジェクトマクロであるか */
-	bool _is_variadic = false;			 /*!< 可変長引数をとるか */
-	Macro_handler_fn _handler = nullptr; /*!< 動的な事前定義マクロの動作(__LINE__など) */
-
-	Macro(unique_ptr<Token> &&body, const bool &objlike);
-};
-
 class PreProcess
 {
 public:
+	/** #if関連のブロックの種類 */
+	enum class BlockKind
+	{
+		IN_THEN,
+		IN_ELIF,
+		IN_ELSE,
+	};
+
+	/** #if関連を表す構造体 */
+	struct CondIncl
+	{
+		unique_ptr<Token> _token /*!< 参照用のトークン */;
+		BlockKind _ctx;			/*!< ブロックの種類 */
+		bool _included = false; /*!< ブロックが有効であるか */
+
+		CondIncl();
+		CondIncl(unique_ptr<Token> &&token, const BlockKind &ctx, bool included);
+	};
+
+	/** マクロ */
+	struct Macro
+	{
+		unique_ptr<Token> _body;			 /*!< マクロの展開先 */
+		unique_ptr<vector<string>> _params;	 /*!< 関数マクロの引数 */
+		bool _is_objlike = true;			 /*!< オブジェクトマクロであるか */
+		bool _is_variadic = false;			 /*!< 可変長引数をとるか */
+		Macro_handler_fn _handler = nullptr; /*!< 動的な事前定義マクロの動作(__LINE__など) */
+
+		Macro(unique_ptr<Token> &&body, const bool &objlike);
+	};
+
 	/* 静的メンバ関数(public) */
 	static unique_ptr<Token> preprocess(unique_ptr<Token> &&token, const unique_ptr<Input> &in);
 

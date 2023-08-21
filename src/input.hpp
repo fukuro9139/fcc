@@ -13,22 +13,26 @@
 
 #include "common.hpp"
 
-/** 入力ファイルの種類 */
-enum class FileType
-{
-	FILE_NONE, /*!< 指定なし */
-	FILE_C,	   /*!< Cソースファイル */
-	FILE_ASM,  /*!< アセンブリファイル */
-	FILE_OBJ   /*!< オブジェクトファイル */
-};
-
+/**
+ * @brief 入力に関連する操作をまとめたクラス
+ *
+ */
 class Input
 {
 public:
+	/** 入力ファイルの種類 */
+	enum class FileType
+	{
+		FILE_NONE, /*!< 指定なし */
+		FILE_C,	   /*!< Cソースファイル */
+		FILE_ASM,  /*!< アセンブリファイル */
+		FILE_OBJ   /*!< オブジェクトファイル */
+	};
+
 	/** 入力ファイルを表す構造体 */
 	struct InputFile
 	{
-		string _name = "";				   /*!< ファイル名 */
+		string _name = "";					  /*!< ファイル名 */
 		FileType _type = FileType::FILE_NONE; /*!<  ファイルの種類*/
 		InputFile(const string &name, const FileType &type) : _name(name), _type(type) {}
 	};
@@ -60,3 +64,5 @@ private:
 	static FileType opt_x;
 	static const std::unordered_map<string, FileType> filetype_table;
 };
+
+using FileType = Input::FileType;

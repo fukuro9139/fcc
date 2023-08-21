@@ -13,8 +13,8 @@
 #include "parse.hpp"
 
 /* Initializerクラス */
-Initializer::Initializer() = default;
-Initializer::Initializer(const shared_ptr<Type> &ty) : _ty(ty) {}
+Object::Initializer::Initializer() = default;
+Object::Initializer::Initializer(const shared_ptr<Type> &ty) : _ty(ty) {}
 
 /* Objectクラス */
 
@@ -22,7 +22,7 @@ Initializer::Initializer(const shared_ptr<Type> &ty) : _ty(ty) {}
 
 unique_ptr<Object> Object::locals = nullptr;
 unique_ptr<Object> Object::globals = nullptr;
-unique_ptr<Scope> Object::scope = make_unique<Scope>();
+unique_ptr<Object::Scope> Object::scope = make_unique<Scope>();
 
 /* コンストラクタ */
 
@@ -90,7 +90,7 @@ Object *Object::new_gvar(const string &name, shared_ptr<Type> ty)
  * @param is_flexible
  * @return 作成した初期化式
  */
-unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool is_flexible)
+unique_ptr<Object::Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool is_flexible)
 {
 	auto init = make_unique<Initializer>(ty);
 
@@ -149,7 +149,7 @@ unique_ptr<Initializer> Object::new_initializer(const shared_ptr<Type> &ty, bool
  * @param token 検索対象のトークン
  * @return 既出の変数であればその変数が属するスコープ
  */
-VarScope *Object::find_var(const Token *token)
+Object::VarScope *Object::find_var(const Token *token)
 {
 	/* スコープを内側から探していく */
 	for (auto sc = scope.get(); sc; sc = sc->_next.get())
@@ -268,7 +268,7 @@ void Object::leave_scope()
  * @param name 追加する変数の名前
  * @param obj 追加する変数のオブジェクト
  */
-VarScope *Object::push_scope(const string &name)
+Object::VarScope *Object::push_scope(const string &name)
 {
 	scope->_vars = make_unique<VarScope>(move(scope->_vars), name);
 	return scope->_vars.get();
