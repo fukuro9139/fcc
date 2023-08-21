@@ -1,12 +1,11 @@
-#define ASSERT(x, y) assert(x, y, #y)
+#define _POSIX_C_SOURCE 200809L
+#include <ctype.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int printf(char *fmt, ...);
-int sprintf(char *buf, char *fmt, ...);
-int vsprintf(char *buf, char *fmt, void *ap);
-int strcmp(char *p, char *q);
-int memcmp(char *p, char *q, long n);
-void exit(int n);
-int vsprintf();
+#define ASSERT(x, y) assert(x, y, #y)
 
 void assert(int expected, int actual, char *code)
 {

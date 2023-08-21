@@ -87,21 +87,16 @@ _Bool false_fn();
 char char_fn();
 short short_fn();
 
-int add_all(int n, ...);
-
-typedef struct
+int add_all(int n, ...)
 {
-	int gp_offset;
-	int fp_offset;
-	void *overflow_arg_area;
-	void *reg_save_area;
-} __va_elem;
+	va_list ap;
+	va_start(ap, n);
 
-typedef __va_elem va_list[1];
-
-int add_all(int n, ...);
-int sprintf(char *buf, char *fmt, ...);
-int vsprintf(char *buf, char *fmt, va_list ap);
+	int sum = 0;
+	for (int i = 0; i < n; i++)
+		sum += va_arg(ap, int);
+	return sum;
+}
 
 char *fmt(char *buf, char *fmt, ...)
 {
@@ -116,8 +111,15 @@ unsigned short ushort_fn();
 char schar_fn();
 short sshort_fn();
 
-double add_double(double x, double y);
-float add_float(float x, float y);
+float add_float(float x, float y)
+{
+	return x + y;
+}
+
+double add_double(double x, double y)
+{
+	return x + y;
+}
 
 float add_float3(float x, float y, float z)
 {
@@ -146,9 +148,20 @@ char *function_fn(void)
 	return __FUNCTION__;
 }
 
-int add10_int(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8, int x9, int x10);
-float add10_float(float x1, float x2, float x3, float x4, float x5, float x6, float x7, float x8, float x9, float x10);
-double add10_double(double x1, double x2, double x3, double x4, double x5, double x6, double x7, double x8, double x9, double x10);
+int add10_int(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8, int x9, int x10)
+{
+	return x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10;
+}
+
+float add10_float(float x1, float x2, float x3, float x4, float x5, float x6, float x7, float x8, float x9, float x10)
+{
+	return x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10;
+}
+
+double add10_double(double x1, double x2, double x3, double x4, double x5, double x6, double x7, double x8, double x9, double x10)
+{
+	return x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10;
+}
 
 int many_args1(int a, int b, int c, int d, int e, int f, int g, int h)
 {
