@@ -20,7 +20,10 @@
 class Input
 {
 public:
-	/** 入力ファイルの種類 */
+	/**
+	 * @brief 入力ファイルの種類
+	 * 
+	 */
 	enum class FileType
 	{
 		FILE_NONE, /*!< 指定なし */
@@ -29,7 +32,10 @@ public:
 		FILE_OBJ   /*!< オブジェクトファイル */
 	};
 
-	/** 入力ファイルを表す構造体 */
+	/**
+	 * @brief 入力ファイルを表す構造体
+	 * 
+	 */
 	struct InputFile
 	{
 		string _name = "";					  /*!< ファイル名 */

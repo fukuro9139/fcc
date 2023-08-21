@@ -35,7 +35,10 @@ enum class TokenKind
 class Token
 {
 public:
-	/** ファイルを表す構造体 */
+	/**
+	 * @brief ファイルを表す構造体
+	 * 
+	 */
 	struct File
 	{
 		string _name;	  /*!< ファイル名（フルパス） */
