@@ -57,17 +57,17 @@ bool end_flg = false;
 
 /* プロトタイプ宣言 */
 void remove_space(char *str);
-void initialize();
-bool parse_input();
-int find_highest_priority_op();
-bool perform_calculation();
+void initialize(void);
+bool parse_input(void);
+int find_highest_priority_op(void);
+bool perform_calculation(void);
 bool calc(int idx);
 void setOP(OperatorType type, long val, int pos);
 bool check_add(long a, long b);
 bool check_sub(long a, long b);
 bool check_div(long a, long b);
 bool check_mul(long a, long b);
-void report_error();
+void report_error(void);
 void signal_handler(int signum);
 
 #endif

@@ -10,7 +10,7 @@
 
 #include "calculator.h"
 
-int main()
+int main(void)
 {
 	struct sigaction sa;
 	/* シグナルマスクのクリア */
@@ -83,7 +83,7 @@ int main()
  * @brief 初期化を行う
  *
  */
-void initialize()
+void initialize(void)
 {
 	input_str[0] = '\0';
 	numSize = 0;
@@ -122,7 +122,7 @@ void remove_space(char *str)
  * @return true 字句解析が正常に終了した場合
  * @return false 字句解析が途中で失敗した場合
  */
-bool parse_input()
+bool parse_input(void)
 {
 	long tmp = 0;				// 読み取った数値
 	int sz = strlen(input_str); // 入力文字列の長さ
@@ -333,7 +333,7 @@ void setOP(OperatorType type, long val, int pos)
  *
  * @return 最も優先度の高い演算子のインデックス
  */
-int find_highest_priority_op()
+int find_highest_priority_op(void)
 {
 	int ret = 0;
 	for (int i = 1; i < opSize; i++)
@@ -352,7 +352,7 @@ int find_highest_priority_op()
  * @return true 演算が正常に終了
  * @return false 演算が途中で失敗
  */
-bool perform_calculation()
+bool perform_calculation(void)
 {
 	while (numSize > 1)
 	{
@@ -457,7 +457,7 @@ bool calc(int idx)
  * 1 + 2 / 0 *3
  *       ^ Invalid expression. Please try again.
  */
-void report_error()
+void report_error(void)
 {
 	printf("%s\n", input_str);
 	printf("%*s", error_pos, "");

@@ -9,16 +9,16 @@
  *
  */
 
-#include <stdio.h>
+#include "eightqueen.h"
 
 /* 発見した買いの総数 */
 static int count;
 
-void init_board(int board[8][8])
+void init_board(int board[WIDTH][WIDTH])
 {
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < WIDTH; i++)
 	{
-		for (int j = 0; j < 8; j++)
+		for (int j = 0; j < WIDTH; j++)
 		{
 			board[i][j] = 0;
 		}
@@ -26,12 +26,12 @@ void init_board(int board[8][8])
 }
 
 /* 盤面を出力する */
-void print_board(int queen_position[8])
+void print_board(int queen_position[WIDTH])
 {
 	printf("No.%d\n", count);
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < WIDTH; i++)
 	{
-		for (int j = 0; j < 8; j++)
+		for (int j = 0; j < WIDTH; j++)
 		{
 			/* 位置(i, j)にクイーンが置いてある */
 			if (j == queen_position[i])
@@ -50,32 +50,32 @@ void print_board(int queen_position[8])
 }
 
 /* クイーンが(row, col)の位置にいるとしてクイーンが動ける範囲のボードの値を
- * +d する。
+ * +val する。
  */
-void change_board(int board[8][8], int row, int col, int d)
+void change_board(int board[WIDTH][WIDTH], int row, int col, int val)
 {
 	/* クイーンが動ける方向 */
 	int delta[8][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
 
-	for (int i = 0; i < 8; i++)
+	for (int d = 0; d < 8; d++)
 	{
-		for (int k = 1; k < 8; k++)
+		for (int k = 1; k < (WIDTH > WIDTH ? WIDTH : WIDTH); k++)
 		{
-			int next_row = row + k * delta[i][0];
-			int next_col = col + k * delta[i][1];
+			int next_row = row + k * delta[d][0];
+			int next_col = col + k * delta[d][1];
 
-			if (next_row < 0 || next_row >= 8 || next_col < 0 || next_col >= 8)
+			if (next_row < 0 || next_row >= WIDTH || next_col < 0 || next_col >= WIDTH)
 				continue;
 
-			board[next_row][next_col] += d;
+			board[next_row][next_col] += val;
 		}
 	}
 }
 
-void set_queen(int queen_position[8], int board[8][8], int row)
+void set_queen(int queen_position[WIDTH], int board[WIDTH][WIDTH], int row)
 {
 	/* 全てのクイーンを置き終わった */
-	if (row == 8)
+	if (row == WIDTH)
 	{
 		count++;
 		print_board(queen_position);
@@ -83,7 +83,7 @@ void set_queen(int queen_position[8], int board[8][8], int row)
 	}
 
 	/* 新しいクイーンを置く場所を決める */
-	for (int col = 0; col < 8; col++)
+	for (int col = 0; col < WIDTH; col++)
 	{
 		/* board[row][col]の位置に配置可能 */
 		if (board[row][col] == 0)
@@ -100,7 +100,7 @@ void set_queen(int queen_position[8], int board[8][8], int row)
 	}
 }
 
-int main()
+int main(void)
 {
 	/* 発見した個数の初期化 */
 	count = 0;
@@ -111,10 +111,10 @@ int main()
 	 * したがって、各列に存在するクイーンの数は1個以下であり、クイーンをおかない列が存在すると
 	 * ８個のクイーンを置ききることができない。
 	 */
-	int queen_position[8];
+	int queen_position[WIDTH];
 
 	/* 現在のボードの状態 */
-	int board[8][8];
+	int board[WIDTH][WIDTH];
 
 	/* ボードを初期化する */
 	init_board(board);
