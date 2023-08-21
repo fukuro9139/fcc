@@ -1,0 +1,10 @@
+<map id="tokenize.hpp" name="tokenize.hpp">
+<area shape="rect" id="node1" title="文字列をトークンに変換するトークナイザの定義" alt="" coords="363,5,469,32"/>
+<area shape="rect" id="node2" href="$codegen_8cpp.html" title="抽象構文木(AST)を意味解析してアセンブリを出力するコードジェネレーターの定義。" alt="" coords="5,80,109,107"/>
+<area shape="rect" id="node3" href="$common_8cpp.html" title="汎用で使う関数の定義" alt="" coords="133,80,240,107"/>
+<area shape="rect" id="node4" href="$main_8cpp.html" title="x86&#45;64用で動作するC言語コンパイラです。" alt="" coords="264,80,347,107"/>
+<area shape="rect" id="node5" href="$object_8cpp.html" title="関数や変数を表すクラス" alt="" coords="371,80,461,107"/>
+<area shape="rect" id="node6" href="$parse_8cpp.html" title="C言語の再帰下降構文解析を行うパーサーの定義" alt="" coords="485,80,571,107"/>
+<area shape="rect" id="node7" href="$preprocess_8cpp.html" title="プリプロセスを行う" alt="" coords="595,80,715,107"/>
+<area shape="rect" id="node8" href="$tokenize_8cpp.html" title="文字列をトークンに変換するトークナイザの定義" alt="" coords="739,80,843,107"/>
+</map>

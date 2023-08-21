@@ -1,0 +1,18 @@
+<map id="Object::VarScope" name="Object::VarScope">
+<area shape="rect" id="node1" title="ローカル変数、グローバル変数、typedef, 列挙型のスコープ" alt="" coords="1000,102,1132,129"/>
+<area shape="rect" id="node2" title=" " alt="" coords="763,5,911,47"/>
+<area shape="rect" id="node3" title=" " alt="" coords="190,234,341,261"/>
+<area shape="rect" id="node5" href="$classObject.html" title="変数または関数を表す。各オブジェクトは名前によって区別する" alt="" coords="805,350,869,377"/>
+<area shape="rect" id="node7" href="$classToken.html" title="トークンを表すクラス" alt="" coords="533,363,592,390"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,357,64,383"/>
+<area shape="rect" id="node12" href="$structToken_1_1File.html" title="ファイルを表す構造体" alt="" coords="220,566,311,593"/>
+<area shape="rect" id="node6" title=" " alt="" coords="485,183,640,210"/>
+<area shape="rect" id="node8" title=" " alt="" coords="192,348,339,389"/>
+<area shape="rect" id="node9" title=" " alt="" coords="186,414,345,441"/>
+<area shape="rect" id="node10" title=" " alt="" coords="180,465,351,491"/>
+<area shape="rect" id="node11" title=" " alt="" coords="217,515,314,542"/>
+<area shape="rect" id="node13" title=" " alt="" coords="480,297,645,339"/>
+<area shape="rect" id="node14" title=" " alt="" coords="481,499,644,526"/>
+<area shape="rect" id="node15" title=" " alt="" coords="489,415,637,456"/>
+<area shape="rect" id="node16" title=" " alt="" coords="489,551,637,592"/>
+</map>
