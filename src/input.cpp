@@ -175,7 +175,7 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
 	}
 
 	/* デフォルトのインクルードパスを設定する */
-	auto path = fs::path(args[0]).parent_path() / "include";
+	auto path = fs::path(args[0]).parent_path() / "../include";
 	in->_include.emplace_back(path.string());
 
 	return in;

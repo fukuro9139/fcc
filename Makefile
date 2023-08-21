@@ -21,18 +21,23 @@ RM = del
 endif
 
 #プログラム名とオブジェクトファイル名
-TARGET = fcc
+FCC = bin/fcc
 SRCS = $(wildcard src/*.cpp)
 OBJS = $(addprefix obj/, $(notdir $(SRCS:.cpp=.o)))
-SAMPLE_CALC = calc
-SAMPLE_QUEEN = eightqueen
+SAMPLE_CALC = sample/bin/calc
+SAMPLE_QUEEN = sample/bin/eightqueen
 
 #テスト用ファイル
 TEST_SRCS=$(wildcard test/*.c)
 TESTS=$(TEST_SRCS:.c=.exe)
 
 #プライマリターゲット
-$(TARGET): $(OBJS)
+$(FCC): $(OBJS)
+ifeq ($(WINDOWS), 0)
+	@mkdir -p bin/
+else
+	@if not exist bin mkdir bin
+endif
 	$(CXX) -o $@ $^
 
 #オブジェクトファイル
@@ -45,19 +50,19 @@ endif
 	$(CXX) $(CFLAGS) -c $< -o $@
 
 #makeとcleanをまとめて行う
-all: clean $(TARGET)
+all: clean $(FCC)
 
 #テスト
 ifeq ($(WINDOWS), 0)
-test/%.exe: $(TARGET) test/%.c
-	./fcc -I test -o $@ test/$*.c -xc test/common
+test/%.exe: $(FCC) test/%.c
+	$(FCC) -I test -o $@ test/$*.c -xc test/common
 
 test: $(TESTS)
 	for i in $^; do echo $$i; ./$$i || exit 1; echo; done
 	test/driver.sh
 else
-test/%.exe: $(TARGET) test/%.c
-	./fcc -I test -S -o test/$*.s test/$*.c
+test/%.exe: $(FCC) test/%.c
+	$(FCC) -I test -S -o test/$*.s test/$*.c
 
 test: $(TESTS)
 endif
@@ -66,19 +71,19 @@ endif
 ifeq ($(WINDOWS), 0)
 sample: $(SAMPLE_CALC) $(SAMPLE_QUEEN)
 
-$(SAMPLE_CALC): $(TARGET)
-	./fcc -o $@ sample/src/calculator.c
+$(SAMPLE_CALC): $(FCC)
+	$(FCC) -o $@ sample/src/calculator.c
 
-$(SAMPLE_QUEEN): $(TARGET)
-	./fcc -o $@ sample/src/eightqueen.c
+$(SAMPLE_QUEEN): $(FCC)
+	$(FCC) -o $@ sample/src/eightqueen.c
 endif
 
 #不要ファイル削除
 clean:
 ifeq ($(WINDOWS), 0)
-	$(RM) $(TARGET) $(OBJS) $(TESTS) $(SAMPLE_CALC) $(SAMPLE_QUEEN) obj/*.d test/*.o
+	$(RM) $(FCC) $(OBJS) $(TESTS) $(SAMPLE_CALC) $(SAMPLE_QUEEN) obj/*.d test/*.o
 else
-	$(RM) fcc.exe obj\* test\*.s /Q
+	$(RM) bin\fcc.exe obj\* test\*.s /Q
 endif
 
 #ヘッダフィルの依存関係
