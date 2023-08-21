@@ -18,6 +18,10 @@ class Input;
 using MacroArgs = std::unordered_map<string, unique_ptr<Token>>;
 using Macro_handler_fn = unique_ptr<Token> (*)(const Token *);
 
+/**
+ * @brief プリプロセスを行う
+ * 
+ */
 class PreProcess
 {
 public:
