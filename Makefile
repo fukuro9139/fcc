@@ -63,13 +63,15 @@ test: $(TESTS)
 endif
 
 #サンプル
+ifeq ($(WINDOWS), 0)
 sample: $(SAMPLE_CALC) $(SAMPLE_QUEEN)
 
-$(SAMPLE_CALC): $(TARGET) 
+$(SAMPLE_CALC): $(TARGET)
 	./fcc -o $@ sample/src/calculator.c
 
-$(SAMPLE_QUEEN): $(TARGET) 
+$(SAMPLE_QUEEN): $(TARGET)
 	./fcc -o $@ sample/src/eightqueen.c
+endif
 
 #不要ファイル削除
 clean:
