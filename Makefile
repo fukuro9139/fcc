@@ -24,6 +24,8 @@ endif
 TARGET = fcc
 SRCS = $(wildcard src/*.cpp)
 OBJS = $(addprefix obj/, $(notdir $(SRCS:.cpp=.o)))
+SAMPLE_CALC = calc
+SAMPLE_QUEEN = eightqueen
 
 #テスト用ファイル
 TEST_SRCS=$(wildcard test/*.c)
@@ -60,10 +62,19 @@ test/%.exe: $(TARGET) test/%.c
 test: $(TESTS)
 endif
 
+#サンプル
+sample: $(SAMPLE_CALC) $(SAMPLE_QUEEN)
+
+$(SAMPLE_CALC): $(TARGET) 
+	./fcc -o $@ sample/src/calculator.c
+
+$(SAMPLE_QUEEN): $(TARGET) 
+	./fcc -o $@ sample/src/eightqueen.c
+
 #不要ファイル削除
 clean:
 ifeq ($(WINDOWS), 0)
-	$(RM) $(TARGET) $(OBJS) $(TESTS) obj/*.d test/*.o
+	$(RM) $(TARGET) $(OBJS) $(TESTS) $(SAMPLE_CALC) $(SAMPLE_QUEEN) obj/*.d test/*.o
 else
 	$(RM) fcc.exe obj\* test\*.s /Q
 endif

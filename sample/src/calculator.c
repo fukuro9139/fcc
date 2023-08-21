@@ -8,77 +8,26 @@
  * @copyright Copyright (c) 2023
  */
 
-/** TRUE, FALSEの定義 */
-typedef enum
-{
-	FALSE = 0,
-	TRUE = 1
-} bool;
-
-/** 演算子の種類  */
-typedef enum
-{
-	OP_PLUS,  // '+'
-	OP_MINUS, // '-'
-	OP_DIV,	  // '/'
-	OP_MUL	  // '*'
-} OperatorType;
-
-/** 演算子を表現する構造体 */
-typedef struct
-{
-	OperatorType kind; // 演算子の種類
-	int priority;	   // 演算子の優先度
-	int pos;		   // エラー報告用の演算子の位置
-} Operator;
-
-/** 入力文字列 */
-char input_str[128];
-
-/** 数式内の数値 */
-int nums[128];
-
-/** 数式内の演算子 */
-Operator ops[128];
-
-/** 演算子の優先順位の基数。括弧の内側に入るほど高くなる */
-int priorityBase;
-
-/** パースした数値の数 */
-int numSize;
-
-/** パースした演算子の数 */
-int opSize;
-
-/** エラーが見つかった個所 */
-int error_pos;
-
-/* プロトタイプ宣言 */
-void remove_space(char *str);
-void initialize();
-bool parse_input();
-int find_highest_priority_op();
-bool perform_calculation();
-bool calc(int idx);
-void setOP(OperatorType type, int val, int pos);
-bool check_add(int a, int b);
-bool check_sub(int a, int b);
-bool check_div(int a, int b);
-bool check_mul(int a, int b);
-
-void report_error();
-
-/* FCCはヘッダをインクルードできないので標準ライブラリの関数を宣言しておく */
-int printf(char *str);
-int strlen(char *str);
-int isdigit(char c);
-
-/* FCCはファイルポインタがまだ実装できていないのでfgets()をラッピング */
-char *receive_input(char *str);
+#include "calculator.h"
 
 int main()
 {
-	while (1)
+	struct sigaction sa;
+	/* シグナルマスクのクリア */
+	if (-1 == sigemptyset(&sa.sa_mask))
+	{
+		exit(1);
+	}
+	sa.sa_handler = signal_handler;
+	sa.sa_flags = 0;
+
+	/* シグナルハンドラの登録 */
+	if (-1 == sigaction(SIGINT, &sa, NULL))
+	{
+		exit(1);
+	}
+
+	while (!end_flg)
 	{
 		/* 初期化 */
 		initialize();
@@ -87,7 +36,13 @@ int main()
 		printf("Enter the formula to be calculated.\n");
 		printf("Press Ctrl+C to exit.\n");
 		printf("Input: ");
-		if (receive_input(input_str) == (void *)0)
+		if (fgets(input_str, MAX_LENGTH, stdin) == (void *)0)
+		{
+			break;
+		}
+
+		/* 終了フラグがたったら抜ける */
+		if (end_flg)
 		{
 			break;
 		}
@@ -103,23 +58,24 @@ int main()
 		}
 
 		/* 入力された数式を解析 */
-		if (parse_input() == FALSE)
+		if (parse_input() == false)
 		{
 			report_error();
 			continue;
 		}
 
 		/* 計算を実行 */
-		if (perform_calculation() == FALSE)
+		if (perform_calculation() == false)
 		{
 			report_error();
 			continue;
 		}
 
 		/* 出力 */
-		printf("Result: %d\n\n", nums[0]);
+		printf("Result: %ld\n\n", nums[0]);
 	}
 
+	printf("\nThank you!\n");
 	return 0;
 }
 
@@ -168,7 +124,7 @@ void remove_space(char *str)
  */
 bool parse_input()
 {
-	int tmp = 0;				// 読み取った数値
+	long tmp = 0;				// 読み取った数値
 	int sz = strlen(input_str); // 入力文字列の長さ
 
 	for (int i = 0; i < sz; i++)
@@ -182,7 +138,7 @@ bool parse_input()
 			if (i != 0 && input_str[i - 1] == ')')
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 
 			/* 数値に変換 */
@@ -205,7 +161,7 @@ bool parse_input()
 			if (i != 0 && (isdigit(input_str[i - 1]) || input_str[i - 1] == ')'))
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 
 			priorityBase += 10;
@@ -220,14 +176,14 @@ bool parse_input()
 			if (priorityBase < 0)
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 
 			/* 直前が数字または')'でないなら無効な数式 */
 			if (!isdigit(input_str[i - 1]) && input_str[i - 1] != ')')
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 
 			/* 数式の末尾なら現在の数字を格納 */
@@ -252,7 +208,7 @@ bool parse_input()
 			if (i != 0 && !isdigit(input_str[i - 1]) && input_str[i - 1] != '(' && input_str[i - 1] != ')')
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 			setOP(OP_PLUS, tmp, i);
 			tmp = 0;
@@ -266,7 +222,7 @@ bool parse_input()
 			if (i != 0 && !isdigit(input_str[i - 1]) && input_str[i - 1] != '(' && input_str[i - 1] != ')')
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 			setOP(OP_MINUS, tmp, i);
 			tmp = 0;
@@ -280,13 +236,13 @@ bool parse_input()
 			if (i == 0)
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 			/* 直前が数字または')'ではないときも存在しないため無効な数式 */
 			if (!isdigit(input_str[i - 1]) && input_str[i - 1] != ')')
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 
 			/* 演算子と演算対象の直前の数値を配列にセットする */
@@ -304,13 +260,13 @@ bool parse_input()
 			if (i == 0)
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 			/* 直前が数字または')'ではないときも存在しないため無効な数式 */
 			if (!isdigit(input_str[i - 1]) && input_str[i - 1] != ')')
 			{
 				error_pos = i;
-				return FALSE;
+				return false;
 			}
 
 			/* 演算子と演算対象の直前の数値を配列にセットする */
@@ -323,7 +279,7 @@ bool parse_input()
 
 		/* 上記のどれでもないときはエラー */
 		error_pos = i;
-		return FALSE;
+		return false;
 	}
 
 	/* 入力された数式に問題がないか確認 */
@@ -331,15 +287,15 @@ bool parse_input()
 	if (priorityBase != 0)
 	{
 		error_pos = sz - 1;
-		return FALSE;
+		return false;
 	}
 	/* 演算子の数があっているか */
 	if (numSize != opSize + 1)
 	{
 		error_pos = sz - 1;
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /**
@@ -349,7 +305,7 @@ bool parse_input()
  * @param val 直前の数値
  * @param pos 演算子の位置
  */
-void setOP(OperatorType type, int val, int pos)
+void setOP(OperatorType type, long val, int pos)
 {
 	nums[numSize] = val;
 
@@ -403,9 +359,9 @@ bool perform_calculation()
 		/* 最も優先度の高い演算子を探索 */
 		int idx = find_highest_priority_op();
 		/* 計算を実行 */
-		if (calc(idx) == FALSE)
+		if (calc(idx) == false)
 		{
-			return FALSE;
+			return false;
 		}
 		/* 数字配列の演算を終えた要素の部分を前につめる */
 		for (int i = idx + 1; i < numSize - 1; i++)
@@ -421,7 +377,7 @@ bool perform_calculation()
 		opSize--;
 	}
 
-	return TRUE;
+	return true;
 }
 
 /**
@@ -433,8 +389,8 @@ bool perform_calculation()
  */
 bool calc(int idx)
 {
-	int lhs = nums[idx];
-	int rhs = nums[idx + 1];
+	long lhs = nums[idx];
+	long rhs = nums[idx + 1];
 	switch (ops[idx].kind)
 	{
 	/* plus */
@@ -447,7 +403,7 @@ bool calc(int idx)
 		else
 		{
 			error_pos = ops[idx].pos;
-			return FALSE;
+			return false;
 		}
 
 	/* minus */
@@ -460,7 +416,7 @@ bool calc(int idx)
 		else
 		{
 			error_pos = ops[idx].pos;
-			return FALSE;
+			return false;
 		}
 
 	/* divide */
@@ -473,7 +429,7 @@ bool calc(int idx)
 		else
 		{
 			error_pos = ops[idx].pos;
-			return FALSE;
+			return false;
 		}
 
 	/* multiple */
@@ -486,13 +442,13 @@ bool calc(int idx)
 		else
 		{
 			error_pos = ops[idx].pos;
-			return FALSE;
+			return false;
 		}
 	default:
 		/* 演算子以外が入力されたらエラー */
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /**
@@ -517,19 +473,16 @@ void report_error()
  * @return true オーバーフローしない
  * @return false オーバーフローする
  */
-bool check_add(int a, int b)
+bool check_add(long a, long b)
 {
-	int max = 2147483647;
-	int min = -2147483648;
-
 	/* aが非負のとき */
 	if (a >= 0)
 	{
-		return b <= max - a; // 最小値側に超えることはないので最大値以下であることをチェック
+		return b <= INT_MAX - a; // 最小値側に超えることはないので最大値以下であることをチェック
 	}
 
 	/* aが負のとき */
-	return b >= min - a; // 最大値側に超えることはないので最小値以上であることをチェック
+	return b >= INT_MIN - a; // 最大値側に超えることはないので最小値以上であることをチェック
 }
 
 /**
@@ -540,11 +493,10 @@ bool check_add(int a, int b)
  * @return true オーバーフローしない
  * @return false オーバーフローする
  */
-bool check_sub(int a, int b)
+bool check_sub(long a, long b)
 {
-	int min = -2147483648;
 	/* bが最小値であるとき-bは最大値を超えることに注意 */
-	if (b == min)
+	if (b == INT_MIN)
 	{
 		return a < 0;
 	}
@@ -559,7 +511,7 @@ bool check_sub(int a, int b)
  * @return true オーバーフローしない
  * @return false オーバーフローする
  */
-bool check_div(int a, int b)
+bool check_div(long a, long b)
 {
 	/* 割り算はbが０でなければ問題なし */
 	return b != 0;
@@ -572,40 +524,37 @@ bool check_div(int a, int b)
  * @return true オーバーフローしない
  * @return false オーバーフローする
  */
-bool check_mul(int a, int b)
+bool check_mul(long a, long b)
 {
-	int max = 2147483647;
-	int min = -2147483648;
-
 	/* どちらかが0なら問題なし */
 	if (a == 0 || b == 0)
 	{
-		return TRUE;
+		return true;
 	}
 
 	/* ともに正 */
 	if (a > 0 && b > 0)
 	{
-		return b <= max / a;
+		return b <= INT_MAX / a;
 	}
 
 	/* ともに負 */
 	if (a < 0 && b < 0)
 	{
 		/* どちらかが最小値ならオーバーフロー */
-		if (a == min || b == min)
+		if (a == INT_MIN || b == INT_MIN)
 		{
-			return FALSE;
+			return false;
 		}
-		return -b <= max / (-a);
+		return -b <= INT_MAX / (-a);
 	}
 	/* a,bの符号が異なる */
 	/* 片方が最小値のときは相手が1でなければオーバーフロー */
-	if (a == min)
+	if (a == INT_MIN)
 	{
 		return b == 1;
 	}
-	if (b == min)
+	if (b == INT_MIN)
 	{
 		return a == 1;
 	}
@@ -620,5 +569,10 @@ bool check_mul(int a, int b)
 		b *= -1;
 	}
 
-	return b <= max / a;
+	return b <= INT_MAX / a;
+}
+
+void signal_handler(int signum)
+{
+	end_flg = true;
 }

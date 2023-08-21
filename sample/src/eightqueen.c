@@ -9,8 +9,7 @@
  *
  */
 
-/* FCCはヘッダをインクルードできないので標準ライブラリの関数を宣言しておく */
-int printf();
+#include <stdio.h>
 
 /* 発見した買いの総数 */
 static int count;
