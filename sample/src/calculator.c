@@ -572,6 +572,11 @@ bool check_mul(long a, long b)
 	return b <= INT_MAX / a;
 }
 
+/**
+ * @brief シグナルハンドラ
+ * 
+ * @param signum  シグナル番号
+ */
 void signal_handler(int signum)
 {
 	end_flg = true;
