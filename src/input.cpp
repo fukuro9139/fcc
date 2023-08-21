@@ -188,8 +188,16 @@ unique_ptr<Input> Input::parse_args(const std::vector<std::string> &args)
  */
 void Input::usage(int status)
 {
-	std::cerr << "fcc [ -o <path> ] [ -S ] <file>\n";
-	std::cerr << "fcc [ -S ] <file1> <file2> ..." << std::endl;
+	std::cerr << "Usage: fcc [options] files...\n";
+	std::cerr << "Options:\n";
+	std::cerr << "  --help  ヘルプを表示します。\n";
+	std::cerr << "  -o      出力ファイルの名前を指定します。\n";
+	std::cerr << "  -g      オブジェクト・ファイルにデバッグ情報を生成します。\n";
+	std::cerr << "  -w      すべての警告メッセージを無効にします。\n";
+	std::cerr << "  -I      インクルード・ファイルの検索先に追加するディレクトリーを指定します。\n";
+	std::cerr << "  -E      プリプロセスのみを行いコンパイル、アセンブル、リンクを行いません。\n";
+	std::cerr << "  -S      コンパイルまでを行いアセンブル、リンクを行いません。\n";
+	std::cerr << "  -c      リンクを抑止します。\n";
 	exit(status);
 }
 
