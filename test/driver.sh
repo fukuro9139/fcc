@@ -25,7 +25,7 @@ check -o
 check --help
 
 # -S
-./fcc -S -o - -xc $tmp/main.c | grep -q 'main:'
+echo 'int main() {}' | ./fcc -S -o- -xc - | grep -q 'main:'
 check -S
 
 # Default output file
@@ -83,16 +83,15 @@ echo "#include \"$tmp/out.h\"" > $tmp/out.cc
 check -E
 
 echo foo > $tmp/out1.h
-echo "#include \"$tmp/out1.h\"" > $tmp/out1.cc
-./fcc -E -o $tmp/out2 -xc $tmp/out1.cc
+echo "#include \"$tmp/out1.h\"" | ./fcc -E -o $tmp/out2 -xc -
 cat $tmp/out2 | grep -q foo
 check '-E and -o'
 
 # -I
 mkdir $tmp/dir
 echo foo > $tmp/dir/i-option-test
-echo "#include \"i-option-test\"" > $tmp/i-option-test.c
-./fcc -I$tmp/dir -E -xc $tmp/i-option-test.c | grep -q foo
+echo "#include \"i-option-test\"" | ./fcc -I$tmp/dir -E -xc - | grep -q foo
+
 check -I
 
 # -x
