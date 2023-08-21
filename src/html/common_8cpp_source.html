@@ -90,17 +90,17 @@ $(document).ready(function(){initNavTree('common_8cpp_source.html',''); initResi
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="common_8hpp.html">common.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="tokenize_8hpp.html">tokenize.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#if __linux__</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &lt;sys/wait.h&gt;</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &lt;unistd.h&gt;</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;sys/types.h&gt;</span></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;windows.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* __linux__ */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="common_8cpp.html#a0c2edf2b24d8f45aa0b0abb8a1b8117d">   28</a></span>&#160;<span class="keyword">static</span> <span class="keywordtype">int</span> <a class="code" href="common_8cpp.html#a0c2edf2b24d8f45aa0b0abb8a1b8117d">warning_level</a> = 1;</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
@@ -184,7 +184,7 @@ $(document).ready(function(){initNavTree('common_8cpp_source.html',''); initResi
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;}</div>
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
 <div class="line"><a name="l00151"></a><span class="lineno"><a class="line" href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">  151</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a>(<span class="keyword">const</span> vector&lt;string&gt; &amp;argv)</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;<span class="preprocessor">#if __linux__</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;{</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="comment">/* 引数の数 + 1 (NULL終端)*/</span></div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="keywordtype">size_t</span> capacity = argv.size() + 1;</div>
@@ -277,9 +277,9 @@ $(document).ready(function(){initNavTree('common_8cpp_source.html',''); initResi
 <div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <span class="comment">/* 解放 */</span></div>
 <div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="comment">// delete[] wcmd;</span></div>
 <div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;}</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* __linux__ */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno"><a class="line" href="common_8cpp.html#a8587b4703e2439d891c2a2351916013d">  254</a></span>&#160;std::ostream *<a class="code" href="common_8cpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;path)</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;std::ostream *<a class="code" href="common_8hpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;path)</div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;{</div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="keyword">static</span> unique_ptr&lt;std::ofstream&gt; <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a>;</div>
 <div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <a class="code" href="codegen_8cpp.html#af583aab7469ad85646c68473fa671258">os</a> = <span class="keyword">nullptr</span>;</div>
@@ -306,11 +306,11 @@ $(document).ready(function(){initNavTree('common_8cpp_source.html',''); initResi
 <div class="ttc" id="acommon_8cpp_html_a119aa816bd531d61ebacff3c96fb27e8"><div class="ttname"><a href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a></div><div class="ttdeci">void run_subprocess(const vector&lt; string &gt; &amp;argv)</div><div class="ttdoc">forkした子プロセスでargvを引数としてexecvpを起動</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00151">common.cpp:151</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_a1e4265113288c7d43237908030b7b964"><div class="ttname"><a href="common_8cpp.html#a1e4265113288c7d43237908030b7b964">error_token</a></div><div class="ttdeci">void error_token(string &amp;&amp;msg, const Token *token)</div><div class="ttdoc">トークンを受け取ってエラーメッセージを出力</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00115">common.cpp:115</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_a747d534dc013bef3180a891b6864cbbe"><div class="ttname"><a href="common_8cpp.html#a747d534dc013bef3180a891b6864cbbe">init_warning_level</a></div><div class="ttdeci">void init_warning_level(int level)</div><div class="ttdoc">警告レベルを初期化する</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00141">common.cpp:141</a></div></div>
-<div class="ttc" id="acommon_8cpp_html_a8587b4703e2439d891c2a2351916013d"><div class="ttname"><a href="common_8cpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a></div><div class="ttdeci">std::ostream * open_file(const string &amp;path)</div><div class="ttdoc">ファイルを開いてファイルストリームのポインタを返す。 アウトプットパスとして&quot;-&quot;が指定されているまたはファイルを開くのに失敗したら出力先は標準出力。</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00254">common.cpp:254</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_ac00192d849d9668352fb24ce744e927b"><div class="ttname"><a href="common_8cpp.html#ac00192d849d9668352fb24ce744e927b">warn_token</a></div><div class="ttdeci">void warn_token(string &amp;&amp;msg, const int &amp;level, Token *token)</div><div class="ttdoc">警告を出力する</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00128">common.cpp:128</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_ae54cd0d65dfe2ce9516dbfe2801638cd"><div class="ttname"><a href="common_8cpp.html#ae54cd0d65dfe2ce9516dbfe2801638cd">error_at</a></div><div class="ttdeci">void error_at(string &amp;&amp;msg, const int &amp;location)</div><div class="ttdoc">エラー箇所の位置を受け取ってエラー出力して終了</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00047">common.cpp:47</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_affc076f7c26f004496f5bc4a8177eafd"><div class="ttname"><a href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a></div><div class="ttdeci">void error(string &amp;&amp;msg)</div><div class="ttdoc">エラーを報告して終了する</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00035">common.cpp:35</a></div></div>
 <div class="ttc" id="acommon_8hpp_html"><div class="ttname"><a href="common_8hpp.html">common.hpp</a></div><div class="ttdoc">共通のインクルード、using宣言、汎用で使う関数の宣言</div></div>
+<div class="ttc" id="acommon_8hpp_html_a8587b4703e2439d891c2a2351916013d"><div class="ttname"><a href="common_8hpp.html#a8587b4703e2439d891c2a2351916013d">open_file</a></div><div class="ttdeci">std::ostream * open_file(const string &amp;path)</div></div>
 <div class="ttc" id="astructToken_1_1File_html_a5b76ad7024f328b49df305244f5560ba"><div class="ttname"><a href="structToken_1_1File.html#a5b76ad7024f328b49df305244f5560ba">Token::File::_name</a></div><div class="ttdeci">string _name</div><div class="ttdef"><b>Definition:</b> <a href="tokenize_8hpp_source.html#l00044">tokenize.hpp:44</a></div></div>
 <div class="ttc" id="astructToken_1_1File_html_ab03cfd81629e8d9b73f591cf8bd45060"><div class="ttname"><a href="structToken_1_1File.html#ab03cfd81629e8d9b73f591cf8bd45060">Token::File::_contents</a></div><div class="ttdeci">string _contents</div><div class="ttdef"><b>Definition:</b> <a href="tokenize_8hpp_source.html#l00046">tokenize.hpp:46</a></div></div>
 <div class="ttc" id="atokenize_8hpp_html"><div class="ttname"><a href="tokenize_8hpp.html">tokenize.hpp</a></div><div class="ttdoc">文字列をトークンに変換するトークナイザの定義</div></div>

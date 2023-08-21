@@ -23,7 +23,9 @@ var files_dup =
     [ "parse.cpp", "parse_8cpp.html", "parse_8cpp" ],
     [ "parse.hpp", "parse_8hpp.html", "parse_8hpp" ],
     [ "postprocess.cpp", "postprocess_8cpp.html", null ],
-    [ "postprocess.hpp", "postprocess_8hpp.html", null ],
+    [ "postprocess.hpp", "postprocess_8hpp.html", [
+      [ "PostProcess", "classPostProcess.html", "classPostProcess" ]
+    ] ],
     [ "preprocess.cpp", "preprocess_8cpp.html", "preprocess_8cpp" ],
     [ "preprocess.hpp", "preprocess_8hpp.html", "preprocess_8hpp" ],
     [ "tokenize.cpp", "tokenize_8cpp.html", null ],

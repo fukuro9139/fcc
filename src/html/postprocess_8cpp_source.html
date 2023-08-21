@@ -89,7 +89,7 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <a href="postprocess_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160; </div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="postprocess_8hpp.html">postprocess.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#if __linux__</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &lt;unistd.h&gt;</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &lt;sys/types.h&gt;</span></div>
@@ -98,13 +98,13 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;glob.h&gt;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;sys/stat.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keywordtype">void</span> PostProcess::assemble(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;input_path, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;output_path)</div>
+<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classPostProcess.html#a6a80920feea205a08a0b3e9a985f10cc">   29</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classPostProcess.html#a6a80920feea205a08a0b3e9a985f10cc">PostProcess::assemble</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;input_path, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;output_path)</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    vector&lt;string&gt; cmd = {<span class="stringliteral">&quot;as&quot;</span>, <span class="stringliteral">&quot;--noexecstack&quot;</span>, <span class="stringliteral">&quot;-c&quot;</span>, input_path, <span class="stringliteral">&quot;-o&quot;</span>, output_path};</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <a class="code" href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a>(cmd);</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;}</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keywordtype">void</span> PostProcess::run_linker(<span class="keyword">const</span> vector&lt;string&gt; &amp;inputs, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;output)</div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classPostProcess.html#a0ce135872d1af7433e749769aae28dbc">   41</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classPostProcess.html#a0ce135872d1af7433e749769aae28dbc">PostProcess::run_linker</a>(<span class="keyword">const</span> vector&lt;string&gt; &amp;inputs, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;output)</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;{</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    vector&lt;string&gt; cmd;</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    cmd.reserve(50);</div>
@@ -117,8 +117,8 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    cmd.emplace_back(<span class="stringliteral">&quot;-dynamic-linker&quot;</span>);</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    cmd.emplace_back(<span class="stringliteral">&quot;/lib64/ld-linux-x86-64.so.2&quot;</span>);</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordtype">string</span> libpath = find_libpath();</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordtype">string</span> gcc_libpath = find_gcc_libpath();</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordtype">string</span> libpath = <a class="code" href="classPostProcess.html#a62a8be30e43d48c5cb1ceaff6982fb46">find_libpath</a>();</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordtype">string</span> gcc_libpath = <a class="code" href="classPostProcess.html#aa28891a4cbe5c787ae15b7a69cb8a1e8">find_gcc_libpath</a>();</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    cmd.emplace_back(libpath + <span class="stringliteral">&quot;/crt1.o&quot;</span>);</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    cmd.emplace_back(libpath + <span class="stringliteral">&quot;/crti.o&quot;</span>);</div>
@@ -150,7 +150,7 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="code" href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a>(cmd);</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;}</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keywordtype">string</span> PostProcess::create_tmpfile()</div>
+<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classPostProcess.html#ae5d2ced40ce02e45f2ebcf312c7190e5">   92</a></span>&#160;<span class="keywordtype">string</span> <a class="code" href="classPostProcess.html#ae5d2ced40ce02e45f2ebcf312c7190e5">PostProcess::create_tmpfile</a>()</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;{</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordtype">char</span> *path = strdup(<span class="stringliteral">&quot;/tmp/fcc-XXXXXX&quot;</span>);</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordtype">int</span> fd = mkstemp(path);</div>
@@ -165,7 +165,7 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">return</span> tmp_path;</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;}</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keywordtype">string</span> PostProcess::find_file(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;pattern)</div>
+<div class="line"><a name="l00114"></a><span class="lineno"><a class="line" href="classPostProcess.html#adcb610a3c935659d2055c20d68a14692">  114</a></span>&#160;<span class="keywordtype">string</span> <a class="code" href="classPostProcess.html#adcb610a3c935659d2055c20d68a14692">PostProcess::find_file</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;pattern)</div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;{</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordtype">string</span> path;</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="comment">/* 検索結果を格納するバッファ */</span></div>
@@ -179,7 +179,7 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keywordflow">return</span> path;</div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;}</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="keywordtype">string</span> PostProcess::find_libpath()</div>
+<div class="line"><a name="l00133"></a><span class="lineno"><a class="line" href="classPostProcess.html#a62a8be30e43d48c5cb1ceaff6982fb46">  133</a></span>&#160;<span class="keywordtype">string</span> <a class="code" href="classPostProcess.html#a62a8be30e43d48c5cb1ceaff6982fb46">PostProcess::find_libpath</a>()</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;{</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keywordflow">if</span> (fs::is_regular_file(<span class="stringliteral">&quot;/usr/lib/x86_64-linux-gnu/crti.o&quot;</span>))</div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    {</div>
@@ -194,7 +194,7 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <a class="code" href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a>(<span class="stringliteral">&quot;ライブラリが見つかりません&quot;</span>);</div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;}</div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;<span class="keywordtype">string</span> PostProcess::find_gcc_libpath()</div>
+<div class="line"><a name="l00153"></a><span class="lineno"><a class="line" href="classPostProcess.html#aa28891a4cbe5c787ae15b7a69cb8a1e8">  153</a></span>&#160;<span class="keywordtype">string</span> <a class="code" href="classPostProcess.html#aa28891a4cbe5c787ae15b7a69cb8a1e8">PostProcess::find_gcc_libpath</a>()</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;{</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">string</span> paths[] = {</div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="stringliteral">&quot;/usr/lib/gcc/x86_64-linux-gnu/*/crtbegin.o&quot;</span>,</div>
@@ -205,7 +205,7 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> &amp;path : paths)</div>
 <div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    {</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="keyword">auto</span> path_found = find_file(path);</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="keyword">auto</span> path_found = <a class="code" href="classPostProcess.html#adcb610a3c935659d2055c20d68a14692">find_file</a>(path);</div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <span class="keywordflow">if</span> (!path_found.empty())</div>
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        {</div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            fs::path p = path_found;</div>
@@ -215,7 +215,12 @@ $(document).ready(function(){initNavTree('postprocess_8cpp_source.html',''); ini
 <div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <a class="code" href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a>(<span class="stringliteral">&quot;gccライブラリが見つかりません&quot;</span>);</div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;}</div>
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* __linux__ */</span><span class="preprocessor"></span></div>
+<div class="ttc" id="aclassPostProcess_html_a0ce135872d1af7433e749769aae28dbc"><div class="ttname"><a href="classPostProcess.html#a0ce135872d1af7433e749769aae28dbc">PostProcess::run_linker</a></div><div class="ttdeci">static void run_linker(const vector&lt; string &gt; &amp;inputs, const string &amp;output)</div><div class="ttdoc">'ld'コマンドでリンクする</div><div class="ttdef"><b>Definition:</b> <a href="postprocess_8cpp_source.html#l00041">postprocess.cpp:41</a></div></div>
+<div class="ttc" id="aclassPostProcess_html_a62a8be30e43d48c5cb1ceaff6982fb46"><div class="ttname"><a href="classPostProcess.html#a62a8be30e43d48c5cb1ceaff6982fb46">PostProcess::find_libpath</a></div><div class="ttdeci">static string find_libpath()</div><div class="ttdoc">リンク時に必要なライブラリのパスを検索する。見つからなければエラー。</div><div class="ttdef"><b>Definition:</b> <a href="postprocess_8cpp_source.html#l00133">postprocess.cpp:133</a></div></div>
+<div class="ttc" id="aclassPostProcess_html_a6a80920feea205a08a0b3e9a985f10cc"><div class="ttname"><a href="classPostProcess.html#a6a80920feea205a08a0b3e9a985f10cc">PostProcess::assemble</a></div><div class="ttdeci">static void assemble(const string &amp;input_path, const string &amp;output_path)</div><div class="ttdoc">'as'コマンドでアセンブルする</div><div class="ttdef"><b>Definition:</b> <a href="postprocess_8cpp_source.html#l00029">postprocess.cpp:29</a></div></div>
+<div class="ttc" id="aclassPostProcess_html_aa28891a4cbe5c787ae15b7a69cb8a1e8"><div class="ttname"><a href="classPostProcess.html#aa28891a4cbe5c787ae15b7a69cb8a1e8">PostProcess::find_gcc_libpath</a></div><div class="ttdeci">static string find_gcc_libpath()</div><div class="ttdoc">gccのライブラリのパスを検索する。見つからなければエラー。</div><div class="ttdef"><b>Definition:</b> <a href="postprocess_8cpp_source.html#l00153">postprocess.cpp:153</a></div></div>
+<div class="ttc" id="aclassPostProcess_html_adcb610a3c935659d2055c20d68a14692"><div class="ttname"><a href="classPostProcess.html#adcb610a3c935659d2055c20d68a14692">PostProcess::find_file</a></div><div class="ttdeci">static string find_file(const string &amp;patern)</div><div class="ttdoc">ファイルパスを正規表現でパターンマッチングして検索</div><div class="ttdef"><b>Definition:</b> <a href="postprocess_8cpp_source.html#l00114">postprocess.cpp:114</a></div></div>
+<div class="ttc" id="aclassPostProcess_html_ae5d2ced40ce02e45f2ebcf312c7190e5"><div class="ttname"><a href="classPostProcess.html#ae5d2ced40ce02e45f2ebcf312c7190e5">PostProcess::create_tmpfile</a></div><div class="ttdeci">static string create_tmpfile()</div><div class="ttdoc">一時ファイルを作成する</div><div class="ttdef"><b>Definition:</b> <a href="postprocess_8cpp_source.html#l00092">postprocess.cpp:92</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_a119aa816bd531d61ebacff3c96fb27e8"><div class="ttname"><a href="common_8cpp.html#a119aa816bd531d61ebacff3c96fb27e8">run_subprocess</a></div><div class="ttdeci">void run_subprocess(const vector&lt; string &gt; &amp;argv)</div><div class="ttdoc">forkした子プロセスでargvを引数としてexecvpを起動</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00151">common.cpp:151</a></div></div>
 <div class="ttc" id="acommon_8cpp_html_affc076f7c26f004496f5bc4a8177eafd"><div class="ttname"><a href="common_8cpp.html#affc076f7c26f004496f5bc4a8177eafd">error</a></div><div class="ttdeci">void error(string &amp;&amp;msg)</div><div class="ttdoc">エラーを報告して終了する</div><div class="ttdef"><b>Definition:</b> <a href="common_8cpp_source.html#l00035">common.cpp:35</a></div></div>
 <div class="ttc" id="apostprocess_8hpp_html"><div class="ttname"><a href="postprocess_8hpp.html">postprocess.hpp</a></div><div class="ttdoc">コンパイル後の処理を行う</div></div>
