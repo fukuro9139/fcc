@@ -1,5 +1,0 @@
-<map id="Object::Relocation" name="Object::Relocation">
-<area shape="rect" id="node1" title="グローバル変数は定数式または他のグローバル変数のポインタで初期化される。 この構造体は後者の初期化法をサポートする。 例: int x=1; int *y = &#160;int main(){...." alt="" coords="73,109,214,136"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,153,47"/>
-<area shape="rect" id="node3" title=" " alt="" coords="178,13,237,39"/>
-</map>

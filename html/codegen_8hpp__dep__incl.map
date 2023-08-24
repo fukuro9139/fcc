@@ -1,5 +1,0 @@
-<map id="codegen.hpp" name="codegen.hpp">
-<area shape="rect" id="node1" title="抽象構文木(AST)を意味解析してアセンブリを出力するコードジェネレーターの定義。" alt="" coords="63,5,169,32"/>
-<area shape="rect" id="node2" href="$codegen_8cpp.html" title="抽象構文木(AST)を意味解析してアセンブリを出力するコードジェネレーターの定義。" alt="" coords="5,80,109,107"/>
-<area shape="rect" id="node3" href="$main_8cpp.html" title="x86&#45;64用で動作するC言語コンパイラです。" alt="" coords="133,80,216,107"/>
-</map>

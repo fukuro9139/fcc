@@ -1,9 +1,0 @@
-<map id="PreProcess" name="PreProcess">
-<area shape="rect" id="node1" title="プリプロセスを行う" alt="" coords="201,228,295,255"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,124,208,165"/>
-<area shape="rect" id="node3" href="$classInput.html" title="入力に関連する操作をまとめたクラス" alt="" coords="233,131,287,158"/>
-<area shape="rect" id="node4" title=" " alt="" coords="112,5,171,32"/>
-<area shape="rect" id="node5" title=" " alt="" coords="195,5,325,32"/>
-<area shape="rect" id="node6" title=" " alt="" coords="350,5,541,32"/>
-<area shape="rect" id="node7" title=" " alt="" coords="323,131,421,158"/>
-</map>
