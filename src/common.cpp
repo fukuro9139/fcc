@@ -11,18 +11,9 @@
 
 #include "common.hpp"
 #include "tokenize.hpp"
-
-#if __linux__
-
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/types.h>
-
-#else
-
-#include <windows.h>
-
-#endif /* __linux__ */
 
 /** 警告レベル */
 static int warning_level = 1;
@@ -149,7 +140,6 @@ void init_warning_level(int level)
  * @param argv 引数リスト
  */
 void run_subprocess(const vector<string> &argv)
-#if __linux__
 {
     /* 引数の数 + 1 (NULL終端)*/
     size_t capacity = argv.size() + 1;
@@ -190,59 +180,6 @@ void run_subprocess(const vector<string> &argv)
 
     delete[] cmd;
 }
-#else
-{
-    string cmd_str;
-    for (int i = 0; i < argv.size(); ++i)
-    {
-        cmd_str += argv[i];
-        if (i != argv.size() - 1)
-        {
-            cmd_str.push_back(' ');
-        }
-    }
-    char *cmd = new char[cmd_str.size() + 1];
-    std::char_traits<char>::copy(cmd, cmd_str.c_str(), cmd_str.size() + 1);
-
-    // wchar_t *wcmd = new wchar_t[cmd.size() + 1];
-    // mbstowcs(wcmd, cmd.c_str(), cmd.size() + 1);
-
-    STARTUPINFO si{};
-    PROCESS_INFORMATION pi{};
-
-    si.cb = sizeof(si);
-
-    /* プロセスの実行 */
-    if (CreateProcess(nullptr, cmd, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi))
-    {
-        /* 子プロセスの終了まで待つ */
-        WaitForSingleObject(pi.hProcess, INFINITE);
-
-        /* アプリケーションの終了コードの取得 */
-        unsigned long exitCode;
-        GetExitCodeProcess(pi.hProcess, &exitCode);
-
-        /* 終了コードが負の値になる場合もあるので、signedにキャストする */
-        long ec = static_cast<long>(exitCode);
-
-        /* ハンドルを閉じる */
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-
-        if (ec != 0)
-        {
-            exit(1);
-        }
-    }
-    else
-    {
-        /* 起動失敗 */
-        error("プロセス起動に失敗しました");
-    }
-    /* 解放 */
-    // delete[] wcmd;
-}
-#endif /* __linux__ */
 
 /**
  * @brief ファイルを開いてファイルストリームのポインタを返す。

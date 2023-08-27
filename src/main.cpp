@@ -88,10 +88,10 @@ void fcc(const unique_ptr<Input> &in, const string &input_path, const string &ou
 
 /**
  * @brief メイン処理
- * 
- * @param argc 
- * @param argv 
- * @return int 
+ *
+ * @param argc
+ * @param argv
+ * @return int
  */
 int main(int argc, char **argv)
 {
@@ -131,8 +131,6 @@ int main(int argc, char **argv)
 			output_path = "-";
 		}
 
-#if __linux__
-
 		/* ファイル名は入力ファイルと同じにする */
 		else if (in->_opt_S)
 		{
@@ -142,17 +140,6 @@ int main(int argc, char **argv)
 		{
 			output_path = Input::replace_extension(input._name, ".o");
 		}
-
-#else /* __linux__ */
-
-		else
-		{
-			output_path = Input::replace_extension(input._name, ".s");
-		}
-
-#endif /* __linux__ */
-
-#if __linux__
 
 		/* 入力ファイルの拡張子が".o"の場合 */
 		if (input._type == FileType::FILE_OBJ)
@@ -210,22 +197,13 @@ int main(int argc, char **argv)
 		PostProcess::assemble(tmpfile1, tmpfile2);
 		/* リンク対象のリストに追加 */
 		ld_args.emplace_back(tmpfile2);
-
-#else
-
-		run_fcc(args, input._name, output_path);
-
-#endif /* __linux__ */
 	}
 
-#if __linux__
 	/* リンク */
 	if (!ld_args.empty())
 	{
 		PostProcess::run_linker(ld_args, in->_output_path.empty() ? "a.out" : in->_output_path);
 	}
-
-#endif /* __linux__ */
 
 	return 0;
 }

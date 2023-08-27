@@ -1410,9 +1410,6 @@ void PreProcess::init_macros()
 	define_macro("__volatile__", "volatile");
 	define_macro("__x86_64", "1");
 	define_macro("__x86_64__", "1");
-
-#if __linux__
-
 	define_macro("__linux", "1");
 	define_macro("__linux__", "1");
 	define_macro("__unix", "1");
@@ -1421,8 +1418,6 @@ void PreProcess::init_macros()
 	define_macro("unix", "1");
 	define_macro("__gnu_linux__", "1");
 	define_macro("__ELF__", "1");
-
-#endif /* __linux__ */
 }
 
 /**
